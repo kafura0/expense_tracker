@@ -1,22 +1,22 @@
 import { createClient } from '@/shared/lib/supabase/client'
 import { type ExchangeRate, type ExchangeRateResponse } from './types'
 
-export function findLatestRates(baseCurrency: string): Promise<ExchangeRate[]> {
+export async function findLatestRates(baseCurrency: string): Promise<ExchangeRate[]> {
   const supabase = createClient()
   
-  return supabase
+  const { data, error } = await supabase
     .from('exchange_rates')
     .select('*')
     .eq('base_currency', baseCurrency)
     .order('fetched_at', { ascending: false })
     .limit(10)
-    .then(({ data, error }) => {
-      if (error) {
-        console.error('Error fetching exchange rates:', error)
-        throw error
-      }
-      return data || []
-    })
+
+  if (error) {
+    console.error('Error fetching exchange rates:', error)
+    throw error
+  }
+
+  return (data || []) as ExchangeRate[]
 }
 
 export async function isRatesStale(baseCurrency: string): Promise<boolean> {
@@ -31,7 +31,7 @@ export async function isRatesStale(baseCurrency: string): Promise<boolean> {
   return now.getTime() - latestFetch.getTime() > oneHourMs
 }
 
-export function upsertRates(rates: ExchangeRateResponse): Promise<void> {
+export async function upsertRates(rates: ExchangeRateResponse): Promise<void> {
   const supabase = createClient()
   
   const now = new Date().toISOString()
@@ -43,15 +43,14 @@ export function upsertRates(rates: ExchangeRateResponse): Promise<void> {
     fetched_at: now,
   }))
 
-  return supabase
+  const { error } = await supabase
     .from('exchange_rates')
     .upsert(rateEntries, {
       onConflict: 'base_currency,target_currency',
     })
-    .then(({ error }) => {
-      if (error) {
-        console.error('Error upserting exchange rates:', error)
-        throw error
-      }
-    })
+
+  if (error) {
+    console.error('Error upserting exchange rates:', error)
+    throw error
+  }
 }
