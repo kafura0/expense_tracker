@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ExpenseOS | Expenses Ledger</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-fixed": "#6ffbbe",
+                    "outline": "#86948a",
+                    "on-tertiary-container": "#711419",
+                    "tertiary-fixed-dim": "#ffb3af",
+                    "on-secondary-fixed": "#07006c",
+                    "on-tertiary": "#650911",
+                    "secondary-container": "#3131c0",
+                    "on-secondary-container": "#b0b2ff",
+                    "primary": "#4edea3",
+                    "on-secondary": "#1000a9",
+                    "secondary": "#c0c1ff",
+                    "tertiary": "#ffb3af",
+                    "on-primary": "#003824",
+                    "surface-container": "#171f33",
+                    "on-secondary-fixed-variant": "#2f2ebe",
+                    "surface-dim": "#0b1326",
+                    "surface-bright": "#31394d",
+                    "error-container": "#93000a",
+                    "inverse-on-surface": "#283044",
+                    "primary-container": "#10b981",
+                    "background": "#0b1326",
+                    "surface-container-lowest": "#060e20",
+                    "on-error": "#690005",
+                    "surface-container-low": "#131b2e",
+                    "on-surface-variant": "#bbcabf",
+                    "surface-tint": "#4edea3",
+                    "on-primary-fixed-variant": "#005236",
+                    "on-tertiary-fixed": "#410005",
+                    "outline-variant": "#3c4a42",
+                    "surface-variant": "#2d3449",
+                    "on-surface": "#dae2fd",
+                    "surface": "#0b1326",
+                    "primary-fixed-dim": "#4edea3",
+                    "tertiary-container": "#fc7c78",
+                    "on-background": "#dae2fd",
+                    "inverse-primary": "#006c49",
+                    "error": "#ffb4ab",
+                    "secondary-fixed-dim": "#c0c1ff",
+                    "surface-container-high": "#222a3d",
+                    "on-error-container": "#ffdad6",
+                    "tertiary-fixed": "#ffdad7",
+                    "on-primary-container": "#00422b",
+                    "inverse-surface": "#dae2fd",
+                    "secondary-fixed": "#e1e0ff",
+                    "surface-container-highest": "#2d3449",
+                    "on-primary-fixed": "#002113",
+                    "on-tertiary-fixed-variant": "#842225"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xs": "4px",
+                    "2xl": "64px",
+                    "lg": "24px",
+                    "sm": "8px",
+                    "md": "16px",
+                    "base": "8px",
+                    "xl": "40px",
+                    "container-max": "1280px",
+                    "gutter": "24px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "headline-md": ["Geist"],
+                    "headline-lg": ["Geist"],
+                    "display-lg": ["Geist"],
+                    "body-md": ["Inter"],
+                    "label-sm": ["JetBrains Mono"]
+            },
+            "fontSize": {
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "500"}],
+                    "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "body-md": ["15px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "label-sm": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #0b1326;
+            color: #dae2fd;
+            -webkit-font-smoothing: antialiased;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #3c4a42;
+            border-radius: 10px;
+        }
+        .glass-panel {
+            background: rgba(23, 31, 51, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(134, 148, 138, 0.2);
+        }
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(78, 222, 163, 0.2);
+        }
+    </style>
+</head>
+<body class="font-body-md text-body-md overflow-hidden">
+<div class="flex h-screen w-full">
+<!-- SideNavBar (from Shared Components JSON) -->
+<aside class="hidden md:flex flex-col h-screen sticky left-0 top-0 p-md gap-sm bg-surface-dim dark:bg-surface-dim border-r border-outline-variant dark:border-outline-variant w-64 z-50">
+<div class="px-md py-lg mb-md">
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary tracking-tight">ExpenseOS</h1>
+<p class="text-[10px] uppercase tracking-widest text-outline mt-1">Premium Workspace</p>
+</div>
+<nav class="flex-1 flex flex-col gap-xs">
+<!-- Dashboard -->
+<a class="flex items-center gap-md px-md py-3 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant transition-colors duration-150 rounded-lg group" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span class="font-medium">Dashboard</span>
+</a>
+<!-- Expenses (ACTIVE) -->
+<a class="flex items-center gap-md px-md py-3 bg-primary-container text-on-primary-container font-medium rounded-lg transition-transform duration-150 translate-x-1" href="#">
+<span class="material-symbols-outlined text-[20px]">receipt_long</span>
+<span class="font-medium">Expenses</span>
+</a>
+<!-- Analytics -->
+<a class="flex items-center gap-md px-md py-3 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant transition-colors duration-150 rounded-lg group" href="#">
+<span class="material-symbols-outlined text-[20px]">leaderboard</span>
+<span class="font-medium">Analytics</span>
+</a>
+<!-- Settings -->
+<a class="flex items-center gap-md px-md py-3 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant transition-colors duration-150 rounded-lg group" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+<span class="font-medium">Settings</span>
+</a>
+<div class="mt-xl">
+<button class="w-full flex items-center justify-center gap-sm bg-primary text-on-primary font-bold py-3 px-md rounded-lg transition-all active:scale-[0.98] shadow-sm">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span>New Entry</span>
+</button>
+</div>
+</nav>
+<div class="mt-auto flex flex-col gap-xs pt-md border-t border-outline-variant/30">
+<a class="flex items-center gap-md px-md py-3 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant transition-colors duration-150 rounded-lg" href="#">
+<span class="material-symbols-outlined text-[20px]">help_outline</span>
+<span class="font-medium">Help</span>
+</a>
+<a class="flex items-center gap-md px-md py-3 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant transition-colors duration-150 rounded-lg" href="#">
+<span class="material-symbols-outlined text-[20px]">logout</span>
+<span class="font-medium">Logout</span>
+</a>
+<div class="flex items-center gap-md px-md py-4 mt-sm">
+<div class="w-10 h-10 rounded-full bg-surface-variant border border-outline-variant overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional studio portrait of a high-level financial executive with a neutral expression. The background is a sophisticated deep navy blue gradient. The lighting is crisp and modern, emphasizing clarity and focus, fitting for a premium corporate fintech environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_PxTYcYFCIlajw_GLBwZS_W0NVNof-WvePjNGd_zMxS8pk8wCo1gbEfCypkwFuar9uHm0wkeyJqq6L0VD6tkinEgAKhDh033W2Ktp9Mb3_XFtDgKGMD8QcomE6L7KTqi5KSbzV0R5ewu9f7a-V5Cgq0GX-83qtMRkU8NskA_oscTb_HwIUEen3d5X6g_5BgSphR5mbQRuOk_l1LQREVKPanyn_gu50ga865vLiOczKuEvDg98Eg3YaQ"/>
+</div>
+<div class="flex flex-col">
+<span class="text-on-surface text-sm font-semibold">Alex Sterling</span>
+<span class="text-outline text-[10px] uppercase font-bold tracking-tighter">Admin Account</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col min-w-0 bg-background relative overflow-hidden">
+<!-- TopNavBar (from Shared Components JSON) -->
+<header class="flex justify-between items-center w-full px-xl h-16 sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-outline-variant dark:border-outline-variant">
+<div class="flex items-center flex-1 max-w-xl">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-lg">search</span>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-lg pl-10 pr-md py-2 text-sm text-on-surface placeholder:text-outline transition-all focus:border-primary" placeholder="Search transactions, merchants, or tags..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<button class="flex items-center gap-xs px-md py-2 border border-outline-variant rounded-lg text-sm font-medium text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+<span>Filter</span>
+</button>
+<div class="h-6 w-[1px] bg-outline-variant mx-xs"></div>
+<div class="flex gap-sm">
+<button class="w-10 h-10 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-variant transition-all">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-variant transition-all">
+<span class="material-symbols-outlined">contrast</span>
+</button>
+</div>
+<button class="bg-primary-container text-on-primary-container px-lg py-2 rounded-lg font-bold text-sm hover:opacity-90 active:scale-[0.98] transition-all">
+                        Add Expense
+                    </button>
+</div>
+</header>
+<!-- Content Workspace -->
+<div class="flex-1 overflow-y-auto custom-scrollbar p-xl">
+<!-- Page Header Stats -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-lg mb-xl">
+<div class="glass-panel p-lg rounded-xl">
+<p class="text-outline text-[11px] font-bold uppercase tracking-widest mb-1">Monthly Spend</p>
+<h2 class="text-headline-md font-headline-md text-on-surface font-bold">$12,482.00</h2>
+<div class="flex items-center gap-1 text-primary text-xs mt-2">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+<span>12.5% vs last month</span>
+</div>
+</div>
+<div class="glass-panel p-lg rounded-xl">
+<p class="text-outline text-[11px] font-bold uppercase tracking-widest mb-1">Pending Approval</p>
+<h2 class="text-headline-md font-headline-md text-on-surface font-bold">14</h2>
+<p class="text-outline text-xs mt-2">Awaiting your review</p>
+</div>
+<div class="glass-panel p-lg rounded-xl">
+<p class="text-outline text-[11px] font-bold uppercase tracking-widest mb-1">Top Category</p>
+<h2 class="text-headline-md font-headline-md text-on-surface font-bold">AWS</h2>
+<p class="text-outline text-xs mt-2">Cloud Infrastructure</p>
+</div>
+<div class="glass-panel p-lg rounded-xl border-primary/30">
+<p class="text-outline text-[11px] font-bold uppercase tracking-widest mb-1">Available Credits</p>
+<h2 class="text-headline-md font-headline-md text-primary font-bold">$4,200.00</h2>
+<p class="text-outline text-xs mt-2">Renewal in 12 days</p>
+</div>
+</div>
+<!-- Toolbar -->
+<div class="flex flex-wrap items-center justify-between gap-md mb-md">
+<div class="flex items-center gap-md">
+<div class="flex items-center gap-xs px-sm py-1 bg-surface-container-high rounded-lg border border-outline-variant">
+<input class="rounded border-outline-variant bg-surface-dim text-primary focus:ring-primary w-4 h-4" type="checkbox"/>
+<span class="text-xs font-medium text-on-surface-variant pr-xs">Select All</span>
+</div>
+<div class="hidden flex items-center gap-sm" id="bulk-actions">
+<button class="flex items-center gap-xs px-md py-1.5 bg-surface-variant text-on-surface rounded-lg text-xs font-medium border border-outline-variant hover:bg-on-surface-variant hover:text-surface-dim transition-colors">
+<span class="material-symbols-outlined text-[16px]">ios_share</span>
+                                Export
+                            </button>
+<button class="flex items-center gap-xs px-md py-1.5 bg-error/10 text-error rounded-lg text-xs font-medium border border-error/20 hover:bg-error/20 transition-colors">
+<span class="material-symbols-outlined text-[16px]">delete</span>
+                                Delete
+                            </button>
+</div>
+</div>
+<div class="flex items-center gap-sm">
+<span class="text-xs text-outline font-medium mr-2">Displaying 1-25 of 1,248</span>
+<div class="flex border border-outline-variant rounded-lg overflow-hidden">
+<button class="p-2 bg-surface-container-high hover:bg-surface-variant transition-colors border-r border-outline-variant">
+<span class="material-symbols-outlined text-[18px]">view_column</span>
+</button>
+<button class="p-2 bg-surface-container-high hover:bg-surface-variant transition-colors border-r border-outline-variant">
+<span class="material-symbols-outlined text-[18px]">tune</span>
+</button>
+<button class="p-2 bg-surface-container-high hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-[18px]">refresh</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Ledger Table Container -->
+<div class="glass-panel rounded-xl overflow-hidden shadow-2xl border-outline-variant/30">
+<div class="overflow-x-auto custom-scrollbar">
+<table class="w-full text-left border-collapse min-w-[1000px]">
+<thead>
+<tr class="bg-surface-container-high/50 border-b border-outline-variant">
+<th class="py-4 px-md w-10"></th>
+<th class="py-4 px-md font-label-sm text-label-sm text-outline uppercase tracking-widest">Merchant</th>
+<th class="py-4 px-md font-label-sm text-label-sm text-outline uppercase tracking-widest">Category</th>
+<th class="py-4 px-md font-label-sm text-label-sm text-outline uppercase tracking-widest">Date</th>
+<th class="py-4 px-md font-label-sm text-label-sm text-outline uppercase tracking-widest">Status</th>
+<th class="py-4 px-md font-label-sm text-label-sm text-outline uppercase tracking-widest text-right">VAT</th>
+<th class="py-4 px-md font-label-sm text-label-sm text-outline uppercase tracking-widest text-right">Total</th>
+<th class="py-4 px-md w-12"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/20">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-variant/20 transition-colors group">
+<td class="py-4 px-md">
+<input class="expense-check rounded border-outline-variant bg-surface-dim text-primary focus:ring-primary w-4 h-4" type="checkbox"/>
+</td>
+<td class="py-4 px-md">
+<div class="flex items-center gap-md">
+<div class="w-8 h-8 rounded-lg bg-surface-container-highest flex items-center justify-center border border-outline-variant">
+<span class="material-symbols-outlined text-[18px] text-primary">cloud</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-on-surface">Amazon Web Services</p>
+<p class="text-[11px] text-outline">INV-0048291</p>
+</div>
+</div>
+</td>
+<td class="py-4 px-md">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-secondary-container/20 text-secondary border border-secondary/30 uppercase tracking-tighter">Infrastructure</span>
+</td>
+<td class="py-4 px-md">
+<p class="text-sm text-on-surface font-label-sm">24 Oct, 2023</p>
+</td>
+<td class="py-4 px-md">
+<div class="flex items-center gap-1.5 text-primary">
+<div class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
+<span class="text-xs font-semibold">Paid</span>
+</div>
+</td>
+<td class="py-4 px-md text-right font-label-sm text-outline text-sm">
+                                        $214.50
+                                    </td>
+<td class="py-4 px-md text-right font-label-sm font-semibold text-on-surface text-sm">
+                                        $1,248.50
+                                    </td>
+<td class="py-4 px-md text-right">
+<button class="text-outline hover:text-on-surface transition-colors p-1 opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-variant/20 transition-colors group">
+<td class="py-4 px-md">
+<input class="expense-check rounded border-outline-variant bg-surface-dim text-primary focus:ring-primary w-4 h-4" type="checkbox"/>
+</td>
+<td class="py-4 px-md">
+<div class="flex items-center gap-md">
+<div class="w-8 h-8 rounded-lg bg-surface-container-highest flex items-center justify-center border border-outline-variant">
+<span class="material-symbols-outlined text-[18px] text-primary">local_cafe</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-on-surface">Starbucks Reserve</p>
+<p class="text-[11px] text-outline">Receipt #8821</p>
+</div>
+</div>
+</td>
+<td class="py-4 px-md">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-surface-variant text-on-surface-variant border border-outline-variant uppercase tracking-tighter">Meals &amp; Ent.</span>
+</td>
+<td class="py-4 px-md">
+<p class="text-sm text-on-surface font-label-sm">23 Oct, 2023</p>
+</td>
+<td class="py-4 px-md">
+<div class="flex items-center gap-1.5 text-tertiary">
+<div class="w-1.5 h-1.5 rounded-full bg-tertiary"></div>
+<span class="text-xs font-semibold">Pending</span>
+</div>
+</td>
+<td class="py-4 px-md text-right font-label-sm text-outline text-sm">
+                                        $2.40
+                                    </td>
+<td class="py-4 px-md text-right font-label-sm font-semibold text-on-surface text-sm">
+                                        $14.20
+                                    </td>
+<td class="py-4 px-md text-right">
+<button class="text-outline hover:text-on-surface transition-colors p-1 opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-variant/20 transition-colors group">
+<td class="py-4 px-md">
+<input class="expense-check rounded border-outline-variant bg-surface-dim text-primary focus:ring-primary w-4 h-4" type="checkbox"/>
+</td>
+<td class="py-4 px-md">
+<div class="flex items-center gap-md">
+<div class="w-8 h-8 rounded-lg bg-surface-container-highest flex items-center justify-center border border-outline-variant">
+<span class="material-symbols-outlined text-[18px] text-primary">train</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-on-surface">Eurostar International</p>
+<p class="text-[11px] text-outline">TX-900381</p>
+</div>
+</div>
+</td>
+<td class="py-4 px-md">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-surface-variant text-on-surface-variant border border-outline-variant uppercase tracking-tighter">Travel</span>
+</td>
+<td class="py-4 px-md">
+<p class="text-sm text-on-surface font-label-sm">22 Oct, 2023</p>
+</td>
+<td class="py-4 px-md">
+<div class="flex items-center gap-1.5 text-primary">
+<div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+<span class="text-xs font-semibold">Paid</span>
+</div>
+</td>
+<td class="py-4 px-md text-right font-label-sm text-outline text-sm">
+                                        $48.20
+                                    </td>
+<td class="py-4 px-md text-right font-label-sm font-semibold text-on-surface text-sm">
+                                        $320.00
+                                    </td>
+<td class="py-4 px-md text-right">
+<button class="text-outline hover:text-on-surface transition-colors p-1 opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-variant/20 transition-colors group">
+<td class="py-4 px-md">
+<input class="expense-check rounded border-outline-variant bg-surface-dim text-primary focus:ring-primary w-4 h-4" type="checkbox"/>
+</td>
+<td class="py-4 px-md">
+<div class="flex items-center gap-md">
+<div class="w-8 h-8 rounded-lg bg-surface-container-highest flex items-center justify-center border border-outline-variant">
+<span class="material-symbols-outlined text-[18px] text-primary">terminal</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-on-surface">GitHub Enterprise</p>
+<p class="text-[11px] text-outline">INV-99231</p>
+</div>
+</div>
+</td>
+<td class="py-4 px-md">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-secondary-container/20 text-secondary border border-secondary/30 uppercase tracking-tighter">Software</span>
+</td>
+<td class="py-4 px-md">
+<p class="text-sm text-on-surface font-label-sm">20 Oct, 2023</p>
+</td>
+<td class="py-4 px-md">
+<div class="flex items-center gap-1.5 text-primary">
+<div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+<span class="text-xs font-semibold">Paid</span>
+</div>
+</td>
+<td class="py-4 px-md text-right font-label-sm text-outline text-sm">
+                                        $80.00
+                                    </td>
+<td class="py-4 px-md text-right font-label-sm font-semibold text-on-surface text-sm">
+                                        $400.00
+                                    </td>
+<td class="py-4 px-md text-right">
+<button class="text-outline hover:text-on-surface transition-colors p-1 opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-surface-variant/20 transition-colors group">
+<td class="py-4 px-md">
+<input class="expense-check rounded border-outline-variant bg-surface-dim text-primary focus:ring-primary w-4 h-4" type="checkbox"/>
+</td>
+<td class="py-4 px-md">
+<div class="flex items-center gap-md">
+<div class="w-8 h-8 rounded-lg bg-surface-container-highest flex items-center justify-center border border-outline-variant">
+<span class="material-symbols-outlined text-[18px] text-primary">bolt</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-on-surface">Vercel Inc.</p>
+<p class="text-[11px] text-outline">INV-4820-A</p>
+</div>
+</div>
+</td>
+<td class="py-4 px-md">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-secondary-container/20 text-secondary border border-secondary/30 uppercase tracking-tighter">Infrastructure</span>
+</td>
+<td class="py-4 px-md">
+<p class="text-sm text-on-surface font-label-sm">18 Oct, 2023</p>
+</td>
+<td class="py-4 px-md">
+<div class="flex items-center gap-1.5 text-primary">
+<div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+<span class="text-xs font-semibold">Paid</span>
+</div>
+</td>
+<td class="py-4 px-md text-right font-label-sm text-outline text-sm">
+                                        $12.00
+                                    </td>
+<td class="py-4 px-md text-right font-label-sm font-semibold text-on-surface text-sm">
+                                        $60.00
+                                    </td>
+<td class="py-4 px-md text-right">
+<button class="text-outline hover:text-on-surface transition-colors p-1 opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Footer -->
+<div class="flex items-center justify-between px-md py-4 bg-surface-container-high/50 border-t border-outline-variant">
+<div class="flex items-center gap-sm">
+<label class="text-xs text-outline">Rows per page</label>
+<select class="bg-surface-dim border border-outline-variant rounded px-2 py-1 text-xs text-on-surface focus:border-primary">
+<option>25</option>
+<option>50</option>
+<option>100</option>
+</select>
+</div>
+<div class="flex items-center gap-md">
+<span class="text-xs text-outline">1-5 of 1,248</span>
+<div class="flex gap-xs">
+<button class="w-8 h-8 flex items-center justify-center border border-outline-variant rounded-lg text-outline hover:bg-surface-variant disabled:opacity-30" disabled="">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center border border-outline-variant rounded-lg text-on-surface hover:bg-surface-variant">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-md pb-safe pt-sm md:hidden bg-surface-container/90 backdrop-blur-lg border-t border-outline-variant rounded-t-xl shadow-lg">
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-sm text-[10px] mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-4 py-1 active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined">receipt</span>
+<span class="font-label-sm text-[10px] mt-1">Expenses</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1" href="#">
+<span class="material-symbols-outlined">bar_chart</span>
+<span class="font-label-sm text-[10px] mt-1">Stats</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-sm text-[10px] mt-1">Settings</span>
+</a>
+</nav>
+</div>
+<!-- Micro-interactions Script -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const checkboxes = document.querySelectorAll('.expense-check');
+            const bulkActions = document.getElementById('bulk-actions');
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                    const checkedCount = document.querySelectorAll('.expense-check:checked').length;
+                    if (checkedCount > 0) {
+                        bulkActions.classList.remove('hidden');
+                    } else {
+                        bulkActions.classList.add('hidden');
+                    }
+                });
+            });
+
+            // Subtle row interaction simulation
+            const rows = document.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                row.addEventListener('click', (e) => {
+                    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON' && !e.target.closest('button')) {
+                        // In a real app, this would open a side panel or detail view
+                        row.classList.add('bg-primary/5');
+                        setTimeout(() => row.classList.remove('bg-primary/5'), 300);
+                    }
+                });
+            });
+        });
+    </script>
+</body></html>

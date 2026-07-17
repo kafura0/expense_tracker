@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ExpenseOS | Intelligence for your personal capital</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Geist:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        :root {
+            --emerald-glow: rgba(16, 185, 129, 0.15);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
+        }
+        .font-headline { font-family: 'Geist', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        /* Custom scrollbar for pro-tool feel */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0b1326; }
+        ::-webkit-scrollbar-thumb { background: #3c4a42; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4edea3; }
+
+        .glass-card {
+            background: rgba(23, 31, 51, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(134, 148, 138, 0.2);
+        }
+
+        .hero-gradient {
+            background: radial-gradient(circle at 50% -20%, rgba(78, 222, 163, 0.15) 0%, rgba(11, 19, 38, 0) 50%);
+        }
+
+        .emerald-drop {
+            filter: drop-shadow(0 0 20px rgba(78, 222, 163, 0.3));
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#6ffbbe",
+                        "outline": "#86948a",
+                        "on-tertiary-container": "#711419",
+                        "tertiary-fixed-dim": "#ffb3af",
+                        "on-secondary-fixed": "#07006c",
+                        "on-tertiary": "#650911",
+                        "secondary-container": "#3131c0",
+                        "on-secondary-container": "#b0b2ff",
+                        "primary": "#4edea3",
+                        "on-secondary": "#1000a9",
+                        "secondary": "#c0c1ff",
+                        "tertiary": "#ffb3af",
+                        "on-primary": "#003824",
+                        "surface-container": "#171f33",
+                        "on-secondary-fixed-variant": "#2f2ebe",
+                        "surface-dim": "#0b1326",
+                        "surface-bright": "#31394d",
+                        "error-container": "#93000a",
+                        "inverse-on-surface": "#283044",
+                        "primary-container": "#10b981",
+                        "background": "#0b1326",
+                        "surface-container-lowest": "#060e20",
+                        "on-error": "#690005",
+                        "surface-container-low": "#131b2e",
+                        "on-surface-variant": "#bbcabf",
+                        "surface-tint": "#4edea3",
+                        "on-primary-fixed-variant": "#005236",
+                        "on-tertiary-fixed": "#410005",
+                        "outline-variant": "#3c4a42",
+                        "surface-variant": "#2d3449",
+                        "on-surface": "#dae2fd",
+                        "surface": "#0b1326",
+                        "primary-fixed-dim": "#4edea3",
+                        "tertiary-container": "#fc7c78",
+                        "on-background": "#dae2fd",
+                        "inverse-primary": "#006c49",
+                        "error": "#ffb4ab",
+                        "secondary-fixed-dim": "#c0c1ff",
+                        "surface-container-high": "#222a3d",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-fixed": "#ffdad7",
+                        "on-primary-container": "#00422b",
+                        "inverse-surface": "#dae2fd",
+                        "secondary-fixed": "#e1e0ff",
+                        "surface-container-highest": "#2d3449",
+                        "on-primary-fixed": "#002113",
+                        "on-tertiary-fixed-variant": "#842225"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "2xl": "64px",
+                        "lg": "24px",
+                        "sm": "8px",
+                        "md": "16px",
+                        "base": "8px",
+                        "xl": "40px",
+                        "container-max": "1280px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Geist"],
+                        "headline-lg": ["Geist"],
+                        "display-lg": ["Geist"],
+                        "body-md": ["Inter"],
+                        "label-sm": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "500"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "body-md": ["15px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "label-sm": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface antialiased selection:bg-primary/30 selection:text-primary-fixed">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center w-full px-xl h-16 sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-outline-variant">
+<div class="flex items-center gap-xl">
+<span class="font-headline-md text-headline-md font-bold text-on-surface">ExpenseOS</span>
+<nav class="hidden md:flex gap-lg items-center">
+<a class="text-primary font-bold border-b-2 border-primary pb-1 font-label-sm text-label-sm" href="#">Home</a>
+<a class="text-on-surface-variant hover:bg-surface-variant transition-colors duration-150 px-3 py-1 rounded font-label-sm text-label-sm" href="#features">Features</a>
+<a class="text-on-surface-variant hover:bg-surface-variant transition-colors duration-150 px-3 py-1 rounded font-label-sm text-label-sm" href="#pricing">Pricing</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">contrast</button>
+<button class="bg-primary-container text-on-primary-container font-body-md text-body-md px-md py-xs rounded-lg font-medium hover:scale-[0.98] transition-all">Add Expense</button>
+</div>
+</header>
+<main class="relative overflow-hidden">
+<!-- Hero Section -->
+<section class="hero-gradient pt-24 pb-12 px-md md:px-xl">
+<div class="max-w-container-max mx-auto text-center">
+<div class="inline-flex items-center gap-sm px-3 py-1 rounded-full border border-outline-variant bg-surface-container-low mb-lg">
+<span class="flex h-2 w-2 rounded-full bg-primary animate-pulse"></span>
+<span class="font-label-sm text-label-sm text-primary uppercase tracking-widest">Now supporting 40+ Currencies</span>
+</div>
+<h1 class="font-display-lg text-display-lg md:text-6xl mb-md max-w-4xl mx-auto leading-tight">
+                    Intelligence for your <span class="text-primary">personal capital.</span>
+</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto mb-xl">
+                    ExpenseOS transforms chaotic financial data into precise strategic assets. Automated reconciliation, multi-currency mastery, and bank-grade security.
+                </p>
+<div class="flex flex-col sm:flex-row justify-center gap-md mb-2xl">
+<button class="bg-primary text-on-primary font-medium px-xl py-md rounded-xl text-body-lg hover:brightness-110 transition-all emerald-drop">Start Auditing Free</button>
+<button class="border border-outline-variant text-on-surface font-medium px-xl py-md rounded-xl text-body-lg hover:bg-surface-variant transition-all">Book Demo</button>
+</div>
+<!-- Dashboard Preview -->
+<div class="relative max-w-5xl mx-auto mt-xl">
+<div class="absolute inset-0 bg-primary/10 blur-[120px] rounded-full -z-10 translate-y-20"></div>
+<div class="glass-card rounded-2xl p-xs md:p-sm shadow-2xl overflow-hidden border border-outline-variant/30">
+<div class="bg-surface-dim rounded-xl border border-outline-variant/20 overflow-hidden shadow-inner">
+<div class="h-8 bg-surface-container-low border-b border-outline-variant/20 flex items-center px-md gap-xs">
+<div class="w-2.5 h-2.5 rounded-full bg-error-container"></div>
+<div class="w-2.5 h-2.5 rounded-full bg-tertiary-container"></div>
+<div class="w-2.5 h-2.5 rounded-full bg-primary-container"></div>
+</div>
+<div class="p-lg md:p-2xl">
+<div class="w-full aspect-[16/9] bg-cover bg-center rounded-lg shadow-2xl" data-alt="A clean, professional dark mode dashboard interface showing financial analytics. The UI features sleek emerald-colored line charts representing monthly spending, a minimalist table of recent transactions with JetBrains Mono numbers, and a sidebar with simple icons. The lighting is low-key and sophisticated, highlighting precise borders and high-contrast typography in a minimalist Vercel-like aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAoTVPS9-Dxkwfgt-TjHV9o_sA6tZ0gpiaZiwdDlVgmJaa1MVaY60ukHY9rXid5LjvrYWGKAw2SLW8Dd-GDdFto3VHhWp0FUmxk0ThMNyOV-C6X66T62L1t2NGtGnp1Hld7sQ1z9j6dLRXwzhKrBp_yCHJAxTxkiMRlz4Rml-7dx9UPipDv2pTXo6ajRWb1yDqY-XZFHTiIROdOKOJmCQ1uQfRYluXKtI_fgysrcO5fLpFfsKYfOic-Jw')"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Feature Bento Grid -->
+<section class="py-2xl px-md md:px-xl" id="features">
+<div class="max-w-container-max mx-auto">
+<div class="text-center mb-2xl">
+<h2 class="font-headline-lg text-headline-lg mb-sm">Engineered for Precision</h2>
+<p class="text-on-surface-variant font-body-md text-body-md">Tools built for the modern financial operator.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-lg h-auto">
+<!-- Smart Insights -->
+<div class="md:col-span-7 glass-card p-xl rounded-2xl border border-outline-variant/20 flex flex-col justify-between group hover:border-primary/50 transition-all duration-300">
+<div>
+<div class="w-12 h-12 bg-primary-container/20 rounded-lg flex items-center justify-center mb-lg">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">insights</span>
+</div>
+<h3 class="font-headline-md text-headline-md mb-md">Smart Insights</h3>
+<p class="text-on-surface-variant font-body-md text-body-md max-w-sm">AI-driven patterns that detect anomalies and spending trends before they impact your runway.</p>
+</div>
+<div class="mt-xl h-48 bg-surface-container-high rounded-xl overflow-hidden relative border border-outline-variant/10">
+
+</div>
+</div>
+<!-- VAT Calculation -->
+<div class="md:col-span-5 glass-card p-xl rounded-2xl border border-outline-variant/20 group hover:border-primary/50 transition-all">
+<div class="w-12 h-12 bg-primary-container/20 rounded-lg flex items-center justify-center mb-lg">
+<span class="material-symbols-outlined text-primary">calculate</span>
+</div>
+<h3 class="font-headline-md text-headline-md mb-md">VAT Calculations</h3>
+<p class="text-on-surface-variant font-body-md text-body-md mb-xl">Automatic tax extraction and VAT compliance across 120+ jurisdictions.</p>
+<div class="bg-surface-container rounded-lg p-md font-mono text-xs border border-outline-variant/20">
+<div class="flex justify-between text-on-surface-variant border-b border-outline-variant/10 pb-xs mb-xs">
+<span>NET AMOUNT</span>
+<span class="text-on-surface">€1,240.00</span>
+</div>
+<div class="flex justify-between text-on-surface-variant border-b border-outline-variant/10 pb-xs mb-xs">
+<span>VAT (21%)</span>
+<span class="text-primary">+€260.40</span>
+</div>
+<div class="flex justify-between font-bold text-on-surface">
+<span>TOTAL AUDITED</span>
+<span>€1,500.40</span>
+</div>
+</div>
+</div>
+<!-- Multi-currency -->
+<div class="md:col-span-5 glass-card p-xl rounded-2xl border border-outline-variant/20 group hover:border-primary/50 transition-all">
+<div class="w-12 h-12 bg-primary-container/20 rounded-lg flex items-center justify-center mb-lg">
+<span class="material-symbols-outlined text-primary">currency_exchange</span>
+</div>
+<h3 class="font-headline-md text-headline-md mb-md">Multi-currency</h3>
+<p class="text-on-surface-variant font-body-md text-body-md">Real-time spot rates with historical data syncing for seamless cross-border reporting.</p>
+</div>
+<!-- Bank Sync -->
+<div class="md:col-span-7 glass-card p-xl rounded-2xl border border-outline-variant/20 group hover:border-primary/50 transition-all">
+<div class="flex flex-col md:flex-row md:items-center gap-xl h-full">
+<div class="flex-1">
+<div class="w-12 h-12 bg-primary-container/20 rounded-lg flex items-center justify-center mb-lg">
+<span class="material-symbols-outlined text-primary">sync_alt</span>
+</div>
+<h3 class="font-headline-md text-headline-md mb-md">Global Bank Sync</h3>
+<p class="text-on-surface-variant font-body-md text-body-md">Connect to 15,000+ financial institutions via Plaid, Salt Edge, and direct API endpoints.</p>
+</div>
+<div class="flex-1 flex justify-center items-center">
+<div class="grid grid-cols-3 gap-md">
+<div class="w-16 h-16 bg-surface-container rounded-lg border border-outline-variant/20 flex items-center justify-center grayscale hover:grayscale-0 transition-all cursor-pointer">
+<div class="w-8 h-8 rounded-full bg-on-surface/10"></div>
+</div>
+<div class="w-16 h-16 bg-surface-container rounded-lg border border-outline-variant/20 flex items-center justify-center grayscale hover:grayscale-0 transition-all cursor-pointer">
+<div class="w-8 h-8 bg-on-surface/10 rotate-45"></div>
+</div>
+<div class="w-16 h-16 bg-surface-container rounded-lg border border-outline-variant/20 flex items-center justify-center grayscale hover:grayscale-0 transition-all cursor-pointer">
+<div class="w-8 h-4 bg-on-surface/10 rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Social Proof -->
+<section class="py-2xl bg-surface-container-lowest overflow-hidden border-y border-outline-variant/20">
+<div class="max-w-container-max mx-auto px-md md:px-xl">
+<p class="font-label-sm text-label-sm text-center text-outline uppercase tracking-widest mb-2xl">Trusted by leaders at</p>
+<div class="flex flex-wrap justify-center items-center gap-2xl opacity-50 contrast-125 grayscale">
+<span class="font-headline-md text-headline-md font-bold">VERTEX</span>
+<span class="font-headline-md text-headline-md font-bold">LINEAR</span>
+<span class="font-headline-md text-headline-md font-bold">VULCAN</span>
+<span class="font-headline-md text-headline-md font-bold">AETHER</span>
+<span class="font-headline-md text-headline-md font-bold">SYNERGY</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-xl mt-2xl">
+<div class="p-xl rounded-2xl bg-surface-dim border border-outline-variant/10 italic">
+<p class="text-body-lg text-on-surface mb-lg">"ExpenseOS is the first tool that actually speaks the language of a CFO. The multi-currency handling is lightyears ahead of anything else."</p>
+<div class="flex items-center gap-md not-italic">
+<div class="w-10 h-10 rounded-full bg-primary-container"></div>
+<div>
+<p class="font-bold text-on-surface">Marcus Chen</p>
+<p class="text-sm text-outline">Founder at Vertex</p>
+</div>
+</div>
+</div>
+<div class="p-xl rounded-2xl bg-surface-dim border border-outline-variant/10 italic">
+<p class="text-body-lg text-on-surface mb-lg">"Finally, a dashboard that doesn't hide data behind layers of menus. It's fast, beautiful, and hyper-precise."</p>
+<div class="flex items-center gap-md not-italic">
+<div class="w-10 h-10 rounded-full bg-secondary-container"></div>
+<div>
+<p class="font-bold text-on-surface">Sarah Drasner</p>
+<p class="text-sm text-outline">CTO at Aether</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Pricing Section -->
+<section class="py-2xl px-md md:px-xl" id="pricing">
+<div class="max-w-container-max mx-auto">
+<div class="text-center mb-2xl">
+<h2 class="font-headline-lg text-headline-lg mb-sm">Transparent Scaling</h2>
+<p class="text-on-surface-variant font-body-md text-body-md">Choose the workspace that fits your volume.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-xl">
+<!-- Starter -->
+<div class="p-xl rounded-2xl border border-outline-variant/20 bg-surface-container flex flex-col hover:border-outline transition-all">
+<span class="font-label-sm text-label-sm text-outline uppercase mb-md">Starter</span>
+<div class="flex items-end gap-xs mb-lg">
+<span class="font-headline-lg text-headline-lg">$0</span>
+<span class="text-on-surface-variant mb-xs">/mo</span>
+</div>
+<ul class="space-y-md mb-2xl flex-1">
+<li class="flex items-center gap-sm text-body-md"><span class="material-symbols-outlined text-primary text-sm">check_circle</span> Up to 50 entries</li>
+<li class="flex items-center gap-sm text-body-md"><span class="material-symbols-outlined text-primary text-sm">check_circle</span> Manual CSV export</li>
+<li class="flex items-center gap-sm text-body-md"><span class="material-symbols-outlined text-primary text-sm">check_circle</span> Basic Insights</li>
+</ul>
+<button class="w-full border border-outline-variant py-md rounded-xl font-medium hover:bg-surface-variant transition-all">Start for free</button>
+</div>
+<!-- Professional -->
+<div class="p-xl rounded-2xl border-2 border-primary bg-surface-container-high flex flex-col relative shadow-[0_0_40px_rgba(78,222,163,0.1)]">
+<div class="absolute top-0 right-8 -translate-y-1/2 bg-primary text-on-primary text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest">Most Popular</div>
+<span class="font-label-sm text-label-sm text-primary uppercase mb-md">Professional</span>
+<div class="flex items-end gap-xs mb-lg">
+<span class="font-headline-lg text-headline-lg">$24</span>
+<span class="text-on-surface-variant mb-xs">/mo</span>
+</div>
+<ul class="space-y-md mb-2xl flex-1">
+<li class="flex items-center gap-sm text-body-md"><span class="material-symbols-outlined text-primary text-sm">check_circle</span> Unlimited entries</li>
+<li class="flex items-center gap-sm text-body-md"><span class="material-symbols-outlined text-primary text-sm">check_circle</span> Auto Bank Sync</li>
+<li class="flex items-center gap-sm text-body-md"><span class="material-symbols-outlined text-primary text-sm">check_circle</span> Smart VAT Extraction</li>
+<li class="flex items-center gap-sm text-body-md"><span class="material-symbols-outlined text-primary text-sm">check_circle</span> PDF Invoicing</li>
+</ul>
+<button class="w-full bg-primary text-on-primary py-md rounded-xl font-medium hover:brightness-110 transition-all">Go Professional</button>
+</div>
+<!-- Enterprise -->
+<div class="p-xl rounded-2xl border border-outline-variant/20 bg-surface-container flex flex-col hover:border-outline transition-all">
+<span class="font-label-sm text-label-sm text-outline uppercase mb-md">Enterprise</span>
+<div class="flex items-end gap-xs mb-lg">
+<span class="font-headline-lg text-headline-lg">Custom</span>
+</div>
+<ul class="space-y-md mb-2xl flex-1">
+<li class="flex items-center gap-sm text-body-md"><span class="material-symbols-outlined text-primary text-sm">check_circle</span> Custom API endpoints</li>
+<li class="flex items-center gap-sm text-body-md"><span class="material-symbols-outlined text-primary text-sm">check_circle</span> Role-based access</li>
+<li class="flex items-center gap-sm text-body-md"><span class="material-symbols-outlined text-primary text-sm">check_circle</span> Dedicated Auditor</li>
+</ul>
+<button class="w-full border border-outline-variant py-md rounded-xl font-medium hover:bg-surface-variant transition-all">Contact Sales</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Final CTA -->
+<section class="py-2xl px-md md:px-xl relative">
+<div class="max-w-container-max mx-auto glass-card rounded-3xl p-2xl text-center border border-primary/20 overflow-hidden">
+
+<h2 class="font-display-lg text-display-lg mb-md">Ready to audit?</h2>
+<p class="text-on-surface-variant font-body-lg text-body-lg mb-xl max-w-xl mx-auto">Join 12,000+ operators managing their capital with absolute clarity.</p>
+<button class="bg-primary text-on-primary font-medium px-2xl py-md rounded-xl text-body-lg hover:brightness-110 transition-all emerald-drop">Deploy ExpenseOS</button>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest border-t border-outline-variant/20 pt-2xl pb-xl px-md md:px-xl">
+<div class="max-w-container-max mx-auto grid grid-cols-1 md:grid-cols-12 gap-xl mb-2xl">
+<div class="md:col-span-4">
+<span class="font-headline-md text-headline-md font-bold text-on-surface block mb-md">ExpenseOS</span>
+<p class="text-on-surface-variant font-body-md text-body-md mb-xl">The premium operating system for high-net-worth capital management.</p>
+<div class="flex gap-md">
+<a class="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center hover:bg-primary/10 hover:border-primary transition-all" href="#">
+<span class="material-symbols-outlined text-sm">public</span>
+</a>
+<a class="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center hover:bg-primary/10 hover:border-primary transition-all" href="#">
+<span class="material-symbols-outlined text-sm">share</span>
+</a>
+</div>
+</div>
+<div class="md:col-span-2">
+<h4 class="font-label-sm text-label-sm text-on-surface uppercase mb-lg">Product</h4>
+<ul class="space-y-sm text-on-surface-variant font-body-md">
+<li><a class="hover:text-primary transition-colors" href="#">Changelog</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Documentation</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Integrations</a></li>
+</ul>
+</div>
+<div class="md:col-span-2">
+<h4 class="font-label-sm text-label-sm text-on-surface uppercase mb-lg">Company</h4>
+<ul class="space-y-sm text-on-surface-variant font-body-md">
+<li><a class="hover:text-primary transition-colors" href="#">About</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Careers</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Legal</a></li>
+</ul>
+</div>
+<div class="md:col-span-4">
+<h4 class="font-label-sm text-label-sm text-on-surface uppercase mb-lg">Subscribe to Updates</h4>
+<div class="flex gap-sm">
+<input class="bg-surface-dim border border-outline-variant rounded-lg px-md py-xs flex-1 focus:ring-1 focus:ring-primary focus:border-primary outline-none" placeholder="email@example.com" type="email"/>
+<button class="bg-on-surface text-surface py-xs px-md rounded-lg font-medium hover:opacity-90 transition-all">Join</button>
+</div>
+</div>
+</div>
+<div class="max-w-container-max mx-auto flex flex-col md:flex-row justify-between items-center border-t border-outline-variant/10 pt-xl">
+<p class="text-outline font-label-sm text-label-sm">© 2024 ExpenseOS Inc. All rights reserved.</p>
+<div class="flex gap-xl mt-md md:mt-0">
+<a class="text-outline font-label-sm text-label-sm hover:text-on-surface" href="#">Security</a>
+<a class="text-outline font-label-sm text-label-sm hover:text-on-surface" href="#">Privacy Policy</a>
+<a class="text-outline font-label-sm text-label-sm hover:text-on-surface" href="#">Terms</a>
+</div>
+</div>
+</footer>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-md pb-safe pt-sm md:hidden bg-surface-container/90 backdrop-blur-lg border-t border-outline-variant">
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-4 py-1 scale-90 transition-all duration-150" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 active:bg-surface-variant transition-all" href="#features">
+<span class="material-symbols-outlined">receipt</span>
+<span class="font-label-sm text-label-sm">Features</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 active:bg-surface-variant transition-all" href="#pricing">
+<span class="material-symbols-outlined">bar_chart</span>
+<span class="font-label-sm text-label-sm">Pricing</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 active:bg-surface-variant transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-sm text-label-sm">Settings</span>
+</a>
+</nav>
+<script>
+        // Micro-interaction for buttons
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('mousedown', () => btn.classList.add('scale-[0.98]'));
+            btn.addEventListener('mouseup', () => btn.classList.remove('scale-[0.98]'));
+            btn.addEventListener('mouseleave', () => btn.classList.remove('scale-[0.98]'));
+        });
+
+        // Simple smooth scroll highlighting
+        window.addEventListener('scroll', () => {
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('header nav a');
+            
+            let current = "";
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (pageYOffset >= sectionTop - 100) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('text-primary', 'font-bold', 'border-b-2', 'border-primary');
+                link.classList.add('text-on-surface-variant');
+                if (link.getAttribute('href') === `#${current}`) {
+                    link.classList.remove('text-on-surface-variant');
+                    link.classList.add('text-primary', 'font-bold', 'border-b-2', 'border-primary');
+                }
+            });
+        });
+    </script>
+</body></html>
