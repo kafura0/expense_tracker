@@ -1,0 +1,55 @@
+# generated: 2026-07-17
+# last_updated: 2026-07-17
+# project: ExpenseOS
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+generated: '2026-07-17'
+last_updated: '2026-07-17'
+project: ExpenseOS
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status: backlog → in-progress → done
+# Story Status: backlog → ready-for-dev → in-progress → review → done
+# Retrospective: optional ↔ done
+# Action Item: open → in-progress → done
+
+development_status:
+  epic-1: backlog
+  1-1-initialize-nextjs-project-with-fsd-structure: backlog
+  1-2-configure-supabase-database-schema: backlog
+  1-3-implement-email-authentication: backlog
+  1-4-create-shared-ui-kit-shadcn-ui: backlog
+  epic-1-retrospective: optional
+
+  epic-2: backlog
+  2-1-create-expense-entity-and-repository: backlog
+  2-2-build-expense-list-page: backlog
+  2-3-build-create-and-edit-expense-forms: backlog
+  2-4-implement-delete-undo-delete-and-duplicate: backlog
+  epic-2-retrospective: optional
+
+  epic-3: backlog
+  3-1-build-kpi-cards: backlog
+  3-2-build-spending-charts: backlog
+  3-3-build-recent-activity-and-insights: backlog
+  epic-3-retrospective: optional
+
+  epic-4: backlog
+  4-1-implement-exchange-rate-service: backlog
+  4-2-build-currency-conversion-on-expenses: backlog
+  4-3-implement-vat-tax-engine: backlog
+  epic-4-retrospective: optional
+
+  epic-5: backlog
+  5-1-build-settings-page: backlog
+  5-2-implement-csv-and-pdf-export: backlog
+  5-3-implement-pwa-support: backlog
+  epic-5-retrospective: optional
+
+action_items: []
