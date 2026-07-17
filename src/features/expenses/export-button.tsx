@@ -65,7 +65,7 @@ export function ExportButton({ filters }: ExportButtonProps) {
       const expenses = await fetchExpenses()
 
       if (expenses.length === 0) {
-        toast('No expenses to export', 'info')
+        toast('No expenses to export', 'warning')
         return
       }
 

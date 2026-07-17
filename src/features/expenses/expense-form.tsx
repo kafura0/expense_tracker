@@ -109,7 +109,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
     try {
       const submissionData = {
         ...data,
-        converted_amount_cents: convertedAmount,
+        converted_amount_cents: convertedAmount ?? undefined,
         converted_currency: BASE_CURRENCY,
         exchange_rate_used: rates[data.currency] || 1,
         tax_rate_used: data.is_taxable ? DEFAULT_VAT_RATE : undefined,

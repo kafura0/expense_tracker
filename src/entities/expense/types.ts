@@ -1,4 +1,6 @@
-export type { Expense, ExpenseInsert, ExpenseUpdate } from './schema'
+import type { Expense, ExpenseInsert, ExpenseUpdate } from './schema'
+
+export type { Expense, ExpenseInsert, ExpenseUpdate }
 
 export interface ExpenseFilters {
   search?: string

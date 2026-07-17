@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/shared/ui/theme-provider";
 import { ToastProvider } from "@/shared/ui/toast";
+import { Providers } from "./providers";
 import { InstallPrompt } from "@/features/pwa/install-prompt";
 import { ServiceWorkerRegistration } from "@/features/pwa/service-worker-registration";
 
@@ -16,16 +17,17 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#4edea3",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
+
 export const metadata: Metadata = {
   title: "Ledgerly",
   description: "Intelligence for your personal capital",
   manifest: "/manifest.json",
-  themeColor: "#4edea3",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-  },
 };
 
 export default function RootLayout({
@@ -40,13 +42,15 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
+        <Providers>
           <ThemeProvider defaultTheme="dark" storageKey="ledgerly-theme">
-          <ToastProvider>
-            {children}
-            <InstallPrompt />
-            <ServiceWorkerRegistration />
-          </ToastProvider>
-        </ThemeProvider>
+            <ToastProvider>
+              {children}
+              <InstallPrompt />
+              <ServiceWorkerRegistration />
+            </ToastProvider>
+          </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );
