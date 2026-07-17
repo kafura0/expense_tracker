@@ -1,22 +1,22 @@
-import { createClient } from '@/shared/lib/supabase/server'
+import { createClient } from '@/shared/lib/supabase/client'
 import { type ExchangeRate, type ExchangeRateResponse } from './types'
 
-export async function findLatestRates(baseCurrency: string): Promise<ExchangeRate[]> {
-  const supabase = await createClient()
+export function findLatestRates(baseCurrency: string): Promise<ExchangeRate[]> {
+  const supabase = createClient()
   
-  const { data, error } = await supabase
+  return supabase
     .from('exchange_rates')
     .select('*')
     .eq('base_currency', baseCurrency)
     .order('fetched_at', { ascending: false })
     .limit(10)
-
-  if (error) {
-    console.error('Error fetching exchange rates:', error)
-    throw error
-  }
-
-  return data || []
+    .then(({ data, error }) => {
+      if (error) {
+        console.error('Error fetching exchange rates:', error)
+        throw error
+      }
+      return data || []
+    })
 }
 
 export async function isRatesStale(baseCurrency: string): Promise<boolean> {
@@ -31,8 +31,8 @@ export async function isRatesStale(baseCurrency: string): Promise<boolean> {
   return now.getTime() - latestFetch.getTime() > oneHourMs
 }
 
-export async function upsertRates(rates: ExchangeRateResponse): Promise<void> {
-  const supabase = await createClient()
+export function upsertRates(rates: ExchangeRateResponse): Promise<void> {
+  const supabase = createClient()
   
   const now = new Date().toISOString()
   
@@ -43,14 +43,15 @@ export async function upsertRates(rates: ExchangeRateResponse): Promise<void> {
     fetched_at: now,
   }))
 
-  const { error } = await supabase
+  return supabase
     .from('exchange_rates')
     .upsert(rateEntries, {
       onConflict: 'base_currency,target_currency',
     })
-
-  if (error) {
-    console.error('Error upserting exchange rates:', error)
-    throw error
-  }
+    .then(({ error }) => {
+      if (error) {
+        console.error('Error upserting exchange rates:', error)
+        throw error
+      }
+    })
 }

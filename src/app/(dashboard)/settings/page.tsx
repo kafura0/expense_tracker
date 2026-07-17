@@ -8,7 +8,7 @@ import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { useToast } from '@/shared/ui/toast'
-import { useTheme } from '@/shared/lib/theme-provider'
+import { useTheme } from '@/shared/ui/theme-provider'
 import { Upload, Save } from 'lucide-react'
 
 const CURRENCIES = ['KES', 'USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY']

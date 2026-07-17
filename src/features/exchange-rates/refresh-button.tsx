@@ -3,10 +3,11 @@
 import { useState } from 'react'
 import { Button } from '@/shared/ui/button'
 import { RefreshCw } from 'lucide-react'
-import { toast } from 'sonner'
+import { useToast } from '@/shared/ui/toast'
 
 export function RefreshRatesButton() {
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const { toast } = useToast()
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
@@ -18,9 +19,9 @@ export function RefreshRatesButton() {
         throw new Error('Failed to refresh rates')
       }
 
-      toast.success('Exchange rates refreshed')
+      toast('Exchange rates refreshed', 'success')
     } catch (error) {
-      toast.error('Failed to refresh exchange rates')
+      toast('Failed to refresh exchange rates', 'error')
     } finally {
       setIsRefreshing(false)
     }

@@ -7,7 +7,7 @@ import { Button } from '@/shared/ui/button'
 import { Download, FileText, Table } from 'lucide-react'
 import { generateCSV, downloadCSV } from '@/shared/lib/csv-export'
 import { generatePDF } from '@/shared/lib/pdf-export'
-import { toast } from 'sonner'
+import { useToast } from '@/shared/ui/toast'
 
 interface ExportButtonProps {
   filters?: {
@@ -22,6 +22,7 @@ export function ExportButton({ filters }: ExportButtonProps) {
   const [isExporting, setIsExporting] = useState(false)
   const [exportType, setExportType] = useState<'csv' | 'pdf' | null>(null)
   const supabase = createClient()
+  const { toast } = useToast()
 
   const fetchExpenses = async () => {
     let query = supabase
