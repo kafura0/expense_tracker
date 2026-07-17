@@ -41,12 +41,19 @@ CREATE INDEX idx_categories_created_at ON categories(created_at);
 CREATE TABLE expenses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  title TEXT,
   amount_cents INTEGER NOT NULL,
   currency TEXT NOT NULL DEFAULT 'USD',
+  converted_amount_cents INTEGER,
+  converted_currency TEXT,
+  exchange_rate_used NUMERIC,
   category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
   date TIMESTAMPTZ NOT NULL,
   notes TEXT,
   tax_applicable BOOLEAN DEFAULT false,
+  is_taxable BOOLEAN DEFAULT false,
+  tax_rate_used NUMERIC,
+  tax_amount_cents INTEGER,
   is_deleted BOOLEAN DEFAULT false,
   deleted_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
@@ -85,7 +92,7 @@ CREATE TABLE exchange_rates (
   target_currency TEXT NOT NULL,
   rate NUMERIC NOT NULL,
   fetched_at TIMESTAMPTZ DEFAULT now() NOT NULL,
-  expires_at TIMESTAMPTZ NOT NULL,
+  expires_at TIMESTAMPTZ,
   UNIQUE(base_currency, target_currency)
 );
 
