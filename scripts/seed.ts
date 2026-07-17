@@ -5,8 +5,13 @@ dotenv.config({ path: '.env.local' })
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 const supabase = createClient(supabaseUrl, supabaseKey)
+
+const DEMO_EMAIL = 'admin@ledgerly.app'
+const DEMO_PASSWORD = '123456'
+const DEMO_DISPLAY_NAME = 'Admin'
 
 const CATEGORIES = [
   { name: 'Food & Dining', icon: '🍔', color: '#4edea3' },
@@ -45,7 +50,7 @@ const EXPENSE_TEMPLATES = [
 ]
 
 const CURRENCIES = ['KES', 'USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY']
-const CURRENCY_WEIGHTS = [60, 15, 8, 5, 5, 4, 3] // KES most common
+const CURRENCY_WEIGHTS = [60, 15, 8, 5, 5, 4, 3]
 
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min
@@ -54,12 +59,12 @@ function randomInt(min: number, max: number): number {
 function weightedRandom(items: string[], weights: number[]): string {
   const totalWeight = weights.reduce((a, b) => a + b, 0)
   let random = Math.random() * totalWeight
-  
+
   for (let i = 0; i < items.length; i++) {
     random -= weights[i]
     if (random <= 0) return items[i]
   }
-  
+
   return items[items.length - 1]
 }
 
@@ -70,33 +75,99 @@ function randomDate(daysBack: number): string {
   return new Date(randomTime).toISOString()
 }
 
+async function ensureDemoUser(): Promise<string> {
+  console.log('Ensuring demo user exists...')
+
+  if (serviceRoleKey) {
+    console.log('Using service role key for admin user creation...')
+
+    const admin = createClient(supabaseUrl, serviceRoleKey)
+
+    const { data: list } = await admin.auth.admin.listUsers()
+    const existing = list?.users?.find((u) => u.email === DEMO_EMAIL)
+
+    if (existing) {
+      console.log(`Demo user already exists: ${DEMO_EMAIL} (id: ${existing.id})`)
+      return existing.id
+    }
+
+    const { data, error } = await admin.auth.admin.createUser({
+      email: DEMO_EMAIL,
+      password: DEMO_PASSWORD,
+      email_confirm: true,
+      user_metadata: {
+        display_name: DEMO_DISPLAY_NAME,
+      },
+    })
+
+    if (error) {
+      console.error('Error creating demo user:', error.message)
+      process.exit(1)
+    }
+
+    console.log(`Created demo user: ${DEMO_EMAIL} (id: ${data.user.id})`)
+    return data.user.id
+  }
+
+  console.log('\nNo SUPABASE_SERVICE_ROLE_KEY found. Trying sign-in...')
+  console.log('Attempting to sign in with existing demo credentials...\n')
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: DEMO_EMAIL,
+    password: DEMO_PASSWORD,
+  })
+
+  if (error) {
+    console.error('Could not sign in as demo user:', error.message)
+    console.log('\n╔══════════════════════════════════════════════════════════════╗')
+    console.log('║  MANUAL STEP REQUIRED                                       ║')
+    console.log('║                                                             ║')
+    console.log('║  1. Go to Supabase Dashboard > Authentication > Users       ║')
+    console.log('║  2. Click "Add user"                                        ║')
+    console.log('║  3. Email: admin@ledgerly.app                               ║')
+    console.log('║  4. Password: 123456                                        ║')
+    console.log('║  5. Check "Auto Confirm User"                               ║')
+    console.log('║  6. Click "Create User"                                     ║')
+    console.log('║  7. Run this script again                                   ║')
+    console.log('║                                                             ║')
+    console.log('║  Also: Disable email confirmation in your Supabase project  ║')
+    console.log('║  Go to: Authentication > Providers > Email > toggle OFF     ║')
+    console.log('║  "Confirm email"                                            ║')
+    console.log('╚══════════════════════════════════════════════════════════════╝')
+    process.exit(1)
+  }
+
+  console.log(`Signed in as: ${DEMO_EMAIL} (id: ${data.user.id})`)
+  return data.user.id
+}
+
 async function seedCategories(userId: string) {
-  console.log('Seeding categories...')
-  
+  console.log('\nSeeding categories...')
+
   const { data: existing } = await supabase
     .from('categories')
     .select('id')
     .eq('user_id', userId)
-  
+
   if (existing && existing.length > 0) {
     console.log('Categories already exist, skipping...')
     return
   }
-  
-  const categories = CATEGORIES.map(cat => ({
+
+  const categories = CATEGORIES.map((cat) => ({
     user_id: userId,
     name: cat.name,
     icon: cat.icon,
     color: cat.color,
   }))
-  
+
   const { error } = await supabase.from('categories').insert(categories)
-  
+
   if (error) {
     console.error('Error seeding categories:', error)
     throw error
   }
-  
+
   console.log(`Created ${categories.length} categories`)
 }
 
@@ -105,38 +176,37 @@ async function getCategories(userId: string) {
     .from('categories')
     .select('id, name')
     .eq('user_id', userId)
-  
+
   if (error) throw error
   return data || []
 }
 
 async function seedExpenses(userId: string) {
   console.log('Seeding expenses...')
-  
+
   const { data: existing } = await supabase
     .from('expenses')
     .select('id')
     .eq('user_id', userId)
     .limit(1)
-  
+
   if (existing && existing.length > 0) {
     console.log('Expenses already exist, skipping...')
     return
   }
-  
+
   const categories = await getCategories(userId)
-  const categoryMap = new Map(categories.map(c => [c.name, c.id]))
-  
+  const categoryMap = new Map(categories.map((c) => [c.name, c.id]))
+
   const expenses = []
-  
-  // Generate 100 expenses over the last 90 days
+
   for (let i = 0; i < 100; i++) {
     const template = EXPENSE_TEMPLATES[randomInt(0, EXPENSE_TEMPLATES.length - 1)]
     const amount = randomInt(template.min, template.max)
     const currency = weightedRandom(CURRENCIES, CURRENCY_WEIGHTS)
     const categoryId = categoryMap.get(template.category) || null
     const isTaxable = Math.random() > 0.7
-    
+
     expenses.push({
       user_id: userId,
       title: template.title,
@@ -152,85 +222,92 @@ async function seedExpenses(userId: string) {
       is_deleted: false,
     })
   }
-  
-  // Insert in batches of 20
+
   for (let i = 0; i < expenses.length; i += 20) {
     const batch = expenses.slice(i, i + 20)
     const { error } = await supabase.from('expenses').insert(batch)
-    
+
     if (error) {
       console.error('Error seeding expenses batch:', error)
       throw error
     }
   }
-  
+
   console.log(`Created ${expenses.length} expenses`)
+}
+
+async function seedProfile(userId: string) {
+  console.log('Seeding profile...')
+
+  const { data: existing } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('user_id', userId)
+    .single()
+
+  if (existing) {
+    console.log('Profile already exists, skipping...')
+    return
+  }
+
+  const { error } = await supabase.from('profiles').insert({
+    user_id: userId,
+    display_name: DEMO_DISPLAY_NAME,
+    avatar_url: null,
+  })
+
+  if (error) {
+    console.error('Error seeding profile:', error)
+    throw error
+  }
+
+  console.log('Created user profile')
 }
 
 async function seedSettings(userId: string) {
   console.log('Seeding settings...')
-  
+
   const { data: existing } = await supabase
     .from('settings')
     .select('id')
     .eq('user_id', userId)
     .single()
-  
+
   if (existing) {
     console.log('Settings already exist, skipping...')
     return
   }
-  
+
   const { error } = await supabase.from('settings').insert({
     user_id: userId,
     theme: 'dark',
     base_currency: 'KES',
     vat_rate: 16,
   })
-  
+
   if (error) {
     console.error('Error seeding settings:', error)
     throw error
   }
-  
+
   console.log('Created user settings')
 }
 
 async function main() {
-  console.log('=== Ledgerly Database Seeder ===\n')
-  
-  // Sign in with test credentials
-  const email = process.env.SEED_EMAIL || 'test@ledgerly.app'
-  const password = process.env.SEED_PASSWORD || 'TestPassword123!'
-  
-  console.log(`Signing in as ${email}...`)
-  
-  const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
-  
-  if (authError) {
-    console.error('Auth error:', authError.message)
-    console.log('\nPlease create a test user first:')
-    console.log(`1. Go to your Supabase dashboard`)
-    console.log(`2. Create user: ${email} with password: ${password}`)
-    console.log(`3. Run this script again`)
-    process.exit(1)
-  }
-  
-  const userId = authData.user.id
-  console.log(`Signed in as user: ${userId}\n`)
-  
+  console.log('=== Ledgerly Demo Seeder ===\n')
+
+  const userId = await ensureDemoUser()
+
+  await seedProfile(userId)
   await seedCategories(userId)
   await seedExpenses(userId)
   await seedSettings(userId)
-  
+
   console.log('\n=== Seeding complete! ===')
-  console.log('\nYou can now:')
-  console.log('1. Sign in to the app')
-  console.log('2. View the dashboard with sample data')
-  console.log('3. Add, edit, and delete expenses')
+  console.log(`\nDemo credentials:`)
+  console.log(`  Email:    ${DEMO_EMAIL}`)
+  console.log(`  Password: ${DEMO_PASSWORD}`)
+  console.log(`  Name:     ${DEMO_DISPLAY_NAME}`)
 }
 
 main().catch(console.error)
