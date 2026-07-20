@@ -33,10 +33,45 @@ export async function login(formData: FormData) {
 }
 
 export async function signup(formData: FormData) {
-  const supabase = await createClient()
-
   const email = formData.get('email') as string
   const password = formData.get('password') as string
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (serviceKey) {
+    const { createClient: createAdminClient } = await import('@supabase/supabase-js')
+    const admin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      serviceKey
+    )
+
+    const { error: createError } = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    })
+
+    if (createError) {
+      if (createError.message.includes('already registered')) {
+        return { error: 'An account with this email already exists' }
+      }
+      return { error: createError.message }
+    }
+
+    const supabase = await createClient()
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (signInError) {
+      redirect('/login?message=Account created. Please sign in.')
+    }
+
+    revalidatePath('/', 'layout')
+    redirect('/')
+  }
+
+  const supabase = await createClient()
 
   const { error } = await supabase.auth.signUp({
     email,

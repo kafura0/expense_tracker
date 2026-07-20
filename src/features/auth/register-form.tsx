@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/shared/lib/supabase/client'
+import { signup } from './actions'
 import Link from 'next/link'
 
 export function RegisterForm() {
@@ -9,15 +9,12 @@ export function RegisterForm() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
-  const supabase = createClient()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
-    setSuccess('')
 
     if (password !== confirmPassword) {
       setError('Passwords do not match')
@@ -31,22 +28,16 @@ export function RegisterForm() {
       return
     }
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    })
+    const formData = new FormData()
+    formData.set('email', email)
+    formData.set('password', password)
 
-    if (error) {
-      setError(error.message)
+    const result = await signup(formData)
+
+    if (result?.error) {
+      setError(result.error)
       setLoading(false)
-      return
     }
-
-    setSuccess('Check your email for verification link')
-    setLoading(false)
   }
 
   return (
@@ -54,12 +45,6 @@ export function RegisterForm() {
       {error && (
         <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md">
           {error}
-        </div>
-      )}
-      
-      {success && (
-        <div className="p-3 text-sm text-green-600 bg-green-50 rounded-md">
-          {success}
         </div>
       )}
       
