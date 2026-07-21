@@ -28,8 +28,7 @@ export async function login(formData: FormData) {
     return { error: 'Invalid email or password' }
   }
 
-  revalidatePath('/', 'layout')
-  redirect('/')
+  return { success: true }
 }
 
 export async function signup(formData: FormData) {

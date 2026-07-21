@@ -1,33 +1,30 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/shared/lib/supabase/client'
+import { login } from '@/features/auth/actions'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 export function LoginForm() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const supabase = createClient()
+  const router = useRouter()
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
     setError('')
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    const formData = new FormData(e.currentTarget)
+    const result = await login(formData)
 
-    if (error) {
-      setError('Invalid email or password')
+    if (result?.error) {
+      setError(result.error)
       setLoading(false)
-      return
+    } else {
+      router.push('/')
+      router.refresh()
     }
-
-    window.location.href = '/'
   }
 
   return (
@@ -47,8 +44,6 @@ export function LoginForm() {
           name="email"
           type="email"
           required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
         />
       </div>
@@ -62,8 +57,6 @@ export function LoginForm() {
           name="password"
           type="password"
           required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
         />
       </div>

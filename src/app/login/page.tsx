@@ -1,10 +1,12 @@
 import { LoginForm } from '@/features/auth/login-form'
 
-export default function LoginPage({
+export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: { message?: string }
+  searchParams: Promise<{ message?: string }>
 }) {
+  const { message } = await searchParams
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -17,9 +19,9 @@ export default function LoginPage({
           </p>
         </div>
         
-        {searchParams?.message && (
+        {message && (
           <div className="p-3 text-sm text-green-600 bg-green-50 rounded-md">
-            {searchParams.message}
+            {message}
           </div>
         )}
 
