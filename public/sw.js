@@ -1,11 +1,7 @@
-const CACHE_NAME = 'ledgerly-v1'
 const STATIC_CACHE = 'ledgerly-static-v1'
 const DYNAMIC_CACHE = 'ledgerly-dynamic-v1'
 
 const STATIC_ASSETS = [
-  '/',
-  '/expenses',
-  '/settings',
   '/manifest.json',
 ]
 
@@ -35,14 +31,33 @@ self.addEventListener('fetch', (event) => {
   const { request } = event
   const url = new URL(request.url)
 
-  // Skip non-GET requests
   if (request.method !== 'GET') return
 
-  // Skip Supabase and API requests
   if (url.hostname.includes('supabase') || url.pathname.startsWith('/api/')) {
     return
   }
 
+  // Navigation requests: always go to network first, fall back to cache
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const responseToCache = response.clone()
+            caches.open(DYNAMIC_CACHE).then((cache) => {
+              cache.put(request, responseToCache)
+            })
+          }
+          return response
+        })
+        .catch(() => {
+          return caches.match(request)
+        })
+    )
+    return
+  }
+
+  // Static assets: cache first, fall back to network
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       if (cachedResponse) {
@@ -63,27 +78,8 @@ self.addEventListener('fetch', (event) => {
           return response
         })
         .catch(() => {
-          // Return offline page for navigation requests
-          if (request.mode === 'navigate') {
-            return caches.match('/')
-          }
           return new Response('Offline', { status: 503 })
         })
     })
   )
 })
-
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-expenses') {
-    event.waitUntil(syncExpenses())
-  }
-})
-
-async function syncExpenses() {
-  // Queue-based sync would be implemented here
-  // For now, just notify the client
-  const clients = await self.clients.matchAll()
-  clients.forEach((client) => {
-    client.postMessage({ type: 'SYNC_COMPLETE' })
-  })
-}
