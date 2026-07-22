@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ledgerly
+
+Personal expense tracking web application built with Next.js, Supabase, and Tailwind CSS.
+
+## Features
+
+- Expense tracking with categories, currencies, and VAT support
+- Multi-currency support via Frankfurter exchange rate API with cached rates
+- Dashboard with KPI cards, charts, and activity feed
+- Settings for base currency, VAT rate, and theme
+- PWA installable on mobile and desktop
+- Row Level Security (RLS) on all tables — each user only sees their own data
+- Demo mode with 100 seeded expenses
+
+## Tech Stack
+
+- **Frontend:** Next.js 16 (App Router), React, TypeScript, Tailwind CSS, Recharts
+- **Backend:** Supabase (PostgreSQL, Auth, RLS)
+- **Deployment:** Vercel
+- **Exchange Rates:** Frankfurter API (ECB data)
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
+cp .env.example .env.local   # fill in Supabase credentials
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Demo Credentials
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Email: `admin@ledgerly.app`
+- Password: `123456`
 
-## Learn More
+### Seed Demo Data
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npx tsx scripts/seed.ts
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Environment Variables
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon (public) key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server only) |
+| `NEXT_PUBLIC_SITE_URL` | Deployed URL for auth redirects |
 
-## Deploy on Vercel
+## Project Structure
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+src/
+  app/                    # Next.js App Router pages
+    (dashboard)/          # Dashboard layout group
+    auth/                 # OAuth callback handler
+    login/                # Login page
+    register/             # Registration page
+    reset-password/       # Password reset request
+    update-password/      # Password reset form
+  features/               # Feature modules (auth, expenses, dashboard, settings, export)
+  entities/               # Domain entities (expense, category, exchange-rate, profile, settings)
+  shared/                 # Shared UI components, lib, types
+scripts/
+  seed.ts                 # Database seeder
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deployment
+
+```bash
+npx vercel --prod
+```
+
+## License
+
+Private
