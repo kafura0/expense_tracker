@@ -67,6 +67,10 @@ scripts/
   seed.ts                 # Database seeder
 ```
 
+## Demo
+
+https://github.com/kafura0/expense_tracker/blob/main/docs/demo.mp4
+
 ## Deployment
 
 ```bash
