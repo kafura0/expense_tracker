@@ -185,15 +185,22 @@ export async function updateSession(request: NextRequest) {
   // because the OAuth callback flow needs to complete before redirecting.
   if (isPublicPath && pathname !== '/auth/callback' && pathname !== '/onboarding') {
     // Check onboarding status before redirecting
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('onboarding_completed')
-      .eq('user_id', user.id)
-      .single()
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('onboarding_completed')
+        .eq('user_id', user.id)
+        .single()
 
-    const url = request.nextUrl.clone()
-    url.pathname = profile?.onboarding_completed ? '/' : '/onboarding'
-    return NextResponse.redirect(url)
+      const url = request.nextUrl.clone()
+      url.pathname = profile?.onboarding_completed ? '/' : '/onboarding'
+      return NextResponse.redirect(url)
+    } catch {
+      // If profiles query fails, redirect to home
+      const url = request.nextUrl.clone()
+      url.pathname = '/'
+      return NextResponse.redirect(url)
+    }
   }
 
   // ──────────────────────────────────────────────────────────────────────
@@ -220,10 +227,18 @@ export async function updateSession(request: NextRequest) {
     // Fetch all org memberships for this user, including org details.
     // The `organizations!inner` join ensures we only get memberships where
     // the referenced organization still exists (deleted orgs are excluded).
-    const { data: memberships } = await supabase
-      .from('org_members')
-      .select('org_id, role, organizations!inner(id, name, slug, status)')
-      .eq('user_id', user.id)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let memberships: any[] | null = null
+    try {
+      const result = await supabase
+        .from('org_members')
+        .select('org_id, role, organizations!inner(id, name, slug, status)')
+        .eq('user_id', user.id)
+      memberships = result.data
+    } catch {
+      // If org_members query fails, let the user through
+      return supabaseResponse
+    }
 
     if (!memberships || memberships.length === 0) {
       // User has no org membership — they can't access any app content.
@@ -270,16 +285,21 @@ export async function updateSession(request: NextRequest) {
       // or on admin/settings/API routes.
       const isOnboardingPath = pathname === '/onboarding' || pathname.startsWith('/onboarding/')
       if (isProtectedPath && !isOnboardingPath && !isAdminPath) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('onboarding_completed')
-          .eq('user_id', user.id)
-          .single()
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('onboarding_completed')
+            .eq('user_id', user.id)
+            .single()
 
-        if (profile && !profile.onboarding_completed) {
-          const url = request.nextUrl.clone()
-          url.pathname = '/onboarding'
-          return NextResponse.redirect(url)
+          if (profile && !profile.onboarding_completed) {
+            const url = request.nextUrl.clone()
+            url.pathname = '/onboarding'
+            return NextResponse.redirect(url)
+          }
+        } catch {
+          // If the onboarding_completed column doesn't exist yet,
+          // skip the redirect and let the user through
         }
       }
     }

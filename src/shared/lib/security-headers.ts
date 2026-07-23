@@ -5,9 +5,9 @@ export function addSecurityHeaders(response: NextResponse): NextResponse {
   const cspDirectives = [
     "default-src 'self'",
     "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // Next.js requires unsafe-eval and unsafe-inline
-    "style-src 'self' 'unsafe-inline'", // Tailwind requires unsafe-inline
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", // Tailwind requires unsafe-inline, Google Fonts for Material Symbols
     "img-src 'self' data: blob: https:",
-    "font-src 'self' data:",
+    "font-src 'self' data: https://fonts.googleapis.com https://fonts.gstatic.com",
     "connect-src 'self' https://*.supabase.co https://api.frankfurter.app",
     "frame-ancestors 'none'",
     "base-uri 'self'",
