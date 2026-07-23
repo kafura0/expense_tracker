@@ -82,13 +82,13 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
       amount_cents: expense.amount_cents ?? 0,
       currency: expense.currency ?? 'USD',
       category_id: expense.category_id ?? null,
-      date: expense.date ? String(expense.date).split('T')[0] : new Date().toISOString().split('T')[0],
+      date: expense.date ? String(expense.date).slice(0, 16) : new Date().toISOString().slice(0, 16),
       notes: expense.notes ?? '',
       tax_applicable: expense.tax_applicable ?? false,
       is_taxable: expense.is_taxable ?? false,
     } : {
       currency: 'USD',
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toISOString().slice(0, 16),
       tax_applicable: false,
       is_taxable: false,
     },
@@ -258,11 +258,11 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
 
         <div className="space-y-2">
           <label htmlFor="date" className="text-sm font-medium">
-            Date *
+            Date & Time *
           </label>
           <Input
             id="date"
-            type="date"
+            type="datetime-local"
             {...register('date')}
           />
           {errors.date && (
