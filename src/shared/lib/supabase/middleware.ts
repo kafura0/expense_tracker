@@ -138,6 +138,7 @@ export async function updateSession(request: NextRequest) {
     '/reset-password',
     '/update-password',
     '/auth/callback',
+    '/onboarding',
   ]
   const isPublicPath = publicPaths.some(
     (path) => pathname === path || pathname.startsWith(path + '/')
@@ -182,9 +183,16 @@ export async function updateSession(request: NextRequest) {
   // Authenticated users who land on auth pages (login, reset-password, etc.)
   // are redirected to the dashboard. The /auth/callback exception is necessary
   // because the OAuth callback flow needs to complete before redirecting.
-  if (isPublicPath && pathname !== '/auth/callback') {
+  if (isPublicPath && pathname !== '/auth/callback' && pathname !== '/onboarding') {
+    // Check onboarding status before redirecting
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('onboarding_completed')
+      .eq('user_id', user.id)
+      .single()
+
     const url = request.nextUrl.clone()
-    url.pathname = '/'
+    url.pathname = profile?.onboarding_completed ? '/' : '/onboarding'
     return NextResponse.redirect(url)
   }
 
@@ -253,6 +261,24 @@ export async function updateSession(request: NextRequest) {
           // at the navigation level; RLS is the real enforcement).
           const url = request.nextUrl.clone()
           url.pathname = '/'
+          return NextResponse.redirect(url)
+        }
+      }
+
+      // Onboarding guard: redirect users who haven't completed onboarding
+      // to the onboarding page. Skip if they're already on /onboarding,
+      // or on admin/settings/API routes.
+      const isOnboardingPath = pathname === '/onboarding' || pathname.startsWith('/onboarding/')
+      if (isProtectedPath && !isOnboardingPath && !isAdminPath) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('onboarding_completed')
+          .eq('user_id', user.id)
+          .single()
+
+        if (profile && !profile.onboarding_completed) {
+          const url = request.nextUrl.clone()
+          url.pathname = '/onboarding'
           return NextResponse.redirect(url)
         }
       }

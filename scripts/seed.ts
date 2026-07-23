@@ -218,6 +218,11 @@ async function ensureSuperAdmin(): Promise<string> {
 
   if (existing) {
     console.log(`Super admin exists: ${SUPER_ADMIN_EMAIL} (id: ${existing.id})`)
+    // Update password to ensure it matches current constant
+    await supabase.auth.admin.updateUserById(existing.id, {
+      password: SUPER_ADMIN_PASSWORD,
+    })
+    console.log(`Updated super admin password`)
     return existing.id
   }
 
@@ -310,7 +315,16 @@ async function seedDemoClientAndOrg(managerId: string) {
     .single()
 
   if (existing) {
-    console.log('Demo client org already exists, skipping...')
+    console.log('Demo client org already exists, checking client user...')
+    // Ensure client user password is current
+    const { data: list } = await supabase.auth.admin.listUsers()
+    const clientUser = list?.users?.find((u) => u.email === 'client@demo.com')
+    if (clientUser) {
+      await supabase.auth.admin.updateUserById(clientUser.id, {
+        password: 'Client@123456789!',
+      })
+      console.log('Updated demo client password')
+    }
     return
   }
 

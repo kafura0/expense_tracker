@@ -115,6 +115,23 @@
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
   --font-headline: 'Geist', ui-sans-serif, system-ui, sans-serif;
+
+  /* Template font-size tokens */
+  --text-display-lg: 48px;
+  --text-headline-lg: 32px;
+  --text-headline-md: 24px;
+  --text-body-lg: 18px;
+  --text-body-md: 15px;
+  --text-label-sm: 12px;
+
+  /* Template spacing tokens */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 40px;
+  --spacing-2xl: 64px;
+  --spacing-container-max: 1280px;
 }
 
 @layer base {
@@ -151,6 +168,21 @@
 /* Emerald glow effect */
 .emerald-glow {
   box-shadow: 0 0 20px rgba(78, 222, 163, 0.1);
+}
+
+/* Emerald drop shadow for buttons */
+.emerald-drop {
+  filter: drop-shadow(0 0 20px rgba(78, 222, 163, 0.3));
+}
+
+/* Hero gradient */
+.hero-gradient {
+  background: radial-gradient(circle at 50% -20%, rgba(78, 222, 163, 0.15) 0%, rgba(11, 19, 38, 0) 50%);
+}
+
+/* Material symbols default fill */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
 /* Selection styling */
