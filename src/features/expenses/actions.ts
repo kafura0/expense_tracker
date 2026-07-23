@@ -57,6 +57,7 @@ export async function duplicateExpense(id: string) {
       return { data: null, error: 'Expense not found' }
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id: _, user_id: __, created_at: ___, updated_at: ____, ...expenseData } = expense
     
     const newExpense = await createExpenseRepo({

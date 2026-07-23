@@ -23,7 +23,7 @@ export function ExpenseFilters({ filters, onFilterChange }: ExpenseFiltersProps)
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [search])
+  }, [search, filters, onFilterChange])
 
   const handleCurrencyChange = (currency: string) => {
     onFilterChange({
@@ -49,7 +49,7 @@ export function ExpenseFilters({ filters, onFilterChange }: ExpenseFiltersProps)
     }
   }
 
-  const activeFilters = Object.entries(filters).filter(([_, value]) => value !== undefined)
+  const activeFilters = Object.entries(filters).filter(([, value]) => value !== undefined)
 
   return (
     <div className="space-y-4">

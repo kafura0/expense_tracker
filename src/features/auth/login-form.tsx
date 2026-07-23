@@ -79,9 +79,9 @@ export function LoginForm() {
       </button>
 
       <p className="text-center text-sm text-gray-600">
-        Don&apos;t have an account?{' '}
-        <Link href="/register" className="text-blue-600 hover:text-blue-500">
-          Sign up
+        Don&apos;t have access?{' '}
+        <Link href="/request-access" className="text-blue-600 hover:text-blue-500">
+          Request access
         </Link>
       </p>
     </form>

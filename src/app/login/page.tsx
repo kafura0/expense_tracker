@@ -15,7 +15,7 @@ export default async function LoginPage({
             Sign in to Ledgerly
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Intelligence for your personal capital
+            Intelligence for your capital
           </p>
         </div>
         

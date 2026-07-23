@@ -1,42 +1,30 @@
 'use client'
 
 import { useState } from 'react'
-import { signup } from './actions'
+import { requestAccess } from '@/features/auth/actions'
 import Link from 'next/link'
 
-export function RegisterForm() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
+export function RequestAccessForm() {
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setSuccess('')
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match')
-      setLoading(false)
-      return
-    }
-
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters')
-      setLoading(false)
-      return
-    }
-
-    const formData = new FormData()
-    formData.set('email', email)
-    formData.set('password', password)
-
-    const result = await signup(formData)
+    const formData = new FormData(e.currentTarget)
+    const result = await requestAccess(formData)
 
     if (result?.error) {
       setError(result.error)
       setLoading(false)
+    } else if (result?.success) {
+      setSuccess(result.success)
+      setLoading(false)
+      ;(e.target as HTMLFormElement).reset()
     }
   }
 
@@ -47,7 +35,25 @@ export function RegisterForm() {
           {error}
         </div>
       )}
-      
+      {success && (
+        <div className="p-3 text-sm text-green-600 bg-green-50 rounded-md">
+          {success}
+        </div>
+      )}
+
+      <div>
+        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+          Full Name
+        </label>
+        <input
+          id="name"
+          name="name"
+          type="text"
+          required
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
+
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-gray-700">
           Email
@@ -57,42 +63,44 @@ export function RegisterForm() {
           name="email"
           type="email"
           required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
         />
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-          Password
+        <label htmlFor="business_name" className="block text-sm font-medium text-gray-700">
+          Business Name
         </label>
         <input
-          id="password"
-          name="password"
-          type="password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          id="business_name"
+          name="business_name"
+          type="text"
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
         />
-        <p className="mt-1 text-xs text-gray-500">
-          Must be at least 8 characters with at least one number and one letter
-        </p>
       </div>
 
       <div>
-        <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-          Confirm Password
+        <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+          Phone (optional)
         </label>
         <input
-          id="confirmPassword"
-          name="confirmPassword"
-          type="password"
-          required
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
+          id="phone"
+          name="phone"
+          type="tel"
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="message" className="block text-sm font-medium text-gray-700">
+          Message (optional)
+        </label>
+        <textarea
+          id="message"
+          name="message"
+          rows={3}
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Tell us about your expense management needs..."
         />
       </div>
 
@@ -101,7 +109,7 @@ export function RegisterForm() {
         disabled={loading}
         className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
       >
-        {loading ? 'Creating account...' : 'Create account'}
+        {loading ? 'Submitting...' : 'Request Access'}
       </button>
 
       <p className="text-center text-sm text-gray-600">

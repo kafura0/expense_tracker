@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import { ExpenseForm } from './expense-form'
+import type { ExpenseWithCategory } from '@/entities/expense/types'
 
 interface ExpenseDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  expense?: any
+  expense?: ExpenseWithCategory | null
 }
 
 export function ExpenseDialog({ open, onOpenChange, expense }: ExpenseDialogProps) {

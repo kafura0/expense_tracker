@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getSettings, updateSettings, uploadAvatar } from '@/features/settings/actions'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -13,11 +13,14 @@ import { Upload, Save } from 'lucide-react'
 
 const CURRENCIES = ['KES', 'USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY']
 
+interface SettingsFormState {
+  displayName: string
+  theme: 'light' | 'dark' | 'system'
+  baseCurrency: string
+  vatRate: number
+}
+
 export default function SettingsPage() {
-  const [displayName, setDisplayName] = useState('')
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('dark')
-  const [baseCurrency, setBaseCurrency] = useState('USD')
-  const [vatRate, setVatRate] = useState(16)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
 
@@ -30,14 +33,19 @@ export default function SettingsPage() {
     queryFn: getSettings,
   })
 
-  useEffect(() => {
-    if (settings) {
-      setDisplayName(settings.display_name)
-      setTheme(settings.theme)
-      setBaseCurrency(settings.base_currency)
-      setVatRate(settings.vat_rate)
-    }
-  }, [settings])
+  const [formState, setFormState] = useState<SettingsFormState>({
+    displayName: settings?.display_name ?? '',
+    theme: (settings?.theme as 'light' | 'dark' | 'system') ?? 'dark',
+    baseCurrency: settings?.base_currency ?? 'USD',
+    vatRate: settings?.vat_rate ?? 16,
+  })
+
+  const updateField = <K extends keyof SettingsFormState>(
+    field: K,
+    value: SettingsFormState[K]
+  ) => {
+    setFormState((prev) => ({ ...prev, [field]: value }))
+  }
 
   const updateMutation = useMutation({
     mutationFn: updateSettings,
@@ -63,12 +71,12 @@ export default function SettingsPage() {
 
   const handleSave = () => {
     updateMutation.mutate({
-      display_name: displayName,
-      theme,
-      base_currency: baseCurrency,
-      vat_rate: vatRate,
+      display_name: formState.displayName,
+      theme: formState.theme,
+      base_currency: formState.baseCurrency,
+      vat_rate: formState.vatRate,
     })
-    setGlobalTheme(theme)
+    setGlobalTheme(formState.theme)
   }
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -118,10 +126,11 @@ export default function SettingsPage() {
             <div className="relative">
               <div className="w-20 h-20 rounded-full bg-surface-container-high flex items-center justify-center overflow-hidden">
                 {avatarPreview ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-3xl text-on-surface-variant">
-                    {displayName?.charAt(0)?.toUpperCase() || '?'}
+                    {formState.displayName?.charAt(0)?.toUpperCase() || '?'}
                   </span>
                 )}
               </div>
@@ -138,8 +147,8 @@ export default function SettingsPage() {
             <div className="flex-1">
               <label className="text-sm font-medium text-on-surface">Display Name</label>
               <Input
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
+                value={formState.displayName}
+                onChange={(e) => updateField('displayName', e.target.value)}
                 placeholder="Your name"
                 className="mt-1"
               />
@@ -162,8 +171,8 @@ export default function SettingsPage() {
           <div className="space-y-2">
             <label className="text-sm font-medium text-on-surface">Theme</label>
             <select
-              value={theme}
-              onChange={(e) => setTheme(e.target.value as 'light' | 'dark' | 'system')}
+              value={formState.theme}
+              onChange={(e) => updateField('theme', e.target.value as 'light' | 'dark' | 'system')}
               className="flex h-10 w-full rounded-md border border-outline bg-surface px-3 py-2 text-sm text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <option value="dark">Dark</option>
@@ -175,8 +184,8 @@ export default function SettingsPage() {
           <div className="space-y-2">
             <label className="text-sm font-medium text-on-surface">Base Currency</label>
             <select
-              value={baseCurrency}
-              onChange={(e) => setBaseCurrency(e.target.value)}
+              value={formState.baseCurrency}
+              onChange={(e) => updateField('baseCurrency', e.target.value)}
               className="flex h-10 w-full rounded-md border border-outline bg-surface px-3 py-2 text-sm text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               {CURRENCIES.map((currency) => (
@@ -194,8 +203,8 @@ export default function SettingsPage() {
             <label className="text-sm font-medium text-on-surface">Default VAT Rate (%)</label>
             <Input
               type="number"
-              value={vatRate}
-              onChange={(e) => setVatRate(Number(e.target.value))}
+              value={formState.vatRate}
+              onChange={(e) => updateField('vatRate', Number(e.target.value))}
               min={0}
               max={100}
               step={0.5}

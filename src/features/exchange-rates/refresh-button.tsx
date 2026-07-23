@@ -20,7 +20,7 @@ export function RefreshRatesButton() {
       }
 
       toast('Exchange rates refreshed', 'success')
-    } catch (error) {
+    } catch {
       toast('Failed to refresh exchange rates', 'error')
     } finally {
       setIsRefreshing(false)

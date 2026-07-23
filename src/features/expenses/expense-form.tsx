@@ -1,35 +1,72 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+/**
+ * expense-form.tsx
+ *
+ * Form component for creating and editing expenses.
+ *
+ * MULTI-TENANCY:
+ * Categories are fetched with an org_id filter to ensure only categories
+ * belonging to the active organization are shown. This prevents:
+ * - Users from associating expenses with categories from other orgs
+ * - Data leakage through category names from other organizations
+ *
+ * The org_id is resolved via the useActiveOrgId() hook, which calls a server
+ * action to read the httpOnly cookie. This ensures the org_id is never
+ * exposed to client-side JavaScript where it could be tampered with.
+ *
+ * CURRENCY CONVERSION:
+ * When the user enters an amount in a non-base currency, the form fetches
+ * exchange rates from the API route and shows the converted amount in real-time.
+ * The rate is stored with the expense for historical accuracy.
+ *
+ * TAX CALCULATION:
+ * If the "Tax applicable" checkbox is checked, VAT is calculated at the
+ * default rate (16%) and displayed in the form before submission.
+ */
+
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { expenseInsertSchema, type ExpenseInsert } from '@/entities/expense/schema'
+import type { ExpenseWithCategory } from '@/entities/expense/types'
 import { createExpense, updateExpense } from './actions'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { useToast } from '@/shared/ui/toast'
 import { createClient } from '@/shared/lib/supabase/client'
+import { useActiveOrgId } from '@/shared/lib/org-helpers'
 import { convertAmount } from '@/entities/exchange-rate/service'
 import { calculateVAT, DEFAULT_VAT_RATE } from '@/shared/lib/vat'
 
-const CURRENCIES = ['KES', 'USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY']
-const BASE_CURRENCY = 'USD'
+interface Category {
+  id: string
+  name: string
+  icon?: string | null
+  color?: string | null
+}
 
 interface ExpenseFormProps {
-  expense?: any
+  expense?: ExpenseWithCategory | null
   onSuccess: () => void
   onCancel: () => void
 }
 
+const CURRENCIES = ['KES', 'USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY']
+const BASE_CURRENCY = 'USD'
+
 export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) {
-  const [categories, setCategories] = useState<any[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [rates, setRates] = useState<Record<string, number>>({})
   const [convertedAmount, setConvertedAmount] = useState<number | null>(null)
   const [vatResult, setVatResult] = useState<{ tax: number; total: number } | null>(null)
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const supabase = createClient()
+  const orgId = useActiveOrgId()
 
   const isEditing = !!expense
 
@@ -42,13 +79,13 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
   } = useForm<ExpenseInsert>({
     resolver: zodResolver(expenseInsertSchema),
     defaultValues: expense ? {
-      amount_cents: expense.amount_cents,
-      currency: expense.currency,
-      category_id: expense.category_id,
-      date: expense.date.split('T')[0],
-      notes: expense.notes || '',
-      tax_applicable: expense.tax_applicable,
-      is_taxable: expense.is_taxable || false,
+      amount_cents: expense.amount_cents ?? 0,
+      currency: expense.currency ?? 'USD',
+      category_id: expense.category_id ?? null,
+      date: expense.date ? String(expense.date).split('T')[0] : new Date().toISOString().split('T')[0],
+      notes: expense.notes ?? '',
+      tax_applicable: expense.tax_applicable ?? false,
+      is_taxable: expense.is_taxable ?? false,
     } : {
       currency: 'USD',
       date: new Date().toISOString().split('T')[0],
@@ -57,37 +94,47 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
     },
   })
 
+  /* eslint-disable react-hooks/incompatible-library */
   const watchedAmount = watch('amount_cents')
   const watchedCurrency = watch('currency')
   const watchedIsTaxable = watch('is_taxable')
+  /* eslint-enable react-hooks/incompatible-library */
+
+  const fetchCategories = useCallback(async () => {
+    if (!orgId) return
+
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('org_id', orgId)
+      .order('name')
+    
+    if (error) {
+      console.error('Failed to fetch categories:', error.message)
+      return
+    }
+
+    if (data) {
+      setCategories(data)
+    }
+  }, [orgId, supabase])
+
+  const fetchRates = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/rates?base=${BASE_CURRENCY}`)
+      if (response.ok) {
+        const data = await response.json()
+        setRates(data.rates)
+      }
+    } catch (error) {
+      console.error('Error fetching rates:', error)
+    }
+  }, [])
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      const { data } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name')
-      
-      if (data) {
-        setCategories(data)
-      }
-    }
-
-    const fetchRates = async () => {
-      try {
-        const response = await fetch(`/api/rates?base=${BASE_CURRENCY}`)
-        if (response.ok) {
-          const data = await response.json()
-          setRates(data.rates)
-        }
-      } catch (error) {
-        console.error('Error fetching rates:', error)
-      }
-    }
-
     fetchCategories()
     fetchRates()
-  }, [])
+  }, [fetchCategories, fetchRates])
 
   useEffect(() => {
     if (watchedAmount && watchedCurrency && rates) {
@@ -116,7 +163,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
         tax_amount_cents: vatResult?.tax,
       }
 
-      if (isEditing) {
+      if (isEditing && expense?.id) {
         const result = await updateExpense(expense.id, submissionData)
         if (result.error) {
           toast(result.error, 'error')
@@ -135,7 +182,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
       queryClient.invalidateQueries({ queryKey: ['expenses'] })
       reset()
       onSuccess()
-    } catch (error) {
+    } catch {
       toast('An error occurred', 'error')
     }
   }

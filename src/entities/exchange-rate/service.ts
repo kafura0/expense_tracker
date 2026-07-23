@@ -55,7 +55,7 @@ export async function getExchangeRates(baseCurrency: string): Promise<ExchangeRa
     const freshRates = await fetchRatesFromAPI(baseCurrency)
     await upsertRates(freshRates)
     return freshRates
-  } catch (error) {
+  } catch {
     // Fallback to stale cache
     console.warn('API failed, falling back to stale cache')
     const cachedRates = await findLatestRates(baseCurrency)

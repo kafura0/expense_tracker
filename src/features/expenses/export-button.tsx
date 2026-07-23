@@ -1,10 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/shared/lib/supabase/client'
 import { Button } from '@/shared/ui/button'
-import { Download, FileText, Table } from 'lucide-react'
+import { FileText, Table } from 'lucide-react'
 import { generateCSV, downloadCSV } from '@/shared/lib/csv-export'
 import { generatePDF } from '@/shared/lib/pdf-export'
 import { useToast } from '@/shared/ui/toast'
@@ -53,7 +52,7 @@ export function ExportButton({ filters }: ExportButtonProps) {
 
     return data?.map(expense => ({
       ...expense,
-      category_name: (expense.categories as any)?.name || '',
+      category_name: (expense.categories as { name?: string } | null)?.name || '',
     })) || []
   }
 
@@ -78,7 +77,7 @@ export function ExportButton({ filters }: ExportButtonProps) {
         await generatePDF(expenses, 'User')
         toast('PDF exported successfully', 'success')
       }
-    } catch (error) {
+    } catch {
       toast('Export failed', 'error')
     } finally {
       setIsExporting(false)

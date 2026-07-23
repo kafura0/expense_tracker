@@ -16,24 +16,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { MoreHorizontal, ArrowUpDown, ChevronLeft, ChevronRight, Trash2, Copy, Pencil } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/shared/lib/utils'
-
-interface Expense {
-  id: string
-  amount_cents: number
-  currency: string
-  date: string
-  notes: string | null
-  tax_applicable: boolean
-  categories: {
-    id: string
-    name: string
-    icon: string | null
-    color: string | null
-  } | null
-}
+import type { ExpenseWithCategory } from '@/entities/expense/types'
 
 interface ExpenseTableProps {
-  data: Expense[]
+  data: ExpenseWithCategory[]
   total: number
   page: number
   pageSize: number
@@ -42,9 +28,35 @@ interface ExpenseTableProps {
   sortDirection: 'asc' | 'desc'
   onSort: (field: 'date' | 'amount_cents') => void
   onPageChange: (page: number) => void
-  onEdit: (expense: Expense) => void
+  onEdit: (expense: ExpenseWithCategory) => void
   onDelete?: (id: string) => void
   onDuplicate?: (id: string) => void
+}
+
+function SortButton({ 
+  field, 
+  currentField, 
+  onSort, 
+  children 
+}: { 
+  field: 'date' | 'amount_cents'
+  currentField: 'date' | 'amount_cents'
+  onSort: (field: 'date' | 'amount_cents') => void
+  children: React.ReactNode 
+}) {
+  return (
+    <Button
+      variant="ghost"
+      onClick={() => onSort(field)}
+      className="h-8 px-2 lg:px-3 text-on-surface-variant hover:text-on-surface"
+    >
+      {children}
+      <ArrowUpDown className={cn(
+        "ml-2 h-4 w-4",
+        currentField === field ? "opacity-100" : "opacity-50"
+      )} />
+    </Button>
+  )
 }
 
 export function ExpenseTable({
@@ -54,7 +66,7 @@ export function ExpenseTable({
   pageSize,
   totalPages,
   sortField,
-  sortDirection,
+  sortDirection: _sortDirection, // eslint-disable-line @typescript-eslint/no-unused-vars
   onSort,
   onPageChange,
   onEdit,
@@ -62,7 +74,7 @@ export function ExpenseTable({
   onDuplicate,
 }: ExpenseTableProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null)
+  const [expenseToDelete, setExpenseToDelete] = useState<ExpenseWithCategory | null>(null)
 
   const formatAmount = (amountCents: number, currency: string) => {
     const amount = amountCents / 100
@@ -72,7 +84,7 @@ export function ExpenseTable({
     }).format(amount)
   }
 
-  const handleDeleteClick = useCallback((expense: Expense) => {
+  const handleDeleteClick = useCallback((expense: ExpenseWithCategory) => {
     setExpenseToDelete(expense)
     setDeleteDialogOpen(true)
   }, [])
@@ -84,20 +96,6 @@ export function ExpenseTable({
       setExpenseToDelete(null)
     }
   }, [expenseToDelete, onDelete])
-
-  const SortButton = ({ field, children }: { field: 'date' | 'amount_cents'; children: React.ReactNode }) => (
-    <Button
-      variant="ghost"
-      onClick={() => onSort(field)}
-      className="h-8 px-2 lg:px-3 text-on-surface-variant hover:text-on-surface"
-    >
-      {children}
-      <ArrowUpDown className={cn(
-        "ml-2 h-4 w-4",
-        sortField === field ? "opacity-100" : "opacity-50"
-      )} />
-    </Button>
-  )
 
   if (data.length === 0) {
     return (
@@ -114,10 +112,10 @@ export function ExpenseTable({
           <TableHeader>
             <TableRow className="border-outline-variant">
               <TableHead className="text-on-surface-variant">
-                <SortButton field="date">Date</SortButton>
+                <SortButton field="date" currentField={sortField} onSort={onSort}>Date</SortButton>
               </TableHead>
               <TableHead className="text-on-surface-variant">
-                <SortButton field="amount_cents">Amount</SortButton>
+                <SortButton field="amount_cents" currentField={sortField} onSort={onSort}>Amount</SortButton>
               </TableHead>
               <TableHead className="text-on-surface-variant">Category</TableHead>
               <TableHead className="text-on-surface-variant">Notes</TableHead>

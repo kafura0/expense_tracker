@@ -34,3 +34,8 @@ export interface ExpenseListResponse {
   page_size: number
   total_pages: number
 }
+
+export type ExpenseWithCategory = Omit<Expense, 'id'> & {
+  id: string
+  categories?: { name: string; icon: string; color: string } | null
+}
