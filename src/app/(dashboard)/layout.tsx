@@ -17,7 +17,7 @@ interface NavItem {
 }
 
 const baseNavItems: NavItem[] = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/expenses', label: 'Expenses', icon: Receipt },
   { href: '/settings', label: 'Settings', icon: Settings },
 ]
@@ -88,8 +88,8 @@ export default function DashboardLayout({
         <nav className="flex-1 px-3 py-4 space-y-1">
           {navItems.map((item) => {
             const isActive =
-              item.href === '/'
-                ? pathname === '/'
+              item.href === '/dashboard'
+                ? pathname === '/dashboard'
                 : pathname.startsWith(item.href)
             return (
               <Link

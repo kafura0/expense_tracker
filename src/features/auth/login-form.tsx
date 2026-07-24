@@ -22,7 +22,7 @@ export function LoginForm() {
       setError(result.error)
       setLoading(false)
     } else {
-      router.push('/')
+      router.push('/dashboard')
       router.refresh()
     }
   }

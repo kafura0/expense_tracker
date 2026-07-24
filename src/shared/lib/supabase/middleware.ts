@@ -133,7 +133,9 @@ export async function updateSession(request: NextRequest) {
   /** Public routes — accessible without authentication. These are auth-related
    *  pages where showing a login form would create a redirect loop. */
   const publicPaths = [
+    '/',
     '/login',
+    '/signup',
     '/request-access',
     '/reset-password',
     '/update-password',
@@ -155,7 +157,7 @@ export async function updateSession(request: NextRequest) {
 
   /** Protected routes — require authentication AND valid org membership.
    *  These are the main authenticated app routes. */
-  const protectedPaths = ['/', '/expenses', '/settings']
+  const protectedPaths = ['/dashboard', '/expenses', '/settings']
   const isProtectedPath = protectedPaths.some(
     (path) => pathname === path || pathname.startsWith(path + '/')
   )
@@ -183,7 +185,7 @@ export async function updateSession(request: NextRequest) {
   // Authenticated users who land on auth pages (login, reset-password, etc.)
   // are redirected to the dashboard. The /auth/callback exception is necessary
   // because the OAuth callback flow needs to complete before redirecting.
-  if (isPublicPath && pathname !== '/auth/callback' && pathname !== '/onboarding') {
+  if (isPublicPath && pathname !== '/auth/callback' && pathname !== '/onboarding' && pathname !== '/') {
     // Check onboarding status before redirecting
     try {
       const { data: profile } = await supabase
@@ -193,12 +195,12 @@ export async function updateSession(request: NextRequest) {
         .single()
 
       const url = request.nextUrl.clone()
-      url.pathname = profile?.onboarding_completed ? '/' : '/onboarding'
+      url.pathname = profile?.onboarding_completed ? '/dashboard' : '/onboarding'
       return NextResponse.redirect(url)
     } catch {
-      // If profiles query fails, redirect to home
+      // If profiles query fails, redirect to dashboard
       const url = request.nextUrl.clone()
-      url.pathname = '/'
+      url.pathname = '/dashboard'
       return NextResponse.redirect(url)
     }
   }

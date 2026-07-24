@@ -11,7 +11,7 @@ export default function OnboardingPage() {
   const handleComplete = async () => {
     setLoading(true)
     await completeOnboarding()
-    router.push('/')
+    router.push('/dashboard')
   }
 
   return (
