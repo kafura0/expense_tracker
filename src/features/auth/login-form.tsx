@@ -81,9 +81,9 @@ export function LoginForm() {
       </button>
 
       <p className="text-center text-sm text-muted-foreground">
-        Don&apos;t have access?{' '}
-        <Link href="/request-access" className="text-primary hover:text-primary/80 transition-colors">
-          Request access
+        Don&apos;t have an account?{' '}
+        <Link href="/signup" className="text-primary hover:text-primary/80 transition-colors">
+          Sign up
         </Link>
       </p>
     </form>
