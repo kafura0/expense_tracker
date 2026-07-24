@@ -26,7 +26,6 @@ export function OtpForm() {
     newOtp[index] = value
     setOtp(newOtp)
 
-    // Auto-focus next input
     if (value && index < 5) {
       const next = document.getElementById(`otp-${index + 1}`)
       next?.focus()
@@ -42,10 +41,15 @@ export function OtpForm() {
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault()
-    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
-    const newOtp = pasted.split('').concat(Array(6).fill('')).slice(0, 6)
+    const pasted = e.clipboardData
+      .getData('text')
+      .replace(/\D/g, '')
+      .slice(0, 6)
+    const newOtp = pasted
+      .split('')
+      .concat(Array(6).fill(''))
+      .slice(0, 6)
     setOtp(newOtp)
-    // Focus last filled or next empty
     const lastFilled = pasted.length - 1
     const next = document.getElementById(`otp-${Math.min(lastFilled, 5)}`)
     next?.focus()
@@ -91,15 +95,15 @@ export function OtpForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
+        <div className="p-3 text-sm text-red-400 bg-red-900/20 border border-red-800/30 rounded-lg">
           {error}
         </div>
       )}
 
       <div>
-        <p className="text-sm text-muted-foreground mb-4">
+        <p className="text-sm text-on-surface-variant mb-4">
           Enter the 6-digit code sent to{' '}
-          <strong className="text-foreground">{email}</strong>
+          <strong className="text-on-surface">{email}</strong>
         </p>
 
         <div className="flex gap-2 justify-center">
@@ -114,7 +118,7 @@ export function OtpForm() {
               onChange={(e) => handleChange(i, e.target.value)}
               onKeyDown={(e) => handleKeyDown(i, e)}
               onPaste={i === 0 ? handlePaste : undefined}
-              className="w-12 h-14 text-center text-xl font-mono bg-card border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+              className="w-12 h-14 text-center text-xl font-mono bg-surface-dim border border-outline-variant rounded-lg text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
             />
           ))}
         </div>
@@ -123,7 +127,7 @@ export function OtpForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full flex justify-center py-2.5 px-4 rounded-lg text-sm font-semibold text-primary-foreground bg-primary hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all disabled:opacity-50"
+        className="w-full flex justify-center py-2.5 px-4 rounded-lg text-sm font-semibold text-on-primary bg-primary hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all disabled:opacity-50"
       >
         {loading ? 'Verifying...' : 'Verify email'}
       </button>

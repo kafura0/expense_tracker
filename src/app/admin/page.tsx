@@ -24,7 +24,6 @@ type Tab = 'clients' | 'errors' | 'messages' | 'plans'
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>('clients')
-  const { toast } = useToast()
   const queryClient = useQueryClient()
 
   const tabs: { id: Tab; label: string; icon: typeof Building2 }[] = [
@@ -397,7 +396,7 @@ function MessagesTab() {
                   </div>
                   <p className="text-sm text-on-surface-variant mb-3 whitespace-pre-wrap">{msg.body as string}</p>
 
-                  {msg.admin_reply && (
+                  {typeof msg.admin_reply === 'string' && msg.admin_reply && (
                     <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg mb-3">
                       <p className="text-xs text-primary font-medium mb-1">Admin Reply:</p>
                       <p className="text-sm text-on-surface">{msg.admin_reply as string}</p>
