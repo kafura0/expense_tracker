@@ -1,32 +1,5 @@
 'use client'
 
-/**
- * expense-form.tsx
- *
- * Form component for creating and editing expenses.
- *
- * MULTI-TENANCY:
- * Categories are fetched with an org_id filter to ensure only categories
- * belonging to the active organization are shown. This prevents:
- * - Users from associating expenses with categories from other orgs
- * - Data leakage through category names from other organizations
- *
- * The org_id is resolved via the useActiveOrgId() hook, which calls a server
- * action to read the httpOnly cookie. This ensures the org_id is never
- * exposed to client-side JavaScript where it could be tampered with.
- *
- * CURRENCY CONVERSION:
- * When the user enters an amount in a non-base currency, the form fetches
- * exchange rates from the API route and shows the converted amount in real-time.
- * The rate is stored with the expense for historical accuracy.
- *
- * TAX CALCULATION:
- * If the "Tax applicable" checkbox is checked, VAT is calculated at the
- * default rate (16%) and displayed in the form before submission.
- */
-
-'use client'
-
 import { useState, useEffect, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -41,6 +14,18 @@ import { createClient } from '@/shared/lib/supabase/client'
 import { useActiveOrgId } from '@/shared/lib/org-helpers'
 import { convertAmount } from '@/entities/exchange-rate/service'
 import { calculateVAT, DEFAULT_VAT_RATE } from '@/shared/lib/vat'
+import {
+  DollarSign,
+  Calendar,
+  Tag,
+  FileText,
+  Percent,
+  Save,
+  X,
+  AlertCircle,
+  ArrowRightLeft,
+} from 'lucide-react'
+import { cn } from '@/shared/lib/utils'
 
 interface Category {
   id: string
@@ -108,7 +93,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
       .select('*')
       .eq('org_id', orgId)
       .order('name')
-    
+
     if (error) {
       console.error('Failed to fetch categories:', error.message)
       return
@@ -178,7 +163,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
         }
         toast('Expense created successfully', 'success')
       }
-      
+
       queryClient.invalidateQueries({ queryKey: ['expenses'] })
       reset()
       onSuccess()
@@ -188,31 +173,42 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <label htmlFor="amount_cents" className="text-sm font-medium">
-            Amount (cents) *
+          <label htmlFor="amount_cents" className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+            Amount (cents)
           </label>
-          <Input
-            id="amount_cents"
-            type="number"
-            {...register('amount_cents', { valueAsNumber: true })}
-            placeholder="0"
-          />
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground pointer-events-none">
+              $
+            </span>
+            <Input
+              id="amount_cents"
+              type="number"
+              {...register('amount_cents', { valueAsNumber: true })}
+              placeholder="0"
+              error={!!errors.amount_cents}
+              className={cn("pl-7", errors.amount_cents && "border-destructive focus-visible:ring-destructive/50")}
+            />
+          </div>
           {errors.amount_cents && (
-            <p className="text-sm text-red-500">{errors.amount_cents.message}</p>
+            <p className="text-xs text-destructive flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" />
+              {errors.amount_cents.message}
+            </p>
           )}
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="currency" className="text-sm font-medium">
-            Currency *
+          <label htmlFor="currency" className="text-sm font-semibold text-foreground">
+            Currency
           </label>
           <select
             id="currency"
             {...register('currency')}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="flex h-10 w-full rounded-lg border border-input bg-muted/50 px-3 py-2 text-sm text-foreground transition-all duration-200 hover:border-muted-foreground/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:border-ring"
           >
             {CURRENCIES.map((currency) => (
               <option key={currency} value={currency}>
@@ -224,28 +220,33 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
       </div>
 
       {convertedAmount !== null && watchedCurrency !== BASE_CURRENCY && (
-        <div className="p-3 bg-surface-container rounded-lg">
-          <p className="text-sm text-on-surface-variant">
-            Converted to {BASE_CURRENCY}:{' '}
-            <span className="font-bold text-primary">
-              ${(convertedAmount / 100).toFixed(2)}
-            </span>
-          </p>
-          <p className="text-xs text-on-surface-variant mt-1">
-            Rate: 1 {watchedCurrency} = {rates[watchedCurrency]?.toFixed(4)} {BASE_CURRENCY}
-          </p>
+        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl border border-border">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <ArrowRightLeft className="h-4 w-4" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm text-foreground">
+              Converted: <span className="font-bold text-primary">
+                ${(convertedAmount / 100).toFixed(2)} {BASE_CURRENCY}
+              </span>
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Rate: 1 {watchedCurrency} = {rates[watchedCurrency]?.toFixed(4)} {BASE_CURRENCY}
+            </p>
+          </div>
         </div>
       )}
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <label htmlFor="category_id" className="text-sm font-medium">
+          <label htmlFor="category_id" className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Tag className="h-3.5 w-3.5 text-muted-foreground" />
             Category
           </label>
           <select
             id="category_id"
             {...register('category_id')}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="flex h-10 w-full rounded-lg border border-input bg-muted/50 px-3 py-2 text-sm text-foreground transition-all duration-200 hover:border-muted-foreground/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:border-ring"
           >
             <option value="">Select category</option>
             {categories.map((category) => (
@@ -257,66 +258,83 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="date" className="text-sm font-medium">
-            Date & Time *
+          <label htmlFor="date" className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+            Date & Time
           </label>
           <Input
             id="date"
             type="datetime-local"
             {...register('date')}
+            error={!!errors.date}
+            className={cn(errors.date && "border-destructive focus-visible:ring-destructive/50")}
           />
           {errors.date && (
-            <p className="text-sm text-red-500">{errors.date.message}</p>
+            <p className="text-xs text-destructive flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" />
+              {errors.date.message}
+            </p>
           )}
         </div>
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="notes" className="text-sm font-medium">
+        <label htmlFor="notes" className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <FileText className="h-3.5 w-3.5 text-muted-foreground" />
           Notes
         </label>
-        <Input
+        <textarea
           id="notes"
           {...register('notes')}
-          placeholder="Optional notes"
+          placeholder="Add any notes about this expense..."
+          rows={3}
+          className="flex w-full rounded-lg border border-input bg-muted/50 px-3 py-2.5 text-sm text-foreground transition-all duration-200 placeholder:text-muted-foreground hover:border-muted-foreground/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:border-ring resize-none"
         />
       </div>
 
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl border border-border">
         <input
           type="checkbox"
           id="is_taxable"
           {...register('is_taxable')}
-          className="h-4 w-4 rounded border-gray-300"
+          className="h-4 w-4 rounded border-border text-primary focus:ring-primary/50 cursor-pointer"
         />
-        <label htmlFor="is_taxable" className="text-sm font-medium">
+        <label htmlFor="is_taxable" className="text-sm font-medium text-foreground cursor-pointer flex items-center gap-2">
+          <Percent className="h-3.5 w-3.5 text-muted-foreground" />
           Tax applicable (VAT {DEFAULT_VAT_RATE}%)
         </label>
       </div>
 
       {vatResult && (
-        <div className="p-3 bg-surface-container rounded-lg">
-          <p className="text-sm text-on-surface-variant">
-            Tax ({DEFAULT_VAT_RATE}%):{' '}
-            <span className="font-bold text-tertiary">
-              ${(vatResult.tax / 100).toFixed(2)}
-            </span>
-          </p>
-          <p className="text-sm text-on-surface-variant mt-1">
-            Total with tax:{' '}
-            <span className="font-bold text-on-surface">
-              ${(vatResult.total / 100).toFixed(2)}
-            </span>
-          </p>
+        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl border border-border">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600">
+            <Percent className="h-4 w-4" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm text-foreground">
+              Tax ({DEFAULT_VAT_RATE}%):{' '}
+              <span className="font-bold text-amber-600">
+                ${(vatResult.tax / 100).toFixed(2)}
+              </span>
+            </p>
+            <p className="text-sm text-foreground">
+              Total with tax:{' '}
+              <span className="font-bold text-foreground">
+                ${(vatResult.total / 100).toFixed(2)}
+              </span>
+            </p>
+          </div>
         </div>
       )}
 
-      <div className="flex justify-end space-x-2 pt-4">
+      <div className="flex justify-end gap-3 pt-2 border-t border-border">
         <Button type="button" variant="outline" onClick={onCancel}>
+          <X className="h-4 w-4" />
           Cancel
         </Button>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Saving...' : isEditing ? 'Update' : 'Create'}
+        <Button type="submit" disabled={isSubmitting} loading={isSubmitting}>
+          <Save className="h-4 w-4" />
+          {isEditing ? 'Update Expense' : 'Create Expense'}
         </Button>
       </div>
     </form>

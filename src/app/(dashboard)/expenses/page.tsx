@@ -1,17 +1,20 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/shared/lib/supabase/client'
 import { useActiveOrgId } from '@/shared/lib/org-helpers'
-import { ExpenseTable } from '@/features/expenses/expense-table'
+import { ExpenseTable, TableSkeleton } from '@/features/expenses/expense-table'
 import { ExpenseFilters } from '@/features/expenses/expense-filters'
 import { Button } from '@/shared/ui/button'
-import { Plus } from 'lucide-react'
+import { Card, CardContent } from '@/shared/ui/card'
+import { Skeleton } from '@/shared/ui/skeleton'
+import { Plus, TrendingUp, Receipt, Calculator, ArrowDownRight } from 'lucide-react'
 import { ExpenseDialog } from '@/features/expenses/expense-dialog'
 import { deleteExpense, duplicateExpense } from '@/features/expenses/actions'
 import { useToast } from '@/shared/ui/toast'
 import type { ExpenseListParams, ExpenseFilters as FilterType, ExpenseWithCategory } from '@/entities/expense/types'
+import { cn } from '@/shared/lib/utils'
 
 export default function ExpensesPage() {
   const [filters, setFilters] = useState<FilterType>({})
@@ -25,7 +28,6 @@ export default function ExpensesPage() {
   const queryClient = useQueryClient()
   const { toast } = useToast()
   const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  /** Resolve active org via server action (reads httpOnly cookie). */
   const orgId = useActiveOrgId()
 
   const fetchExpenses = async (params: ExpenseListParams) => {
@@ -56,8 +58,8 @@ export default function ExpensesPage() {
       query = query.lte('date', params.filters.date_to)
     }
 
-    query = query.order(params.sort?.field || 'date', { 
-      ascending: params.sort?.direction === 'asc' 
+    query = query.order(params.sort?.field || 'date', {
+      ascending: params.sort?.direction === 'asc'
     })
 
     const from = ((params.pagination?.page || 1) - 1) * (params.pagination?.page_size || 20)
@@ -87,6 +89,27 @@ export default function ExpensesPage() {
     enabled: orgId !== undefined && orgId !== null,
   })
 
+  const stats = useMemo(() => {
+    const items = data?.data || []
+    if (items.length === 0) return null
+    const total = items.reduce((sum, e) => sum + e.amount_cents, 0)
+    const avg = items.length > 0 ? Math.round(total / items.length) : 0
+    return {
+      totalAmount: total,
+      totalCount: data?.total || 0,
+      averageAmount: avg,
+    }
+  }, [data])
+
+  const formatCurrency = (cents: number, currency = 'USD') => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(cents / 100)
+  }
+
   const handleSort = useCallback((field: 'date' | 'amount_cents') => {
     if (field === sortField) {
       setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')
@@ -113,35 +136,28 @@ export default function ExpensesPage() {
 
   const handleDelete = useCallback(async (id: string) => {
     const result = await deleteExpense(id)
-    
+
     if (result.error) {
       toast(result.error, 'error')
       return
     }
 
     queryClient.invalidateQueries({ queryKey: ['expenses'] })
-    
-    // Show undo toast
+
     toast('Expense deleted. Click Undo to restore.', 'default')
-    
-    // Clear previous timeout if exists
+
     if (undoTimeoutRef.current) {
       clearTimeout(undoTimeoutRef.current)
     }
-    
-    // Set timeout for undo (30 seconds)
+
     undoTimeoutRef.current = setTimeout(async () => {
-      // If undo wasn't clicked, the expense stays deleted
       undoTimeoutRef.current = null
     }, 30000)
-    
-    // For now, we'll just invalidate the query
-    // In a real app, you'd store the deleted expense and provide an undo callback
   }, [queryClient, toast])
 
   const handleDuplicate = useCallback(async (id: string) => {
     const result = await duplicateExpense(id)
-    
+
     if (result.error) {
       toast(result.error, 'error')
       return
@@ -155,20 +171,96 @@ export default function ExpensesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-headline text-2xl font-bold tracking-tight text-on-surface">Expenses</h1>
-          <p className="text-on-surface-variant">
-            Manage and track your expenses
+          <h1 className="font-headline text-2xl font-bold tracking-tight text-foreground">
+            Expenses
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Track and manage all your expense transactions
           </p>
         </div>
-        <Button onClick={handleAddNew} className="bg-primary-container text-on-primary-container hover:bg-primary-container/90">
-          <Plus className="mr-2 h-4 w-4" />
+        <Button onClick={handleAddNew} className="shadow-md shadow-primary/20">
+          <Plus className="h-4 w-4" />
           Add Expense
         </Button>
       </div>
 
-      <ExpenseFilters 
-        filters={filters} 
-        onFilterChange={handleFilterChange} 
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-7 w-28" />
+                  </div>
+                  <Skeleton className="h-10 w-10 rounded-xl" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : stats && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card className="hover:shadow-md transition-shadow duration-200">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Total Amount
+                  </p>
+                  <p className="text-2xl font-bold text-foreground mt-1 tabular-nums">
+                    {formatCurrency(stats.totalAmount)}
+                  </p>
+                </div>
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <TrendingUp className="h-5 w-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-md transition-shadow duration-200">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Total Records
+                  </p>
+                  <p className="text-2xl font-bold text-foreground mt-1 tabular-nums">
+                    {stats.totalCount.toLocaleString()}
+                  </p>
+                </div>
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600">
+                  <Receipt className="h-5 w-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-md transition-shadow duration-200">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Average
+                  </p>
+                  <p className="text-2xl font-bold text-foreground mt-1 tabular-nums">
+                    {formatCurrency(stats.averageAmount)}
+                  </p>
+                </div>
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600">
+                  <Calculator className="h-5 w-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      <ExpenseFilters
+        filters={filters}
+        onFilterChange={handleFilterChange}
       />
 
       {orgId === undefined ? (
@@ -176,16 +268,22 @@ export default function ExpensesPage() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       ) : orgId === null ? (
-        <div className="text-center py-12 text-on-surface-variant">
-          No organization selected. Please switch to an organization.
+        <div className="text-center py-16">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/50 text-muted-foreground mx-auto">
+            <ArrowDownRight className="h-8 w-8" />
+          </div>
+          <p className="text-base font-semibold text-foreground mb-1">No organization selected</p>
+          <p className="text-sm text-muted-foreground">Please switch to an organization to view expenses.</p>
         </div>
       ) : isLoading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-        </div>
+        <TableSkeleton />
       ) : error ? (
-        <div className="text-center py-12 text-destructive">
-          Error loading expenses
+        <div className="text-center py-16">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-destructive/10 text-destructive mx-auto">
+            <ArrowDownRight className="h-8 w-8" />
+          </div>
+          <p className="text-base font-semibold text-foreground mb-1">Failed to load expenses</p>
+          <p className="text-sm text-muted-foreground">Please try again later.</p>
         </div>
       ) : (
         <ExpenseTable
