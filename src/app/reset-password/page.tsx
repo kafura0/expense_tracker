@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import { createClient } from '@/shared/lib/supabase/client'
 import Link from 'next/link'
+import { Input } from '@/shared/ui/input'
+import { Button } from '@/shared/ui/button'
+import { Mail, ArrowLeft, CheckCircle } from 'lucide-react'
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState('')
@@ -32,25 +35,25 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-6 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-12 relative overflow-hidden">
       <div className="absolute inset-0 hero-gradient pointer-events-none" />
 
-      <div className="max-w-md w-full space-y-8 relative z-10">
-        <div className="text-center">
-          <Link href="/" className="inline-block mb-6">
-            <span className="font-headline-md text-headline-lg font-bold text-on-surface">
+      <div className="max-w-md w-full space-y-8 relative z-10 animate-fade-in">
+        <div className="text-center space-y-2">
+          <Link href="/" className="inline-block mb-4">
+            <span className="text-2xl font-bold text-on-surface tracking-tight">
               Ledgerly
             </span>
           </Link>
-          <h2 className="text-3xl font-headline font-bold text-on-surface tracking-tight">
+          <h2 className="text-3xl font-bold text-on-surface tracking-tight">
             Reset your password
           </h2>
-          <p className="mt-2 text-sm text-on-surface-variant">
+          <p className="text-sm text-on-surface-variant">
             Enter your email to receive a reset link
           </p>
         </div>
 
-        <div className="glass-card border-outline-variant rounded-xl p-6">
+        <div className="glass-card rounded-2xl p-8 animate-slide-up">
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
               <div className="p-3 text-sm text-red-400 bg-red-900/20 border border-red-800/30 rounded-lg">
@@ -59,45 +62,42 @@ export default function ResetPasswordPage() {
             )}
 
             {success && (
-              <div className="p-3 text-sm text-primary bg-primary/10 border border-primary/20 rounded-lg">
-                {success}
+              <div className="p-4 text-sm text-emerald-400 bg-emerald-900/20 border border-emerald-800/30 rounded-lg flex items-start gap-3">
+                <CheckCircle className="h-5 w-5 mt-0.5 shrink-0" />
+                <span>{success}</span>
               </div>
             )}
 
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-on-surface mb-1.5"
-              >
+            <div className="space-y-1.5">
+              <label htmlFor="email" className="text-sm font-medium text-on-surface">
                 Email
               </label>
-              <input
+              <Input
                 id="email"
                 name="email"
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="block w-full px-4 py-2.5 bg-surface-dim border border-outline-variant rounded-lg text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
                 placeholder="you@example.com"
+                icon={<Mail className="h-4 w-4" />}
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex justify-center py-2.5 px-4 rounded-lg text-sm font-semibold text-on-primary bg-primary hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all disabled:opacity-50"
-            >
-              {loading ? 'Sending...' : 'Send reset link'}
-            </button>
-
-            <p className="text-center text-sm text-on-surface-variant">
-              Remember your password?{' '}
-              <Link href="/login" className="text-primary hover:text-primary/80 transition-colors font-medium">
-                Sign in
-              </Link>
-            </p>
+            <Button type="submit" disabled={loading} loading={loading} className="w-full h-11">
+              Send reset link
+            </Button>
           </form>
+
+          <div className="mt-6 text-center">
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-1.5 text-sm text-on-surface-variant hover:text-on-surface transition-colors"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Back to login
+            </Link>
+          </div>
         </div>
       </div>
     </div>
