@@ -173,3 +173,11 @@ Summary of fixes:
 - Added a `key` prop (`e.id`) to the mapped list items.
 - Added loading and error states for better UX.
 - Added TypeScript types for the expense data.
+
+
+Bonus Qs to discuss:
+1. explain the purpose of each supabase migration
+
+2. have we used wwith check in the expenses tsble yes or no and why..
+
+3. lets as well discuss the convertAmount() fallabck and etc
