@@ -5,7 +5,7 @@ import { createClient } from '@/shared/lib/supabase/client'
 import { useActiveOrgId } from '@/shared/lib/org-helpers'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { TrendingUp, TrendingDown, AlertCircle, Lightbulb } from 'lucide-react'
+import { TrendingUp, TrendingDown, AlertCircle, Lightbulb, Sparkles } from 'lucide-react'
 
 interface Insight {
   id: string
@@ -25,16 +25,6 @@ export function Insights() {
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0)
 
-    /**
-     * ERROR HANDLING: All three queries now check for errors.
-     * Previously, errors were silently ignored, which meant:
-     * - If the expenses table was empty or inaccessible, insights showed misleading data
-     * - If RLS denied access, the component showed "All Good!" instead of an error
-     * - Debugging was impossible because errors were swallowed
-     *
-     * Now, any query failure throws immediately, which React Query catches
-     * and displays as an error state in the UI.
-     */
     const { data: currentExpenses, error: currentError } = await supabase
       .from('expenses')
       .select('amount_cents, category_id')
@@ -123,64 +113,139 @@ export function Insights() {
     enabled: orgId !== undefined,
   })
 
-  if (orgId === undefined) {
+  if (orgId === undefined || orgId === null) {
     return (
-      <Card className="glass-card border-outline-variant">
-        <CardHeader><Skeleton className="h-6 w-40 bg-surface-container-high" /></CardHeader>
-        <CardContent><div className="space-y-3">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-16 w-full bg-surface-container-high" />)}</div></CardContent>
+      <Card className="glass-card border-outline-variant shadow-lg shadow-black/5 animate-fade-in">
+        <CardHeader className="pb-2">
+          <Skeleton className="h-6 w-40 bg-surface-container-high rounded-md" />
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex items-start gap-3 p-4 rounded-xl bg-muted/30">
+                <Skeleton className="h-9 w-9 rounded-lg bg-surface-container-high shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-28 bg-surface-container-high rounded-md" />
+                  <Skeleton className="h-3 w-full bg-surface-container-high rounded-md" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
       </Card>
     )
   }
 
-  if (orgId === null) {
-    return <Card className="glass-card border-outline-variant"><CardContent className="p-6 text-center text-on-surface-variant">No organization selected</CardContent></Card>
-  }
-
   if (isLoading) {
     return (
-      <Card className="glass-card border-outline-variant">
-        <CardHeader><Skeleton className="h-6 w-40 bg-surface-container-high" /></CardHeader>
-        <CardContent><div className="space-y-3">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-16 w-full bg-surface-container-high" />)}</div></CardContent>
+      <Card className="glass-card border-outline-variant shadow-lg shadow-black/5 animate-fade-in">
+        <CardHeader className="pb-2">
+          <Skeleton className="h-6 w-40 bg-surface-container-high rounded-md" />
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex items-start gap-3 p-4 rounded-xl bg-muted/30">
+                <Skeleton className="h-9 w-9 rounded-lg bg-surface-container-high shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-28 bg-surface-container-high rounded-md" />
+                  <Skeleton className="h-3 w-full bg-surface-container-high rounded-md" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
       </Card>
     )
   }
 
   if (error) {
-    return <Card className="glass-card border-outline-variant"><CardContent className="p-6 text-center text-destructive">Error loading insights</CardContent></Card>
+    return <Card className="glass-card border-outline-variant shadow-lg shadow-black/5"><CardContent className="p-6 text-center text-destructive">Error loading insights</CardContent></Card>
   }
 
-  const getIcon = (type: Insight['type']) => {
-    switch (type) {
-      case 'increase': return <TrendingUp className="h-5 w-5 text-destructive" />
-      case 'decrease': return <TrendingDown className="h-5 w-5 text-primary" />
-      case 'alert': return <AlertCircle className="h-5 w-5 text-tertiary" />
-      case 'tip': return <Lightbulb className="h-5 w-5 text-secondary" />
-    }
+  if (!insights || insights.length === 0) {
+    return (
+      <Card className="glass-card border-outline-variant shadow-lg shadow-black/5 animate-fade-in">
+        <CardHeader className="pb-2">
+          <CardTitle>Insights</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[200px] flex flex-col items-center justify-center gap-3 text-muted-foreground">
+            <div className="p-4 rounded-2xl bg-muted/50">
+              <Sparkles className="h-8 w-8" />
+            </div>
+            <p className="font-medium">No insights yet</p>
+            <p className="text-xs">Add more expenses to get personalized insights</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
-  const getBgColor = (type: Insight['type']) => {
+  const getInsightConfig = (type: Insight['type']) => {
     switch (type) {
-      case 'increase': return 'bg-destructive/10'
-      case 'decrease': return 'bg-primary/10'
-      case 'alert': return 'bg-tertiary/10'
-      case 'tip': return 'bg-secondary/10'
+      case 'increase':
+        return {
+          icon: TrendingUp,
+          iconBg: 'bg-red-500/10',
+          iconColor: 'text-red-500',
+          accentBorder: 'border-l-red-500',
+          bg: 'bg-red-500/5',
+        }
+      case 'decrease':
+        return {
+          icon: TrendingDown,
+          iconBg: 'bg-emerald-500/10',
+          iconColor: 'text-emerald-500',
+          accentBorder: 'border-l-emerald-500',
+          bg: 'bg-emerald-500/5',
+        }
+      case 'alert':
+        return {
+          icon: AlertCircle,
+          iconBg: 'bg-amber-500/10',
+          iconColor: 'text-amber-500',
+          accentBorder: 'border-l-amber-500',
+          bg: 'bg-amber-500/5',
+        }
+      case 'tip':
+        return {
+          icon: Lightbulb,
+          iconBg: 'bg-sky-500/10',
+          iconColor: 'text-sky-500',
+          accentBorder: 'border-l-sky-500',
+          bg: 'bg-sky-500/5',
+        }
     }
   }
 
   return (
-    <Card className="glass-card border-outline-variant">
-      <CardHeader><CardTitle className="text-on-surface font-headline">Insights</CardTitle></CardHeader>
+    <Card className="glass-card border-outline-variant shadow-lg shadow-black/5 animate-fade-in delay-300">
+      <CardHeader className="pb-2">
+        <CardTitle>Insights</CardTitle>
+      </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {insights?.map((insight) => (
-            <div key={insight.id} className={`flex items-start gap-3 p-3 rounded-lg ${getBgColor(insight.type)}`}>
-              <div className="mt-0.5">{getIcon(insight.type)}</div>
-              <div>
-                <p className="font-medium text-on-surface">{insight.title}</p>
-                <p className="text-sm text-on-surface-variant">{insight.description}</p>
+          {insights.map((insight, index) => {
+            const config = getInsightConfig(insight.type)
+            const Icon = config.icon
+            return (
+              <div
+                key={insight.id}
+                className={`flex items-start gap-3.5 p-4 rounded-xl border-l-2 ${config.accentBorder} ${config.bg} hover:shadow-md transition-all duration-200 animate-fade-in ${
+                  index === 0 ? '' : index === 1 ? 'delay-75' : index === 2 ? 'delay-150' : 'delay-200'
+                }`}
+              >
+                <div className={`p-2 rounded-lg ${config.iconBg} shrink-0`}>
+                  <Icon className={`h-4 w-4 ${config.iconColor}`} />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-sm text-foreground">{insight.title}</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">{insight.description}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </CardContent>
     </Card>
