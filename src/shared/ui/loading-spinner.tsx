@@ -1,33 +1,23 @@
-import { cn } from '@/shared/lib/utils'
-import { Loader2 } from 'lucide-react'
+import { cn } from "@/shared/lib/utils"
 
-interface LoadingSpinnerProps {
-  className?: string
-  size?: 'sm' | 'md' | 'lg'
-}
-
-export function LoadingSpinner({ className, size = 'md' }: LoadingSpinnerProps) {
-  const sizeClasses = {
-    sm: 'h-4 w-4',
-    md: 'h-8 w-8',
-    lg: 'h-12 w-12',
-  }
-
+function LoadingSpinner({ className }: { className?: string }) {
   return (
-    <Loader2
-      className={cn('animate-spin text-muted-foreground', sizeClasses[size], className)}
-    />
+    <svg className={cn("animate-spin h-5 w-5 text-primary", className)} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+    </svg>
   )
 }
 
-interface LoadingPageProps {
-  className?: string
-}
-
-export function LoadingPage({ className }: LoadingPageProps) {
+function PageLoader() {
   return (
-    <div className={cn('flex items-center justify-center min-h-[400px]', className)}>
-      <LoadingSpinner size="lg" />
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex flex-col items-center gap-4">
+        <LoadingSpinner className="h-8 w-8" />
+        <p className="text-sm text-muted-foreground animate-pulse-soft">Loading...</p>
+      </div>
     </div>
   )
 }
+
+export { LoadingSpinner, PageLoader }
