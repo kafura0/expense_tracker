@@ -43,7 +43,7 @@ describe('Expense Server Actions', () => {
         date: '2024-01-15T10:30:00Z',
         notes: 'Test expense',
         tax_applicable: true,
-        user_id: 'user-1',
+        is_taxable: true,
       })
       
       expect(result.data).toEqual(mockExpense)
@@ -63,7 +63,7 @@ describe('Expense Server Actions', () => {
         category_id: 'cat-1',
         date: '2024-01-15T10:30:00Z',
         tax_applicable: false,
-        user_id: 'user-1',
+        is_taxable: false,
       })
       
       expect(result.data).toBeNull()
@@ -170,8 +170,8 @@ describe('Expense Server Actions', () => {
       }
       
       const newExpense = {
-        id: '456',
         ...originalExpense,
+        id: '456',
         date: new Date().toISOString(),
       }
       

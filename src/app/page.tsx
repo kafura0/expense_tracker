@@ -178,7 +178,7 @@ export default function LandingPage() {
       <main className="relative overflow-hidden">
         {/* ─── Hero Section ─── */}
         <section className="hero-gradient pt-28 pb-20 md:pt-36 md:pb-28 px-6 md:px-12">
-          <div className="max-w-4xl mx-auto text-center">
+          <div className="max-w-5xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-outline-variant/40 bg-surface-container-low/60 mb-8">
               <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
               <span className="font-label-sm text-xs text-primary uppercase tracking-widest font-medium">
@@ -213,7 +213,7 @@ export default function LandingPage() {
             </div>
 
             {/* Dashboard Preview */}
-            <div className="relative max-w-4xl mx-auto">
+            <div className="relative max-w-5xl mx-auto">
               <div className="absolute inset-0 bg-primary/8 blur-[140px] rounded-full -z-10 translate-y-10" />
               <div className="glass-card rounded-2xl p-1 md:p-1.5 shadow-2xl overflow-hidden border border-outline-variant/20">
                 <div className="bg-surface-dim rounded-xl border border-outline-variant/10 overflow-hidden shadow-inner">
@@ -241,82 +241,80 @@ export default function LandingPage() {
         </section>
 
         {/* ─── Feature Bento Grid ─── */}
-        <section className="py-24 md:py-32 px-6 md:px-12" id="features">
+        <section className="py-28 md:py-36 px-6 md:px-12" id="features">
           <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-16 md:mb-20">
+            <div className="mb-16 md:mb-20">
               <p className="font-label-sm text-xs text-primary uppercase tracking-widest font-medium mb-4">
                 Features
               </p>
-              <h2 className="font-headline text-3xl md:text-4xl font-bold mb-4 tracking-tight">
-                Engineered for Precision
+              <h2 className="font-headline text-3xl md:text-[40px] font-bold mb-5 tracking-tight leading-[1.15]">
+                Engineered for<br />Precision
               </h2>
-              <p className="text-on-surface-variant/70 text-base max-w-md mx-auto leading-relaxed">
+              <p className="text-on-surface-variant/60 text-[15px] leading-relaxed max-w-md">
                 Tools built for the modern financial operator.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
               {FEATURES.map((feature) => {
                 const IconComp = feature.iconComponent
                 return (
                   <div
                     key={feature.title}
-                    className={`${feature.span} glass-card p-8 rounded-2xl border border-outline-variant/15 flex flex-col justify-between group hover:border-primary/40 transition-all duration-300`}
+                    className={`${feature.span} glass-card p-7 md:p-8 rounded-2xl border border-outline-variant/15 flex flex-col group hover:border-primary/30 hover:bg-surface-container/80 transition-all duration-300`}
                   >
-                    <div>
-                      <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-6">
-                        <IconComp className="w-6 h-6 text-primary" />
+                    <div className="mb-6">
+                      <div className="w-11 h-11 bg-primary/10 rounded-xl flex items-center justify-center mb-5">
+                        <IconComp className="w-5 h-5 text-primary" />
                       </div>
-                      <h3 className="font-headline text-xl font-semibold mb-3 tracking-tight">
+                      <h3 className="font-headline text-lg font-semibold mb-2.5 tracking-tight">
                         {feature.title}
                       </h3>
-                      <p className="text-on-surface-variant/70 text-[15px] leading-[1.65]">
+                      <p className="text-on-surface-variant/60 text-sm leading-[1.7]">
                         {feature.description}
                       </p>
                     </div>
 
                     {feature.hasVisual && (
-                      <div className="mt-8 h-44 bg-surface-container-high rounded-xl overflow-hidden relative border border-outline-variant/10 flex items-end justify-center pb-6">
-                        <div className="flex items-end gap-2">
-                          {[16, 28, 12, 22, 8, 32, 18, 26, 14, 20, 10, 24].map((h, i) => (
-                            <div
-                              key={i}
-                              className="w-2.5 rounded-full bg-primary/60 group-hover:bg-primary transition-colors duration-300"
-                              style={{ height: `${h * 0.15}rem` }}
-                            />
-                          ))}
-                        </div>
+                      <div className="mt-auto h-40 bg-surface-container-high/60 rounded-xl overflow-hidden border border-outline-variant/10 flex items-end justify-center gap-[5px] px-4 pb-5 pt-4">
+                        {[14, 24, 10, 30, 7, 22, 16, 28, 11, 20, 13, 26, 9, 18].map((h, i) => (
+                          <div
+                            key={i}
+                            className="w-2 rounded-full bg-primary/40 group-hover:bg-primary/80 transition-colors duration-500"
+                            style={{ height: `${h * 0.12}rem` }}
+                          />
+                        ))}
                       </div>
                     )}
 
                     {feature.hasCalc && (
-                      <div className="bg-surface-container/80 rounded-xl p-5 font-mono text-xs border border-outline-variant/15 mt-8">
-                        <div className="flex justify-between text-on-surface-variant/60 border-b border-outline-variant/10 pb-2.5 mb-2.5">
-                          <span className="uppercase tracking-wider">Net Amount</span>
-                          <span className="text-on-surface">$1,240.00</span>
+                      <div className="mt-auto bg-surface-container/60 rounded-xl p-4 font-mono text-xs border border-outline-variant/10">
+                        <div className="flex justify-between text-on-surface-variant/50 border-b border-outline-variant/10 pb-2 mb-2">
+                          <span className="uppercase tracking-wider text-[10px]">Net Amount</span>
+                          <span className="text-on-surface/80">$1,240.00</span>
                         </div>
-                        <div className="flex justify-between text-on-surface-variant/60 border-b border-outline-variant/10 pb-2.5 mb-2.5">
-                          <span className="uppercase tracking-wider">VAT (21%)</span>
+                        <div className="flex justify-between text-on-surface-variant/50 border-b border-outline-variant/10 pb-2 mb-2">
+                          <span className="uppercase tracking-wider text-[10px]">VAT (21%)</span>
                           <span className="text-primary">+$260.40</span>
                         </div>
-                        <div className="flex justify-between font-bold text-on-surface">
-                          <span className="uppercase tracking-wider">Total Audited</span>
+                        <div className="flex justify-between font-bold text-on-surface text-[13px]">
+                          <span className="uppercase tracking-wider text-[10px]">Total Audited</span>
                           <span>$1,500.40</span>
                         </div>
                       </div>
                     )}
 
                     {feature.hasBanks && (
-                      <div className="mt-8 flex justify-center">
+                      <div className="mt-auto flex justify-center pt-2">
                         <div className="grid grid-cols-3 gap-3">
-                          <div className="w-16 h-16 bg-surface-container rounded-xl border border-outline-variant/15 flex items-center justify-center grayscale group-hover:grayscale-0 transition-all cursor-pointer">
-                            <div className="w-8 h-8 rounded-full bg-on-surface/8" />
+                          <div className="w-14 h-14 bg-surface-container-high/60 rounded-xl border border-outline-variant/10 flex items-center justify-center grayscale group-hover:grayscale-0 transition-all cursor-pointer">
+                            <div className="w-7 h-7 rounded-full bg-on-surface/6" />
                           </div>
-                          <div className="w-16 h-16 bg-surface-container rounded-xl border border-outline-variant/15 flex items-center justify-center grayscale group-hover:grayscale-0 transition-all cursor-pointer">
-                            <div className="w-8 h-8 bg-on-surface/8 rotate-45" />
+                          <div className="w-14 h-14 bg-surface-container-high/60 rounded-xl border border-outline-variant/10 flex items-center justify-center grayscale group-hover:grayscale-0 transition-all cursor-pointer">
+                            <div className="w-7 h-7 bg-on-surface/6 rotate-45" />
                           </div>
-                          <div className="w-16 h-16 bg-surface-container rounded-xl border border-outline-variant/15 flex items-center justify-center grayscale group-hover:grayscale-0 transition-all cursor-pointer">
-                            <div className="w-8 h-4 bg-on-surface/8 rounded-full" />
+                          <div className="w-14 h-14 bg-surface-container-high/60 rounded-xl border border-outline-variant/10 flex items-center justify-center grayscale group-hover:grayscale-0 transition-all cursor-pointer">
+                            <div className="w-7 h-3.5 bg-on-surface/6 rounded-full" />
                           </div>
                         </div>
                       </div>
@@ -329,33 +327,36 @@ export default function LandingPage() {
         </section>
 
         {/* ─── Social Proof ─── */}
-        <section className="py-24 md:py-28 bg-surface-container-lowest/50 overflow-hidden border-y border-outline-variant/15">
-          <div className="max-w-4xl mx-auto px-6 md:px-12">
-            <p className="font-label-sm text-xs text-center text-outline/60 uppercase tracking-[0.2em] mb-14">
+        <section className="py-28 md:py-32 bg-surface-container-lowest/40 overflow-hidden border-y border-outline-variant/10 px-6 md:px-12">
+          <div className="max-w-5xl mx-auto">
+            <p className="font-label-sm text-[11px] text-center text-outline/40 uppercase tracking-[0.25em] mb-12">
               Trusted by leaders at
             </p>
-            <div className="flex flex-wrap justify-center items-center gap-x-14 gap-y-6 opacity-30">
+            <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-5 opacity-20">
               {['VERTEX', 'LINEAR', 'VULCAN', 'AETHER', 'SYNERGY'].map((name) => (
-                <span key={name} className="font-headline text-xl md:text-2xl font-bold tracking-tight">
+                <span key={name} className="font-headline text-lg md:text-xl font-bold tracking-tight">
                   {name}
                 </span>
               ))}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-16">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-20">
               {TESTIMONIALS.map((t) => (
                 <div
                   key={t.name}
-                  className="p-8 rounded-2xl bg-surface-dim border border-outline-variant/10"
+                  className="p-7 rounded-2xl bg-surface-container/40 border border-outline-variant/10"
                 >
-                  <p className="text-[15px] text-on-surface/90 mb-6 leading-[1.7]">
+                  <svg className="w-8 h-8 text-primary/20 mb-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
+                  </svg>
+                  <p className="text-[15px] text-on-surface/80 mb-6 leading-[1.75]">
                     {t.quote}
                   </p>
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full ${t.color}`} />
+                    <div className={`w-9 h-9 rounded-full ${t.color}`} />
                     <div>
                       <p className="font-semibold text-on-surface text-sm">{t.name}</p>
-                      <p className="text-xs text-outline/60">{t.role}</p>
+                      <p className="text-xs text-outline/50">{t.role}</p>
                     </div>
                   </div>
                 </div>
@@ -365,28 +366,28 @@ export default function LandingPage() {
         </section>
 
         {/* ─── Pricing Section ─── */}
-        <section className="py-24 md:py-32 px-6 md:px-12" id="pricing">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16 md:mb-20">
+        <section className="py-28 md:py-36 px-6 md:px-12" id="pricing">
+          <div className="max-w-5xl mx-auto">
+            <div className="mb-16 md:mb-20">
               <p className="font-label-sm text-xs text-primary uppercase tracking-widest font-medium mb-4">
                 Pricing
               </p>
-              <h2 className="font-headline text-3xl md:text-4xl font-bold mb-4 tracking-tight">
+              <h2 className="font-headline text-3xl md:text-[40px] font-bold mb-5 tracking-tight leading-[1.15]">
                 Transparent Scaling
               </h2>
-              <p className="text-on-surface-variant/70 text-lg max-w-xl mx-auto">
+              <p className="text-on-surface-variant/60 text-[15px] leading-relaxed max-w-md">
                 Choose the workspace that fits your volume.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
               {PRICING_PLANS.map((plan) => (
                 <div
                   key={plan.name}
                   className={`rounded-2xl flex flex-col transition-all duration-300 ${
                     plan.featured
-                      ? 'border-2 border-primary bg-surface-container-high/80 relative shadow-[0_0_60px_rgba(78,222,163,0.08)] md:-mt-3 md:mb-[-12px]'
-                      : 'border border-outline-variant/15 bg-surface-container/60 hover:border-outline-variant/40'
+                      ? 'border-2 border-primary bg-surface-container-high/60 relative shadow-[0_0_80px_rgba(78,222,163,0.06)] md:-mt-3 md:mb-[-12px]'
+                      : 'border border-outline-variant/10 bg-surface-container/40 hover:border-outline-variant/30'
                   }`}
                 >
                   {plan.featured && (
@@ -394,34 +395,36 @@ export default function LandingPage() {
                       Most Popular
                     </div>
                   )}
-                  <div className="p-8">
-                    <span className={`font-label-sm text-xs uppercase tracking-widest font-medium ${
-                      plan.featured ? 'text-primary' : 'text-outline/60'
+                  <div className="p-7">
+                    <span className={`font-label-sm text-[11px] uppercase tracking-widest font-medium ${
+                      plan.featured ? 'text-primary' : 'text-outline/50'
                     }`}>
                       {plan.name}
                     </span>
-                    <div className="flex items-end gap-1 mt-4 mb-6">
-                      <span className="font-headline text-4xl font-bold">{plan.price}</span>
+                    <div className="flex items-end gap-1 mt-3 mb-6">
+                      <span className="font-headline text-[40px] font-bold leading-none">{plan.price}</span>
                       {plan.period && (
-                        <span className="text-on-surface-variant/50 text-sm mb-1">{plan.period}</span>
+                        <span className="text-on-surface-variant/40 text-sm mb-1">{plan.period}</span>
                       )}
                     </div>
-                    <ul className="space-y-3 mb-8">
-                      {plan.features.map((f) => (
-                        <li key={f} className="flex items-center gap-3 text-sm text-on-surface/80">
-                          <CheckIcon />
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="border-t border-outline-variant/10 pt-5 mb-6">
+                      <ul className="space-y-3">
+                        {plan.features.map((f) => (
+                          <li key={f} className="flex items-center gap-2.5 text-sm text-on-surface/70">
+                            <CheckIcon />
+                            {f}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
-                  <div className="px-8 pb-8">
+                  <div className="px-7 pb-7 mt-auto">
                     <Link
                       href={plan.featured ? '/signup' : '#'}
-                      className={`w-full py-3 rounded-xl font-semibold text-sm transition-all text-center block ${
+                      className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all text-center block ${
                         plan.featured
                           ? 'bg-primary text-on-primary hover:brightness-110'
-                          : 'border border-outline-variant/30 text-on-surface hover:bg-surface-variant/30'
+                          : 'border border-outline-variant/20 text-on-surface/70 hover:bg-surface-variant/20 hover:text-on-surface'
                       }`}
                     >
                       {plan.cta}
@@ -434,19 +437,19 @@ export default function LandingPage() {
         </section>
 
         {/* ─── Final CTA ─── */}
-        <section className="pb-24 md:pb-32 px-6 md:px-12 relative">
-          <div className="max-w-4xl mx-auto glass-card rounded-3xl px-8 py-16 md:px-16 md:py-20 text-center border border-primary/15 overflow-hidden relative">
-            <div className="absolute inset-0 bg-primary/5 blur-[80px] rounded-full" />
+        <section className="pb-28 md:pb-36 px-6 md:px-12 relative">
+          <div className="max-w-3xl mx-auto rounded-3xl px-8 py-14 md:px-14 md:py-18 text-center border border-outline-variant/10 overflow-hidden relative bg-surface-container/30">
+            <div className="absolute inset-0 bg-primary/4 blur-[100px] rounded-full" />
             <div className="relative z-10">
-              <h2 className="font-headline text-3xl md:text-5xl font-bold mb-4 tracking-tight">
+              <h2 className="font-headline text-3xl md:text-[44px] font-bold mb-4 tracking-tight leading-[1.1]">
                 Ready to audit?
               </h2>
-              <p className="text-on-surface-variant/70 text-lg mb-10 max-w-lg mx-auto leading-relaxed">
+              <p className="text-on-surface-variant/50 text-[15px] mb-8 max-w-sm mx-auto leading-relaxed">
                 Join 12,000+ operators managing their capital with absolute clarity.
               </p>
               <Link
                 href="/signup"
-                className="bg-primary text-on-primary font-semibold px-10 py-4 rounded-xl text-base hover:brightness-110 transition-all emerald-drop inline-block"
+                className="bg-primary text-on-primary font-semibold px-8 py-3 rounded-xl text-sm hover:brightness-110 transition-all emerald-drop inline-block"
               >
                 Deploy Ledgerly
               </Link>
@@ -457,7 +460,7 @@ export default function LandingPage() {
 
       {/* ─── Footer ─── */}
       <footer className="bg-surface-container-lowest border-t border-outline-variant/15 pt-16 pb-8 px-6 md:px-12">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-10 mb-14">
+        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-10 mb-14">
           <div className="md:col-span-4">
             <span className="font-headline-md text-headline-md font-bold text-on-surface block mb-4">
               Ledgerly
@@ -514,7 +517,7 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center border-t border-outline-variant/10 pt-6">
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center border-t border-outline-variant/10 pt-6">
           <p className="text-outline/40 text-xs">
             &copy; {currentYear} Ledgerly Inc. All rights reserved.
           </p>

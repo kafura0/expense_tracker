@@ -83,7 +83,7 @@ describe('Exchange Rate API Route', () => {
       const mockRates = {
         base: 'USD',
         rates: { EUR: 0.85, GBP: 0.73, KES: 150.5 },
-        timestamp: new Date().toISOString(),
+        date: new Date().toISOString(),
       }
       vi.mocked(getExchangeRates).mockResolvedValue(mockRates)
 
@@ -107,7 +107,7 @@ describe('Exchange Rate API Route', () => {
       } as any)
 
       const { getExchangeRates } = await import('@/entities/exchange-rate/service')
-      vi.mocked(getExchangeRates).mockResolvedValue({ base: 'USD', rates: {} })
+      vi.mocked(getExchangeRates).mockResolvedValue({ base: 'USD', rates: {}, date: new Date().toISOString() })
 
       const { GET } = await import('@/app/api/rates/route')
       const request = new NextRequest('http://localhost:3000/api/rates?base=usd')
@@ -148,7 +148,7 @@ describe('Exchange Rate API Route', () => {
       } as any)
 
       const { getExchangeRates } = await import('@/entities/exchange-rate/service')
-      vi.mocked(getExchangeRates).mockResolvedValue({ base: 'USD', rates: {} })
+      vi.mocked(getExchangeRates).mockResolvedValue({ base: 'USD', rates: {}, date: new Date().toISOString() })
 
       const { GET } = await import('@/app/api/rates/route')
       const currencies = ['USD', 'EUR', 'GBP', 'KES', 'CAD', 'AUD', 'JPY']

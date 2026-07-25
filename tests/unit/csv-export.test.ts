@@ -162,8 +162,8 @@ describe('CSV Export', () => {
       }
       
       vi.spyOn(document, 'createElement').mockReturnValue(mockLink as any)
-      vi.spyOn(document.body, 'appendChild').mockImplementation(() => {})
-      vi.spyOn(document.body, 'removeChild').mockImplementation(() => {})
+      vi.spyOn(document.body, 'appendChild').mockImplementation((node: any) => node)
+      vi.spyOn(document.body, 'removeChild').mockImplementation((node: any) => node)
       
       downloadCSV('test,csv', 'expenses.csv')
       
@@ -179,8 +179,8 @@ describe('CSV Export', () => {
       }
       
       vi.spyOn(document, 'createElement').mockReturnValue(mockLink as any)
-      vi.spyOn(document.body, 'appendChild').mockImplementation(() => {})
-      vi.spyOn(document.body, 'removeChild').mockImplementation(() => {})
+      vi.spyOn(document.body, 'appendChild').mockImplementation((node: any) => node)
+      vi.spyOn(document.body, 'removeChild').mockImplementation((node: any) => node)
       
       downloadCSV('test,csv', 'test.csv')
       
