@@ -193,6 +193,7 @@ export default function SettingsPage() {
             <div className="relative group">
               <div className="w-24 h-24 rounded-2xl bg-surface-container-high flex items-center justify-center overflow-hidden ring-2 ring-outline-variant/30">
                 {avatarPreview ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-3xl font-bold text-on-surface-variant">

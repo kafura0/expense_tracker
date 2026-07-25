@@ -108,7 +108,7 @@ function UsersTab() {
     onError: (e: Error) => toast(e.message, 'error'),
   })
 
-  const clients = (data as { clients?: Array<Record<string, unknown>> })?.clients || []
+  const clients = useMemo(() => (data as { clients?: Array<Record<string, unknown>> })?.clients || [], [data])
 
   const allUsers = useMemo(() => {
     const users: Array<{
@@ -546,7 +546,6 @@ function AnnouncementsTab() {
   const [announcementTitle, setAnnouncementTitle] = useState('')
   const [announcementBody, setAnnouncementBody] = useState('')
   const { toast } = useToast()
-  const queryClient = useQueryClient()
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'messages'],

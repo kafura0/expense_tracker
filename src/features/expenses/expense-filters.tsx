@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Input } from '@/shared/ui/input'
 import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
-import { X, Search, Calendar, Tag, DollarSign, SlidersHorizontal, RotateCcw } from 'lucide-react'
+import { X, Search, Calendar, Tag, SlidersHorizontal, RotateCcw } from 'lucide-react'
 import type { ExpenseFilters as FilterType } from '@/entities/expense/types'
 import { cn } from '@/shared/lib/utils'
 

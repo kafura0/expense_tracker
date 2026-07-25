@@ -8,11 +8,7 @@ import { Input } from '@/shared/ui/input'
 import { Button } from '@/shared/ui/button'
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 
-export default function LoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ message?: string }>
-}) {
+export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)

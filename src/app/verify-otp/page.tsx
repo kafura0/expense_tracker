@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { verifyOtp, resendOtp } from '@/features/auth/signup-actions'
 import Link from 'next/link'
 import { Button } from '@/shared/ui/button'
-import { ArrowLeft, CheckCircle } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 
 export default function VerifyOtpPage() {
   const [otp, setOtp] = useState(['', '', '', '', '', ''])

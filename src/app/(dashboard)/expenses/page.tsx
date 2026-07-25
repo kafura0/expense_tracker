@@ -14,7 +14,6 @@ import { ExpenseDialog } from '@/features/expenses/expense-dialog'
 import { deleteExpense, duplicateExpense } from '@/features/expenses/actions'
 import { useToast } from '@/shared/ui/toast'
 import type { ExpenseListParams, ExpenseFilters as FilterType, ExpenseWithCategory } from '@/entities/expense/types'
-import { cn } from '@/shared/lib/utils'
 
 export default function ExpensesPage() {
   const [filters, setFilters] = useState<FilterType>({})
