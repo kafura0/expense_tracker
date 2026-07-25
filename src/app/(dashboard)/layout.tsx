@@ -137,8 +137,8 @@ export default function DashboardLayout({
           <nav className="flex items-center gap-1">
             {navItems.map((item) => {
               const isActive =
-                item.href === '/'
-                  ? pathname === '/'
+                item.href === '/dashboard'
+                  ? pathname === '/dashboard'
                   : pathname.startsWith(item.href)
               return (
                 <Link

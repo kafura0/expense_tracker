@@ -178,7 +178,7 @@ export default function LandingPage() {
       <main className="relative overflow-hidden">
         {/* ─── Hero Section ─── */}
         <section className="hero-gradient pt-28 pb-20 md:pt-36 md:pb-28 px-6 md:px-12">
-          <div className="max-w-6xl mx-auto text-center">
+          <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-outline-variant/40 bg-surface-container-low/60 mb-8">
               <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
               <span className="font-label-sm text-xs text-primary uppercase tracking-widest font-medium">
@@ -186,12 +186,12 @@ export default function LandingPage() {
               </span>
             </div>
 
-            <h1 className="font-headline text-5xl md:text-[64px] font-bold mb-6 max-w-4xl mx-auto leading-[1.08] tracking-tight">
+            <h1 className="font-headline text-5xl md:text-[64px] font-bold mb-6 leading-[1.08] tracking-tight">
               Intelligence for your{' '}
               <span className="text-primary">personal capital.</span>
             </h1>
 
-            <p className="text-lg md:text-xl text-on-surface-variant/80 max-w-2xl mx-auto mb-10 leading-relaxed">
+            <p className="text-lg md:text-xl text-on-surface-variant/80 max-w-[540px] mx-auto mb-10 leading-relaxed">
               Ledgerly transforms chaotic financial data into precise strategic
               assets. Automated reconciliation, multi-currency mastery, and
               bank-grade security.
@@ -213,7 +213,7 @@ export default function LandingPage() {
             </div>
 
             {/* Dashboard Preview */}
-            <div className="relative max-w-5xl mx-auto">
+            <div className="relative max-w-4xl mx-auto">
               <div className="absolute inset-0 bg-primary/8 blur-[140px] rounded-full -z-10 translate-y-10" />
               <div className="glass-card rounded-2xl p-1 md:p-1.5 shadow-2xl overflow-hidden border border-outline-variant/20">
                 <div className="bg-surface-dim rounded-xl border border-outline-variant/10 overflow-hidden shadow-inner">
@@ -242,7 +242,7 @@ export default function LandingPage() {
 
         {/* ─── Feature Bento Grid ─── */}
         <section className="py-24 md:py-32 px-6 md:px-12" id="features">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-5xl mx-auto">
             <div className="text-center mb-16 md:mb-20">
               <p className="font-label-sm text-xs text-primary uppercase tracking-widest font-medium mb-4">
                 Features
@@ -250,7 +250,7 @@ export default function LandingPage() {
               <h2 className="font-headline text-3xl md:text-4xl font-bold mb-4 tracking-tight">
                 Engineered for Precision
               </h2>
-              <p className="text-on-surface-variant/70 text-lg max-w-xl mx-auto">
+              <p className="text-on-surface-variant/70 text-base max-w-md mx-auto leading-relaxed">
                 Tools built for the modern financial operator.
               </p>
             </div>
@@ -267,10 +267,10 @@ export default function LandingPage() {
                       <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-6">
                         <IconComp className="w-6 h-6 text-primary" />
                       </div>
-                      <h3 className="font-headline text-xl font-semibold mb-3">
+                      <h3 className="font-headline text-xl font-semibold mb-3 tracking-tight">
                         {feature.title}
                       </h3>
-                      <p className="text-on-surface-variant/70 leading-relaxed max-w-sm">
+                      <p className="text-on-surface-variant/70 text-[15px] leading-[1.65]">
                         {feature.description}
                       </p>
                     </div>
@@ -330,7 +330,7 @@ export default function LandingPage() {
 
         {/* ─── Social Proof ─── */}
         <section className="py-24 md:py-28 bg-surface-container-lowest/50 overflow-hidden border-y border-outline-variant/15">
-          <div className="max-w-5xl mx-auto px-6 md:px-12">
+          <div className="max-w-4xl mx-auto px-6 md:px-12">
             <p className="font-label-sm text-xs text-center text-outline/60 uppercase tracking-[0.2em] mb-14">
               Trusted by leaders at
             </p>
@@ -346,12 +346,12 @@ export default function LandingPage() {
               {TESTIMONIALS.map((t) => (
                 <div
                   key={t.name}
-                  className="p-8 rounded-2xl bg-surface-dim border border-outline-variant/10 italic"
+                  className="p-8 rounded-2xl bg-surface-dim border border-outline-variant/10"
                 >
-                  <p className="text-lg text-on-surface/90 mb-6 leading-relaxed">
+                  <p className="text-[15px] text-on-surface/90 mb-6 leading-[1.7]">
                     {t.quote}
                   </p>
-                  <div className="flex items-center gap-3 not-italic">
+                  <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-full ${t.color}`} />
                     <div>
                       <p className="font-semibold text-on-surface text-sm">{t.name}</p>

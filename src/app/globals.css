@@ -113,9 +113,9 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
-  --font-headline: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-geist-sans), 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), 'JetBrains Mono', ui-monospace, monospace;
+  --font-headline: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 
   /* Template font-size tokens */
   --text-display-lg: 48px;
