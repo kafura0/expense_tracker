@@ -4,8 +4,8 @@
   "description": "Premium expense management and financial tracking",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0b1326",
-  "theme_color": "#4edea3",
+  "background_color": "#0a0f1e",
+  "theme_color": "#34d399",
   "orientation": "portrait-primary",
   "icons": [
     {

@@ -17,9 +17,9 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground antialiased selection:bg-primary/30 selection:text-primary-foreground">
       {/* ─── NAV ─── */}
-      <header className="flex justify-between items-center w-full px-10 h-16 sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center gap-10">
-          <span className="font-headline text-2xl font-bold tracking-tight">Ledgerly</span>
+      <header className="flex justify-between items-center w-full px-sm md:px-10 h-14 md:h-16 sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+        <div className="flex items-center gap-4 md:gap-10">
+          <span className="font-headline text-lg md:text-2xl font-bold tracking-tight">Ledgerly</span>
           <nav className="hidden md:flex gap-6 items-center">
             <a className="text-primary font-semibold border-b-2 border-primary pb-1 text-xs uppercase tracking-widest" href="#hero">Home</a>
             <a className="text-muted-foreground hover:text-foreground transition-colors px-3 py-1 rounded text-xs uppercase tracking-widest" href="#features">Features</a>
@@ -38,29 +38,29 @@ export default function OnboardingPage() {
 
       <main className="relative overflow-hidden">
         {/* ─── HERO ─── */}
-        <section id="hero" className="hero-gradient pt-28 pb-16 px-6 md:px-10">
-          <div className="max-w-6xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-border bg-card mb-8">
+        <section id="hero" className="hero-gradient pt-20 md:pt-28 pb-12 md:pb-16 px-sm md:px-10 flex flex-col items-center">
+          <div className="max-w-6xl w-full text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-border bg-card mb-lg md:mb-8">
               <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse"></span>
               <span className="text-xs uppercase tracking-widest text-primary font-medium">Now supporting 7 Currencies</span>
             </div>
-            <h1 className="text-5xl md:text-6xl font-headline font-bold mb-6 max-w-4xl mx-auto leading-[1.1] tracking-tight">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl font-headline font-bold mb-md md:mb-6 max-w-4xl mx-auto leading-[1.1] tracking-tight">
               Intelligence for your <span className="text-primary">business capital.</span>
             </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
+            <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-lg md:mb-10 leading-relaxed">
               Ledgerly transforms chaotic expense data into precise strategic assets. Automated reconciliation, multi-currency mastery, and bank-grade security.
             </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4 mb-16">
+            <div className="flex flex-col sm:flex-row justify-center gap-sm sm:gap-4 mb-12 md:mb-16">
               <button
                 onClick={handleComplete}
                 disabled={loading}
-                className="bg-primary text-primary-foreground font-semibold px-8 py-4 rounded-xl text-lg hover:brightness-110 transition-all emerald-drop disabled:opacity-50"
+                className="bg-primary text-primary-foreground font-semibold px-lg sm:px-8 py-3 sm:py-4 rounded-xl text-sm sm:text-lg hover:brightness-110 transition-all emerald-drop disabled:opacity-50 w-full sm:w-auto"
               >
                 {loading ? 'Setting up...' : 'Start Tracking Free'}
               </button>
               <button
                 onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
-                className="border border-border text-foreground font-medium px-8 py-4 rounded-xl text-lg hover:bg-muted transition-all"
+                className="border border-border text-foreground font-medium px-lg sm:px-8 py-3 sm:py-4 rounded-xl text-sm sm:text-lg hover:bg-muted transition-all w-full sm:w-auto"
               >
                 Learn More
               </button>

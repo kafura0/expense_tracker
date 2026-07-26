@@ -60,7 +60,7 @@ export default function AdminDashboard() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`relative flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap flex-1 justify-center ${
+            className={`relative flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap justify-center ${
               activeTab === tab.id
                 ? 'bg-surface text-on-surface shadow-sm'
                 : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high'
@@ -429,7 +429,7 @@ function ClientsTab() {
                       className="p-4 bg-surface-container/50 cursor-pointer hover:bg-surface-container transition-colors"
                       onClick={() => setExpandedOrg(isExpanded ? null : (org.id as string))}
                     >
-                      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-3">
                           <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                             <Building2 className="h-5 w-5 text-primary" />

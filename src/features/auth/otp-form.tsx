@@ -107,7 +107,7 @@ export function OtpForm() {
           <strong className="text-on-surface">{email}</strong>
         </p>
 
-        <div className="flex gap-2.5 justify-center">
+        <div className="flex gap-2 sm:gap-2.5 justify-center">
           {otp.map((digit, i) => (
             <input
               key={i}
@@ -119,7 +119,7 @@ export function OtpForm() {
               onChange={(e) => handleChange(i, e.target.value)}
               onKeyDown={(e) => handleKeyDown(i, e)}
               onPaste={i === 0 ? handlePaste : undefined}
-              className="w-12 h-14 text-center text-xl font-mono bg-muted/50 border border-input rounded-lg text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 hover:border-muted-foreground/50"
+              className="w-10 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-mono bg-muted/50 border border-input rounded-lg text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 hover:border-muted-foreground/50"
             />
           ))}
         </div>

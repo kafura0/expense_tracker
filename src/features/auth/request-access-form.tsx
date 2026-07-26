@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import { requestAccess } from '@/features/auth/actions'
 import Link from 'next/link'
+import { Input } from '@/shared/ui/input'
+import { Button } from '@/shared/ui/button'
+import { Mail, User, Building2, Phone, CheckCircle } from 'lucide-react'
 
 export function RequestAccessForm() {
   const [error, setError] = useState('')
@@ -31,90 +34,91 @@ export function RequestAccessForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md">
+        <div className="p-3 text-sm text-red-400 bg-red-900/20 border border-red-800/30 rounded-lg">
           {error}
         </div>
       )}
       {success && (
-        <div className="p-3 text-sm text-green-600 bg-green-50 rounded-md">
-          {success}
+        <div className="p-4 text-sm text-emerald-400 bg-emerald-900/20 border border-emerald-800/30 rounded-lg flex items-start gap-3">
+          <CheckCircle className="h-5 w-5 mt-0.5 shrink-0" />
+          <span>{success}</span>
         </div>
       )}
 
-      <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+      <div className="space-y-1.5">
+        <label htmlFor="name" className="text-sm font-medium text-on-surface">
           Full Name
         </label>
-        <input
+        <Input
           id="name"
           name="name"
           type="text"
           required
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          placeholder="John Doe"
+          icon={<User className="h-4 w-4" />}
         />
       </div>
 
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+      <div className="space-y-1.5">
+        <label htmlFor="email" className="text-sm font-medium text-on-surface">
           Email
         </label>
-        <input
+        <Input
           id="email"
           name="email"
           type="email"
           required
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          placeholder="you@company.com"
+          icon={<Mail className="h-4 w-4" />}
         />
       </div>
 
-      <div>
-        <label htmlFor="business_name" className="block text-sm font-medium text-gray-700">
+      <div className="space-y-1.5">
+        <label htmlFor="business_name" className="text-sm font-medium text-on-surface">
           Business Name
         </label>
-        <input
+        <Input
           id="business_name"
           name="business_name"
           type="text"
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Acme Corp"
+          icon={<Building2 className="h-4 w-4" />}
         />
       </div>
 
-      <div>
-        <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-          Phone (optional)
+      <div className="space-y-1.5">
+        <label htmlFor="phone" className="text-sm font-medium text-on-surface">
+          Phone <span className="text-on-surface-variant/50">(optional)</span>
         </label>
-        <input
+        <Input
           id="phone"
           name="phone"
           type="tel"
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          placeholder="+1 (555) 000-0000"
+          icon={<Phone className="h-4 w-4" />}
         />
       </div>
 
-      <div>
-        <label htmlFor="message" className="block text-sm font-medium text-gray-700">
-          Message (optional)
+      <div className="space-y-1.5">
+        <label htmlFor="message" className="text-sm font-medium text-on-surface">
+          Message <span className="text-on-surface-variant/50">(optional)</span>
         </label>
         <textarea
           id="message"
           name="message"
           rows={3}
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          className="flex w-full rounded-lg border border-input bg-muted/50 px-3 py-2.5 text-sm text-foreground transition-all duration-200 placeholder:text-muted-foreground hover:border-muted-foreground/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:border-ring resize-none"
           placeholder="Tell us about your expense management needs..."
         />
       </div>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-      >
-        {loading ? 'Submitting...' : 'Request Access'}
-      </button>
+      <Button type="submit" disabled={loading} loading={loading} className="w-full h-11">
+        Request Access
+      </Button>
 
-      <p className="text-center text-sm text-gray-600">
+      <p className="text-center text-sm text-on-surface-variant">
         Already have an account?{' '}
-        <Link href="/login" className="text-blue-600 hover:text-blue-500">
+        <Link href="/login" className="text-primary hover:text-primary/80 transition-colors font-medium">
           Sign in
         </Link>
       </p>

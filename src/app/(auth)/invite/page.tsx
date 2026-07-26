@@ -56,17 +56,17 @@ function InviteContent() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-12 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-background px-sm md:px-4 py-8 md:py-12 relative overflow-hidden">
       <div className="absolute inset-0 hero-gradient pointer-events-none" />
 
-      <div className="max-w-md w-full space-y-8 relative z-10 animate-fade-in">
+      <div className="max-w-md w-full space-y-6 md:space-y-8 relative z-10 animate-fade-in">
         <div className="text-center space-y-2">
           <Link href="/" className="inline-block mb-4">
-            <span className="text-2xl font-bold text-on-surface tracking-tight">
+            <span className="text-xl md:text-2xl font-bold text-on-surface tracking-tight">
               Ledgerly
             </span>
           </Link>
-          <h2 className="text-3xl font-bold text-on-surface tracking-tight">
+          <h2 className="text-2xl md:text-3xl font-bold text-on-surface tracking-tight">
             You&apos;re Invited
           </h2>
           <p className="text-sm text-on-surface-variant">
@@ -75,7 +75,7 @@ function InviteContent() {
         </div>
 
         <Card className="glass-card rounded-2xl border-0 animate-slide-up">
-          <CardContent className="p-8">
+          <CardContent className="p-6 md:p-8">
             {loading && (
               <div className="space-y-4">
                 <Skeleton className="h-12 w-full rounded-lg" />

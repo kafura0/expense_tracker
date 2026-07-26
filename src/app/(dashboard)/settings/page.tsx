@@ -391,7 +391,7 @@ export default function SettingsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between p-4 rounded-xl border border-red-500/20 bg-red-500/5">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-xl border border-red-500/20 bg-red-500/5 gap-3">
             <div className="space-y-1">
               <p className="text-sm font-medium text-on-surface">Delete Account</p>
               <p className="text-xs text-on-surface-variant">
@@ -401,7 +401,7 @@ export default function SettingsPage() {
             <Button
               variant="destructive"
               size="sm"
-              className="shrink-0 ml-4"
+              className="sm:shrink-0 w-full sm:w-auto"
             >
               <Trash2 className="h-4 w-4 mr-2" />
               Delete

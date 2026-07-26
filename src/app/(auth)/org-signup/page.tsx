@@ -40,17 +40,17 @@ export default function OrgSignupPage() {
   const score = Object.values(strength).filter(Boolean).length
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-12 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-background px-sm md:px-4 py-8 md:py-12 relative overflow-hidden">
       <div className="absolute inset-0 hero-gradient pointer-events-none" />
 
-      <div className="max-w-md w-full space-y-8 relative z-10 animate-fade-in">
+      <div className="max-w-md w-full space-y-6 md:space-y-8 relative z-10 animate-fade-in">
         <div className="text-center space-y-2">
           <Link href="/" className="inline-block mb-4">
-            <span className="text-2xl font-bold text-on-surface tracking-tight">
+            <span className="text-xl md:text-2xl font-bold text-on-surface tracking-tight">
               Ledgerly
             </span>
           </Link>
-          <h2 className="text-3xl font-bold text-on-surface tracking-tight">
+          <h2 className="text-2xl md:text-3xl font-bold text-on-surface tracking-tight">
             Create your organization
           </h2>
           <p className="text-sm text-on-surface-variant">
@@ -58,7 +58,7 @@ export default function OrgSignupPage() {
           </p>
         </div>
 
-        <div className="glass-card rounded-2xl p-8 animate-slide-up">
+        <div className="glass-card rounded-2xl p-6 md:p-8 animate-slide-up">
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
               <div className="p-3 text-sm text-red-400 bg-red-900/20 border border-red-800/30 rounded-lg">

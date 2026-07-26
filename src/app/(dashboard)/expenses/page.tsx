@@ -188,7 +188,7 @@ export default function ExpensesPage() {
           {Array.from({ length: 3 }).map((_, i) => (
             <Card key={i}>
               <CardContent className="p-5">
-                <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-2">
                     <Skeleton className="h-3 w-20" />
                     <Skeleton className="h-7 w-28" />
