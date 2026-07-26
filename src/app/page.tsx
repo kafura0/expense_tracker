@@ -233,23 +233,23 @@ export default function LandingPage() {
               Future
             </h1>
 
-            <p className="text-muted-foreground font-body-md text-sm md:text-body-lg leading-relaxed max-w-xl mb-lg md:mb-xl animate-slide-up delay-75">
+            <p className="font-body-md text-body-lg md:text-xl leading-relaxed text-muted-foreground max-w-2xl mb-xl md:mb-2xl animate-slide-up delay-75">
               Transform chaotic financial data into precise strategic assets.
               Automated reconciliation, multi-currency mastery, and bank-grade
               security — all in one platform.
             </p>
 
-            <div className="flex flex-col sm:flex-row justify-center gap-sm sm:gap-md mb-xl md:mb-2xl w-full sm:w-auto animate-slide-up delay-150">
+            <div className="flex flex-col sm:flex-row justify-center gap-sm sm:gap-md mb-2xl animate-slide-up delay-150">
               <Link
                 href="/signup"
-                className="bg-primary text-primary-foreground font-medium px-lg py-3 rounded-xl text-sm md:text-body-lg hover:brightness-110 transition-all emerald-drop inline-flex items-center justify-center gap-sm w-full sm:w-auto"
+                className="bg-primary text-primary-foreground font-medium px-xl py-3 rounded-xl text-body-md md:text-body-lg hover:brightness-110 transition-all emerald-drop inline-flex items-center justify-center gap-sm w-full sm:w-auto"
               >
                 Get Started Free
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
                 href="#features"
-                className="border border-border text-foreground font-medium px-lg py-3 rounded-xl text-sm md:text-body-lg hover:bg-muted/50 transition-all inline-flex items-center justify-center gap-sm w-full sm:w-auto"
+                className="border border-border text-foreground font-medium px-xl py-3 rounded-xl text-body-md md:text-body-lg hover:bg-muted/50 transition-all inline-flex items-center justify-center gap-sm w-full sm:w-auto"
               >
                 <Play className="w-4 h-4" />
                 See How It Works
