@@ -323,21 +323,21 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-lg">
+            <div className="flex flex-col md:flex-row gap-lg">
               {FEATURES.map((feature) => {
                 const IconComp = feature.icon
                 return (
                   <div
                     key={feature.title}
-                    className="group p-lg md:p-xl rounded-2xl bg-card border border-border flex flex-col items-center text-center hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300"
+                    className="group p-lg md:p-xl rounded-2xl bg-card border border-border flex-1 flex flex-col items-center text-center hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300"
                   >
-                    <div className={`w-12 h-12 ${feature.bg} rounded-xl flex items-center justify-center mb-lg`}>
-                      <IconComp className={`w-6 h-6 ${feature.color}`} />
+                    <div className={`w-14 h-14 ${feature.bg} rounded-2xl flex items-center justify-center mb-lg`}>
+                      <IconComp className={`w-7 h-7 ${feature.color}`} />
                     </div>
                     <h3 className="font-headline text-headline-md mb-sm text-foreground">
                       {feature.title}
                     </h3>
-                    <p className="text-muted-foreground font-body-md text-body-md">
+                    <p className="text-muted-foreground font-body-md text-body-md leading-relaxed">
                       {feature.description}
                     </p>
                   </div>
@@ -361,7 +361,7 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-lg relative">
+            <div className="flex flex-col md:flex-row gap-lg relative">
               <div className="hidden md:block absolute top-16 left-[20%] right-[20%] h-px bg-gradient-to-r from-transparent via-border to-transparent" />
               {STEPS.map((step) => {
                 const IconComp = step.icon
@@ -375,13 +375,13 @@ export default function LandingPage() {
                         {step.number}
                       </span>
                     </div>
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-md">
-                      <IconComp className="w-6 h-6 text-primary" />
+                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-md">
+                      <IconComp className="w-7 h-7 text-primary" />
                     </div>
                     <h3 className="font-headline text-headline-md mb-sm text-foreground">
                       {step.title}
                     </h3>
-                    <p className="text-muted-foreground font-body-md text-body-md max-w-xs mx-auto">
+                    <p className="text-muted-foreground font-body-md text-body-md max-w-xs mx-auto leading-relaxed">
                       {step.description}
                     </p>
                   </div>
@@ -405,37 +405,37 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-lg">
-              <div className="p-lg md:p-xl rounded-2xl bg-card border border-border flex flex-col items-center text-center hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
-                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-lg">
-                  <Users className="w-6 h-6 text-primary" />
+            <div className="flex flex-col md:flex-row gap-lg">
+              <div className="p-lg md:p-xl rounded-2xl bg-card border border-border flex-1 flex flex-col items-center text-center hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+                <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-lg">
+                  <Users className="w-7 h-7 text-primary" />
                 </div>
                 <h3 className="font-headline text-headline-md mb-sm text-foreground">
                   Client Management
                 </h3>
-                <p className="text-muted-foreground font-body-md text-body-md">
+                <p className="text-muted-foreground font-body-md text-body-md leading-relaxed">
                   Create client accounts, assign roles, and manage access with ease
                 </p>
               </div>
-              <div className="p-lg md:p-xl rounded-2xl bg-card border border-border flex flex-col items-center text-center hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
-                <div className="w-12 h-12 bg-secondary/10 rounded-xl flex items-center justify-center mb-lg">
-                  <ShieldCheck className="w-6 h-6 text-secondary" />
+              <div className="p-lg md:p-xl rounded-2xl bg-card border border-border flex-1 flex flex-col items-center text-center hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+                <div className="w-14 h-14 bg-secondary/10 rounded-2xl flex items-center justify-center mb-lg">
+                  <ShieldCheck className="w-7 h-7 text-secondary" />
                 </div>
                 <h3 className="font-headline text-headline-md mb-sm text-foreground">
                   Role-Based Access
                 </h3>
-                <p className="text-muted-foreground font-body-md text-body-md">
+                <p className="text-muted-foreground font-body-md text-body-md leading-relaxed">
                   Managers get full control, clients see only their own data
                 </p>
               </div>
-              <div className="p-lg md:p-xl rounded-2xl bg-card border border-border flex flex-col items-center text-center hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
-                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-lg">
-                  <Handshake className="w-6 h-6 text-primary" />
+              <div className="p-lg md:p-xl rounded-2xl bg-card border border-border flex-1 flex flex-col items-center text-center hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+                <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-lg">
+                  <Handshake className="w-7 h-7 text-primary" />
                 </div>
                 <h3 className="font-headline text-headline-md mb-sm text-foreground">
                   Team Collaboration
                 </h3>
-                <p className="text-muted-foreground font-body-md text-body-md">
+                <p className="text-muted-foreground font-body-md text-body-md leading-relaxed">
                   Work together with shared categories, budgets, and real-time insights
                 </p>
               </div>
@@ -467,11 +467,11 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-lg md:gap-xl items-start">
+            <div className="flex flex-col md:flex-row gap-lg md:gap-xl items-start">
               {PRICING_PLANS.map((plan) => (
                 <div
                   key={plan.name}
-                  className={`relative p-lg md:p-xl rounded-2xl flex flex-col transition-all duration-300 ${
+                  className={`relative p-lg md:p-xl rounded-2xl flex-1 flex flex-col transition-all duration-300 ${
                     plan.featured
                       ? 'border-2 border-primary bg-card shadow-[0_0_40px_rgba(52,211,153,0.1)] scale-[1.02]'
                       : 'border border-border bg-card hover:border-muted-foreground/30'
@@ -555,8 +555,8 @@ export default function LandingPage() {
       </main>
 
       <footer className="bg-card/50 border-t border-border pt-2xl pb-xl px-md md:px-xl">
-        <div className="max-w-container-max mx-auto grid grid-cols-1 md:grid-cols-12 gap-xl mb-2xl">
-          <div className="md:col-span-4">
+        <div className="max-w-container-max mx-auto flex flex-col md:flex-row justify-center items-start gap-2xl mb-2xl">
+          <div className="flex flex-col">
             <span className="font-headline text-headline-md font-bold text-foreground block mb-md">
               Ledgerly
             </span>
@@ -584,7 +584,7 @@ export default function LandingPage() {
               </a>
             </div>
           </div>
-          <div className="md:col-span-2">
+          <div className="flex flex-col">
             <h4 className="font-label-sm text-label-sm text-foreground uppercase mb-lg">
               Product
             </h4>
@@ -595,7 +595,7 @@ export default function LandingPage() {
               <li><a href="#" className="hover:text-primary transition-colors">Documentation</a></li>
             </ul>
           </div>
-          <div className="md:col-span-2">
+          <div className="flex flex-col">
             <h4 className="font-label-sm text-label-sm text-foreground uppercase mb-lg">
               Company
             </h4>
@@ -606,7 +606,7 @@ export default function LandingPage() {
               <li><a href="#" className="hover:text-primary transition-colors">Legal</a></li>
             </ul>
           </div>
-          <div className="md:col-span-4">
+          <div className="flex flex-col">
             <h4 className="font-label-sm text-label-sm text-foreground uppercase mb-lg">
               Stay Updated
             </h4>
