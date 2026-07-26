@@ -323,13 +323,13 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-lg">
+            <div className="flex flex-col md:flex-row md:flex-wrap gap-lg">
               {FEATURES.map((feature) => {
                 const IconComp = feature.icon
                 return (
                   <div
                     key={feature.title}
-                    className="group p-lg md:p-xl rounded-2xl bg-card border border-border flex-1 flex flex-col items-center text-center hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300"
+                    className="group p-lg md:p-xl rounded-2xl bg-card border border-border md:w-[calc(33.333%-1rem)] flex flex-col items-center text-center hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300"
                   >
                     <div className={`w-14 h-14 ${feature.bg} rounded-2xl flex items-center justify-center mb-lg`}>
                       <IconComp className={`w-7 h-7 ${feature.color}`} />
@@ -361,12 +361,12 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-lg relative">
+            <div className="flex flex-col md:flex-row md:flex-wrap gap-lg relative">
               <div className="hidden md:block absolute top-16 left-[20%] right-[20%] h-px bg-gradient-to-r from-transparent via-border to-transparent" />
               {STEPS.map((step) => {
                 const IconComp = step.icon
                 return (
-                  <div key={step.number} className="relative text-center group">
+                  <div key={step.number} className="relative text-center group flex-1 min-w-[200px]">
                     <div className="relative z-10 w-32 h-32 mx-auto mb-lg rounded-2xl bg-card border border-border flex flex-col items-center justify-center hover:border-primary/30 transition-all duration-300">
                       <span className="font-label-sm text-label-sm text-primary/60 uppercase tracking-widest mb-xs">
                         Step
@@ -405,8 +405,8 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-lg">
-              <div className="p-lg md:p-xl rounded-2xl bg-card border border-border flex-1 flex flex-col items-center text-center hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+            <div className="flex flex-col md:flex-row md:flex-wrap gap-lg">
+              <div className="p-lg md:p-xl rounded-2xl bg-card border border-border md:w-[calc(33.333%-1rem)] flex flex-col items-center text-center hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
                 <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-lg">
                   <Users className="w-7 h-7 text-primary" />
                 </div>
@@ -417,7 +417,7 @@ export default function LandingPage() {
                   Create client accounts, assign roles, and manage access with ease
                 </p>
               </div>
-              <div className="p-lg md:p-xl rounded-2xl bg-card border border-border flex-1 flex flex-col items-center text-center hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+              <div className="p-lg md:p-xl rounded-2xl bg-card border border-border md:w-[calc(33.333%-1rem)] flex flex-col items-center text-center hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
                 <div className="w-14 h-14 bg-secondary/10 rounded-2xl flex items-center justify-center mb-lg">
                   <ShieldCheck className="w-7 h-7 text-secondary" />
                 </div>
@@ -428,7 +428,7 @@ export default function LandingPage() {
                   Managers get full control, clients see only their own data
                 </p>
               </div>
-              <div className="p-lg md:p-xl rounded-2xl bg-card border border-border flex-1 flex flex-col items-center text-center hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+              <div className="p-lg md:p-xl rounded-2xl bg-card border border-border md:w-[calc(33.333%-1rem)] flex flex-col items-center text-center hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
                 <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-lg">
                   <Handshake className="w-7 h-7 text-primary" />
                 </div>
@@ -467,14 +467,14 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-lg md:gap-xl items-start">
+            <div className="flex flex-col md:flex-row md:flex-wrap gap-lg md:gap-xl items-start">
               {PRICING_PLANS.map((plan) => (
                 <div
                   key={plan.name}
-                  className={`relative p-lg md:p-xl rounded-2xl flex-1 flex flex-col transition-all duration-300 ${
+                  className={`relative p-lg md:p-xl rounded-2xl md:w-[calc(33.333%-1.33rem)] flex flex-col transition-all duration-300 ${
                     plan.featured
-                      ? 'border-2 border-primary bg-card shadow-[0_0_40px_rgba(52,211,153,0.1)] scale-[1.02]'
-                      : 'border border-border bg-card hover:border-muted-foreground/30'
+                      ? 'border-2 border-primary bg-card shadow-[0_0_40px_rgba(52,211,153,0.1)] scale-[1.02] hover:shadow-[0_0_60px_rgba(52,211,153,0.15)]'
+                      : 'border border-border bg-card hover:border-muted-foreground/30 hover:shadow-lg hover:-translate-y-1'
                   }`}
                 >
                   {plan.featured && (
@@ -555,8 +555,8 @@ export default function LandingPage() {
       </main>
 
       <footer className="bg-card/50 border-t border-border pt-2xl pb-xl px-md md:px-xl">
-        <div className="max-w-container-max mx-auto flex flex-col md:flex-row justify-center items-start gap-2xl mb-2xl">
-          <div className="flex flex-col">
+        <div className="max-w-container-max mx-auto flex flex-col md:flex-row md:flex-wrap justify-center items-start gap-2xl mb-2xl">
+          <div className="flex flex-col min-w-[200px]">
             <span className="font-headline text-headline-md font-bold text-foreground block mb-md">
               Ledgerly
             </span>
@@ -584,7 +584,7 @@ export default function LandingPage() {
               </a>
             </div>
           </div>
-          <div className="flex flex-col">
+          <div className="flex flex-col min-w-[120px]">
             <h4 className="font-label-sm text-label-sm text-foreground uppercase mb-lg">
               Product
             </h4>
@@ -595,7 +595,7 @@ export default function LandingPage() {
               <li><a href="#" className="hover:text-primary transition-colors">Documentation</a></li>
             </ul>
           </div>
-          <div className="flex flex-col">
+          <div className="flex flex-col min-w-[120px]">
             <h4 className="font-label-sm text-label-sm text-foreground uppercase mb-lg">
               Company
             </h4>
@@ -606,7 +606,7 @@ export default function LandingPage() {
               <li><a href="#" className="hover:text-primary transition-colors">Legal</a></li>
             </ul>
           </div>
-          <div className="flex flex-col">
+          <div className="flex flex-col min-w-[200px]">
             <h4 className="font-label-sm text-label-sm text-foreground uppercase mb-lg">
               Stay Updated
             </h4>
