@@ -38,17 +38,17 @@ export default function RequestAccessPage() {
       <div className="max-w-md w-full space-y-6 md:space-y-8 relative z-10 animate-fade-in">
         <div className="text-center space-y-2">
           <Link href="/" className="inline-block mb-4">
-            <span className="text-xl md:text-2xl font-bold text-on-surface tracking-tight">
+            <span className="text-xl md:text-2xl font-bold text-foreground tracking-tight">
               Ledgerly
             </span>
           </Link>
-          <h2 className="text-2xl md:text-3xl font-bold text-on-surface tracking-tight">
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
             Request Access
           </h2>
-          <p className="text-sm text-on-surface-variant">
+          <p className="text-sm text-muted-foreground">
             Professional expense management for your business
           </p>
-          <p className="text-xs text-on-surface-variant/60">
+          <p className="text-xs text-muted-foreground/60">
             Submit your request and our team will review it within 24 hours.
           </p>
         </div>
@@ -68,7 +68,7 @@ export default function RequestAccessPage() {
             )}
 
             <div className="space-y-1.5">
-              <label htmlFor="name" className="text-sm font-medium text-on-surface">
+              <label htmlFor="name" className="text-sm font-medium text-foreground">
                 Full Name
               </label>
               <Input
@@ -82,7 +82,7 @@ export default function RequestAccessPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="email" className="text-sm font-medium text-on-surface">
+              <label htmlFor="email" className="text-sm font-medium text-foreground">
                 Email
               </label>
               <Input
@@ -96,7 +96,7 @@ export default function RequestAccessPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="business_name" className="text-sm font-medium text-on-surface">
+              <label htmlFor="business_name" className="text-sm font-medium text-foreground">
                 Business Name
               </label>
               <Input
@@ -109,8 +109,8 @@ export default function RequestAccessPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="phone" className="text-sm font-medium text-on-surface">
-                Phone <span className="text-on-surface-variant/50">(optional)</span>
+              <label htmlFor="phone" className="text-sm font-medium text-foreground">
+                Phone <span className="text-muted-foreground/50">(optional)</span>
               </label>
               <Input
                 id="phone"
@@ -122,8 +122,8 @@ export default function RequestAccessPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="message" className="text-sm font-medium text-on-surface">
-                Message <span className="text-on-surface-variant/50">(optional)</span>
+              <label htmlFor="message" className="text-sm font-medium text-foreground">
+                Message <span className="text-muted-foreground/50">(optional)</span>
               </label>
               <textarea
                 id="message"
@@ -140,7 +140,7 @@ export default function RequestAccessPage() {
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-sm text-on-surface-variant">
+            <p className="text-sm text-muted-foreground">
               Already have an account?{' '}
               <Link href="/login" className="text-primary hover:text-primary/80 transition-colors font-medium">
                 Sign in

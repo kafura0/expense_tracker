@@ -62,14 +62,14 @@ function InviteContent() {
       <div className="max-w-md w-full space-y-6 md:space-y-8 relative z-10 animate-fade-in">
         <div className="text-center space-y-2">
           <Link href="/" className="inline-block mb-4">
-            <span className="text-xl md:text-2xl font-bold text-on-surface tracking-tight">
+            <span className="text-xl md:text-2xl font-bold text-foreground tracking-tight">
               Ledgerly
             </span>
           </Link>
-          <h2 className="text-2xl md:text-3xl font-bold text-on-surface tracking-tight">
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
             You&apos;re Invited
           </h2>
-          <p className="text-sm text-on-surface-variant">
+          <p className="text-sm text-muted-foreground">
             Join an organization on Ledgerly
           </p>
         </div>
@@ -105,8 +105,8 @@ function InviteContent() {
                     <div className="mx-auto w-12 h-12 rounded-full bg-emerald-500/15 flex items-center justify-center">
                       <CheckCircle className="h-6 w-6 text-emerald-400" />
                     </div>
-                    <p className="text-on-surface font-medium">Welcome to {details.org_name}!</p>
-                    <p className="text-sm text-on-surface-variant">Redirecting to your dashboard...</p>
+                    <p className="text-foreground font-medium">Welcome to {details.org_name}!</p>
+                    <p className="text-sm text-muted-foreground">Redirecting to your dashboard...</p>
                   </div>
                 ) : (
                   <>
@@ -116,17 +116,17 @@ function InviteContent() {
                           <Building2 className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-on-surface">{details.org_name}</p>
-                          <p className="text-xs text-on-surface-variant">{details.email}</p>
+                          <p className="text-sm font-medium text-foreground">{details.org_name}</p>
+                          <p className="text-xs text-muted-foreground">{details.email}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 pt-1">
                         {details.role === 'manager' ? (
                           <Shield className="h-4 w-4 text-primary" />
                         ) : (
-                          <Users className="h-4 w-4 text-on-surface-variant" />
+                          <Users className="h-4 w-4 text-muted-foreground" />
                         )}
-                        <span className="text-sm text-on-surface-variant capitalize">
+                        <span className="text-sm text-muted-foreground capitalize">
                           {details.role} role
                         </span>
                       </div>
@@ -142,7 +142,7 @@ function InviteContent() {
                     </Button>
 
                     <div className="text-center">
-                      <Link href="/login" className="text-xs text-on-surface-variant hover:text-on-surface transition-colors">
+                      <Link href="/login" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
                         Not you? Go to login
                       </Link>
                     </div>

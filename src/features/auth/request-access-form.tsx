@@ -46,7 +46,7 @@ export function RequestAccessForm() {
       )}
 
       <div className="space-y-1.5">
-        <label htmlFor="name" className="text-sm font-medium text-on-surface">
+        <label htmlFor="name" className="text-sm font-medium text-foreground">
           Full Name
         </label>
         <Input
@@ -60,7 +60,7 @@ export function RequestAccessForm() {
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="email" className="text-sm font-medium text-on-surface">
+        <label htmlFor="email" className="text-sm font-medium text-foreground">
           Email
         </label>
         <Input
@@ -74,7 +74,7 @@ export function RequestAccessForm() {
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="business_name" className="text-sm font-medium text-on-surface">
+        <label htmlFor="business_name" className="text-sm font-medium text-foreground">
           Business Name
         </label>
         <Input
@@ -87,8 +87,8 @@ export function RequestAccessForm() {
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="phone" className="text-sm font-medium text-on-surface">
-          Phone <span className="text-on-surface-variant/50">(optional)</span>
+        <label htmlFor="phone" className="text-sm font-medium text-foreground">
+          Phone <span className="text-muted-foreground/50">(optional)</span>
         </label>
         <Input
           id="phone"
@@ -100,8 +100,8 @@ export function RequestAccessForm() {
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="message" className="text-sm font-medium text-on-surface">
-          Message <span className="text-on-surface-variant/50">(optional)</span>
+        <label htmlFor="message" className="text-sm font-medium text-foreground">
+          Message <span className="text-muted-foreground/50">(optional)</span>
         </label>
         <textarea
           id="message"
@@ -116,7 +116,7 @@ export function RequestAccessForm() {
         Request Access
       </Button>
 
-      <p className="text-center text-sm text-on-surface-variant">
+      <p className="text-center text-sm text-muted-foreground">
         Already have an account?{' '}
         <Link href="/login" className="text-primary hover:text-primary/80 transition-colors font-medium">
           Sign in

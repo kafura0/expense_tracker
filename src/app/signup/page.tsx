@@ -46,14 +46,14 @@ export default function SignupPage() {
       <div className="max-w-md w-full space-y-6 md:space-y-8 relative z-10 animate-fade-in">
         <div className="text-center space-y-2">
           <Link href="/" className="inline-block mb-4">
-            <span className="text-xl md:text-2xl font-bold text-on-surface tracking-tight">
+            <span className="text-xl md:text-2xl font-bold text-foreground tracking-tight">
               Ledgerly
             </span>
           </Link>
-          <h2 className="text-2xl md:text-3xl font-bold text-on-surface tracking-tight">
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
             Create your account
           </h2>
-          <p className="text-sm text-on-surface-variant">
+          <p className="text-sm text-muted-foreground">
             Start tracking your expenses with precision
           </p>
         </div>
@@ -67,7 +67,7 @@ export default function SignupPage() {
             )}
 
             <div className="space-y-1.5">
-              <label htmlFor="full_name" className="text-sm font-medium text-on-surface">
+              <label htmlFor="full_name" className="text-sm font-medium text-foreground">
                 Full Name
               </label>
               <Input
@@ -81,7 +81,7 @@ export default function SignupPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="email" className="text-sm font-medium text-on-surface">
+              <label htmlFor="email" className="text-sm font-medium text-foreground">
                 Email
               </label>
               <Input
@@ -95,7 +95,7 @@ export default function SignupPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="password" className="text-sm font-medium text-on-surface">
+              <label htmlFor="password" className="text-sm font-medium text-foreground">
                 Password
               </label>
               <div className="relative">
@@ -113,7 +113,7 @@ export default function SignupPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -133,12 +133,12 @@ export default function SignupPage() {
                                 : score <= 3
                                   ? 'bg-yellow-500'
                                   : 'bg-emerald-500'
-                            : 'bg-on-surface-variant/20'
+                            : 'bg-muted/20'
                         }`}
                       />
                     ))}
                   </div>
-                  <p className="text-xs text-on-surface-variant/60">
+                  <p className="text-xs text-muted-foreground/60">
                     {score === 0 && 'Add uppercase, lowercase, number & symbol'}
                     {score === 1 && 'Weak — add more character types'}
                     {score === 2 && 'Fair — add more character types'}
@@ -156,10 +156,10 @@ export default function SignupPage() {
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-outline-variant" />
+              <div className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-background px-2 text-on-surface-variant">or continue with</span>
+              <span className="bg-background px-2 text-muted-foreground">or continue with</span>
             </div>
           </div>
 
@@ -182,7 +182,7 @@ export default function SignupPage() {
           </div>
 
           <div className="mt-6 text-center">
-            <p className="text-sm text-on-surface-variant">
+            <p className="text-sm text-muted-foreground">
               Already have an account?{' '}
               <Link href="/login" className="text-primary hover:text-primary/80 transition-colors font-medium">
                 Sign in
@@ -191,7 +191,7 @@ export default function SignupPage() {
           </div>
 
           <div className="mt-6 text-center">
-            <p className="text-sm text-on-surface-variant">
+            <p className="text-sm text-muted-foreground">
               Managing a team?{' '}
               <Link href="/org-signup" className="text-primary hover:text-primary/80 transition-colors font-medium">
                 Set up an organization

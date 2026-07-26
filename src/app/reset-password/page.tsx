@@ -41,14 +41,14 @@ export default function ResetPasswordPage() {
       <div className="max-w-md w-full space-y-6 md:space-y-8 relative z-10 animate-fade-in">
         <div className="text-center space-y-2">
           <Link href="/" className="inline-block mb-4">
-            <span className="text-xl md:text-2xl font-bold text-on-surface tracking-tight">
+            <span className="text-xl md:text-2xl font-bold text-foreground tracking-tight">
               Ledgerly
             </span>
           </Link>
-          <h2 className="text-2xl md:text-3xl font-bold text-on-surface tracking-tight">
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
             Reset your password
           </h2>
-          <p className="text-sm text-on-surface-variant">
+          <p className="text-sm text-muted-foreground">
             Enter your email to receive a reset link
           </p>
         </div>
@@ -69,7 +69,7 @@ export default function ResetPasswordPage() {
             )}
 
             <div className="space-y-1.5">
-              <label htmlFor="email" className="text-sm font-medium text-on-surface">
+              <label htmlFor="email" className="text-sm font-medium text-foreground">
                 Email
               </label>
               <Input
@@ -92,7 +92,7 @@ export default function ResetPasswordPage() {
           <div className="mt-6 text-center">
             <Link
               href="/login"
-              className="inline-flex items-center gap-1.5 text-sm text-on-surface-variant hover:text-on-surface transition-colors"
+              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               Back to login

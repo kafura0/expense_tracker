@@ -92,7 +92,7 @@ export function ExportButton({ filters }: ExportButtonProps) {
         size="sm"
         onClick={() => handleExport('csv')}
         disabled={isExporting}
-        className="border-outline-variant text-on-surface-variant hover:text-primary hover:border-primary"
+        className="border-border text-muted-foreground hover:text-primary hover:border-primary"
       >
         <Table className="h-4 w-4 mr-2" />
         {isExporting && exportType === 'csv' ? 'Exporting...' : 'CSV'}
@@ -102,7 +102,7 @@ export function ExportButton({ filters }: ExportButtonProps) {
         size="sm"
         onClick={() => handleExport('pdf')}
         disabled={isExporting}
-        className="border-outline-variant text-on-surface-variant hover:text-primary hover:border-primary"
+        className="border-border text-muted-foreground hover:text-primary hover:border-primary"
       >
         <FileText className="h-4 w-4 mr-2" />
         {isExporting && exportType === 'pdf' ? 'Exporting...' : 'PDF'}

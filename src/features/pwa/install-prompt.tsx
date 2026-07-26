@@ -61,20 +61,20 @@ export function InstallPrompt() {
 
   return (
     <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50">
-      <div className="bg-surface-container border border-outline-variant rounded-xl p-4 shadow-xl">
+      <div className="bg-muted border border-border rounded-xl p-4 shadow-xl">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
               <Download className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h3 className="font-medium text-on-surface">Install Ledgerly</h3>
-              <p className="text-sm text-on-surface-variant">Track expenses offline</p>
+              <h3 className="font-medium text-foreground">Install Ledgerly</h3>
+              <p className="text-sm text-muted-foreground">Track expenses offline</p>
             </div>
           </div>
           <button
             onClick={handleDismiss}
-            className="text-on-surface-variant hover:text-on-surface"
+            className="text-muted-foreground hover:text-foreground"
           >
             <X className="h-5 w-5" />
           </button>
@@ -82,14 +82,14 @@ export function InstallPrompt() {
         <div className="flex gap-2">
           <Button
             onClick={handleInstall}
-            className="flex-1 bg-primary text-on-primary hover:bg-primary/90"
+            className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
           >
             Install
           </Button>
           <Button
             onClick={handleDismiss}
             variant="outline"
-            className="border-outline-variant text-on-surface-variant"
+            className="border-border text-muted-foreground"
           >
             Not now
           </Button>

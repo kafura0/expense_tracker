@@ -40,7 +40,7 @@ export function LoginForm() {
       )}
 
       <div className="space-y-1.5">
-        <label htmlFor="email" className="text-sm font-medium text-on-surface">
+        <label htmlFor="email" className="text-sm font-medium text-foreground">
           Email
         </label>
         <Input
@@ -55,7 +55,7 @@ export function LoginForm() {
 
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
-          <label htmlFor="password" className="text-sm font-medium text-on-surface">
+          <label htmlFor="password" className="text-sm font-medium text-foreground">
             Password
           </label>
           <Link href="/reset-password" className="text-xs text-primary hover:text-primary/80 transition-colors">
@@ -74,7 +74,7 @@ export function LoginForm() {
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
           >
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
@@ -85,7 +85,7 @@ export function LoginForm() {
         Sign in
       </Button>
 
-      <p className="text-center text-sm text-on-surface-variant">
+      <p className="text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{' '}
         <Link href="/signup" className="text-primary hover:text-primary/80 transition-colors font-medium">
           Sign up

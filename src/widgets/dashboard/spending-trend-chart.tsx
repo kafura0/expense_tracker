@@ -88,13 +88,13 @@ export function SpendingTrendChart() {
 
   if (orgId === undefined || orgId === null) {
     return (
-      <Card className="glass-card border-outline-variant shadow-lg shadow-black/5 animate-fade-in">
+      <Card className="glass-card border-border shadow-lg shadow-black/5 animate-fade-in">
         <CardHeader className="pb-2">
-          <Skeleton className="h-6 w-40 bg-surface-container-high rounded-md" />
-          <Skeleton className="h-4 w-56 bg-surface-container-high rounded-md" />
+          <Skeleton className="h-6 w-40 bg-muted rounded-md" />
+          <Skeleton className="h-4 w-56 bg-muted rounded-md" />
         </CardHeader>
         <CardContent>
-          <Skeleton className="h-[300px] w-full bg-surface-container-high rounded-xl" />
+          <Skeleton className="h-[300px] w-full bg-muted rounded-xl" />
         </CardContent>
       </Card>
     )
@@ -102,25 +102,25 @@ export function SpendingTrendChart() {
 
   if (isLoading) {
     return (
-      <Card className="glass-card border-outline-variant shadow-lg shadow-black/5 animate-fade-in">
+      <Card className="glass-card border-border shadow-lg shadow-black/5 animate-fade-in">
         <CardHeader className="pb-2">
-          <Skeleton className="h-6 w-40 bg-surface-container-high rounded-md" />
-          <Skeleton className="h-4 w-56 bg-surface-container-high rounded-md" />
+          <Skeleton className="h-6 w-40 bg-muted rounded-md" />
+          <Skeleton className="h-4 w-56 bg-muted rounded-md" />
         </CardHeader>
         <CardContent>
-          <Skeleton className="h-[300px] w-full bg-surface-container-high rounded-xl" />
+          <Skeleton className="h-[300px] w-full bg-muted rounded-xl" />
         </CardContent>
       </Card>
     )
   }
 
   if (error) {
-    return <Card className="glass-card border-outline-variant shadow-lg shadow-black/5"><CardContent className="p-6 text-center text-destructive">Error loading chart data</CardContent></Card>
+    return <Card className="glass-card border-border shadow-lg shadow-black/5"><CardContent className="p-6 text-center text-destructive">Error loading chart data</CardContent></Card>
   }
 
   if (!data || data.every(d => d.amount === 0)) {
     return (
-      <Card className="glass-card border-outline-variant shadow-lg shadow-black/5 animate-fade-in">
+      <Card className="glass-card border-border shadow-lg shadow-black/5 animate-fade-in">
         <CardHeader className="pb-2">
           <CardTitle>Spending Trend</CardTitle>
           <CardDescription>Monthly expenditures over the last 6 months</CardDescription>
@@ -133,7 +133,7 @@ export function SpendingTrendChart() {
   }
 
   return (
-    <Card className="glass-card border-outline-variant shadow-lg shadow-black/5 animate-fade-in delay-100">
+    <Card className="glass-card border-border shadow-lg shadow-black/5 animate-fade-in delay-100">
       <CardHeader className="pb-2">
         <CardTitle>Spending Trend</CardTitle>
         <CardDescription>Monthly expenditures over the last 6 months</CardDescription>

@@ -71,14 +71,14 @@ export function KpiCards() {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[...Array(4)].map((_, i) => (
-          <Card key={i} className="glass-card border-outline-variant shadow-lg shadow-black/5">
+          <Card key={i} className="glass-card border-border shadow-lg shadow-black/5">
             <CardContent className="p-6">
               <div className="flex justify-between items-start mb-4">
-                <Skeleton className="h-4 w-24 bg-surface-container-high rounded-md" />
-                <Skeleton className="h-10 w-10 rounded-xl bg-surface-container-high" />
+                <Skeleton className="h-4 w-24 bg-muted rounded-md" />
+                <Skeleton className="h-10 w-10 rounded-xl bg-muted" />
               </div>
-              <Skeleton className="h-9 w-32 mb-3 bg-surface-container-high rounded-md" />
-              <Skeleton className="h-4 w-28 bg-surface-container-high rounded-md" />
+              <Skeleton className="h-9 w-32 mb-3 bg-muted rounded-md" />
+              <Skeleton className="h-4 w-28 bg-muted rounded-md" />
             </CardContent>
           </Card>
         ))}
@@ -90,14 +90,14 @@ export function KpiCards() {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[...Array(4)].map((_, i) => (
-          <Card key={i} className="glass-card border-outline-variant shadow-lg shadow-black/5">
+          <Card key={i} className="glass-card border-border shadow-lg shadow-black/5">
             <CardContent className="p-6">
               <div className="flex justify-between items-start mb-4">
-                <Skeleton className="h-4 w-24 bg-surface-container-high rounded-md" />
-                <Skeleton className="h-10 w-10 rounded-xl bg-surface-container-high" />
+                <Skeleton className="h-4 w-24 bg-muted rounded-md" />
+                <Skeleton className="h-10 w-10 rounded-xl bg-muted" />
               </div>
-              <Skeleton className="h-9 w-32 mb-3 bg-surface-container-high rounded-md" />
-              <Skeleton className="h-4 w-28 bg-surface-container-high rounded-md" />
+              <Skeleton className="h-9 w-32 mb-3 bg-muted rounded-md" />
+              <Skeleton className="h-4 w-28 bg-muted rounded-md" />
             </CardContent>
           </Card>
         ))}
@@ -153,7 +153,7 @@ export function KpiCards() {
       {kpiItems.map((kpi, index) => (
         <Card
           key={kpi.title}
-          className={`glass-card border-outline-variant border-l-2 ${kpi.borderColor} shadow-lg shadow-black/5 hover:shadow-xl hover:shadow-black/10 hover:-translate-y-0.5 transition-all duration-300 animate-fade-in ${
+          className={`glass-card border-border border-l-2 ${kpi.borderColor} shadow-lg shadow-black/5 hover:shadow-xl hover:shadow-black/10 hover:-translate-y-0.5 transition-all duration-300 animate-fade-in ${
             index === 0 ? '' : index === 1 ? 'delay-75' : index === 2 ? 'delay-150' : 'delay-200'
           }`}
         >

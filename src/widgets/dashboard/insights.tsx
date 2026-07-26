@@ -131,18 +131,18 @@ export function Insights() {
 
   if (orgId === undefined || orgId === null) {
     return (
-      <Card className="glass-card border-outline-variant shadow-lg shadow-black/5 animate-fade-in">
+      <Card className="glass-card border-border shadow-lg shadow-black/5 animate-fade-in">
         <CardHeader className="pb-2">
-          <Skeleton className="h-6 w-40 bg-surface-container-high rounded-md" />
+          <Skeleton className="h-6 w-40 bg-muted rounded-md" />
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {[...Array(3)].map((_, i) => (
               <div key={i} className="flex items-start gap-3 p-4 rounded-xl bg-muted/30">
-                <Skeleton className="h-9 w-9 rounded-lg bg-surface-container-high shrink-0" />
+                <Skeleton className="h-9 w-9 rounded-lg bg-muted shrink-0" />
                 <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-28 bg-surface-container-high rounded-md" />
-                  <Skeleton className="h-3 w-full bg-surface-container-high rounded-md" />
+                  <Skeleton className="h-4 w-28 bg-muted rounded-md" />
+                  <Skeleton className="h-3 w-full bg-muted rounded-md" />
                 </div>
               </div>
             ))}
@@ -154,18 +154,18 @@ export function Insights() {
 
   if (isLoading) {
     return (
-      <Card className="glass-card border-outline-variant shadow-lg shadow-black/5 animate-fade-in">
+      <Card className="glass-card border-border shadow-lg shadow-black/5 animate-fade-in">
         <CardHeader className="pb-2">
-          <Skeleton className="h-6 w-40 bg-surface-container-high rounded-md" />
+          <Skeleton className="h-6 w-40 bg-muted rounded-md" />
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {[...Array(3)].map((_, i) => (
               <div key={i} className="flex items-start gap-3 p-4 rounded-xl bg-muted/30">
-                <Skeleton className="h-9 w-9 rounded-lg bg-surface-container-high shrink-0" />
+                <Skeleton className="h-9 w-9 rounded-lg bg-muted shrink-0" />
                 <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-28 bg-surface-container-high rounded-md" />
-                  <Skeleton className="h-3 w-full bg-surface-container-high rounded-md" />
+                  <Skeleton className="h-4 w-28 bg-muted rounded-md" />
+                  <Skeleton className="h-3 w-full bg-muted rounded-md" />
                 </div>
               </div>
             ))}
@@ -176,12 +176,12 @@ export function Insights() {
   }
 
   if (error) {
-    return <Card className="glass-card border-outline-variant shadow-lg shadow-black/5"><CardContent className="p-6 text-center text-destructive">Error loading insights</CardContent></Card>
+    return <Card className="glass-card border-border shadow-lg shadow-black/5"><CardContent className="p-6 text-center text-destructive">Error loading insights</CardContent></Card>
   }
 
   if (!insights || insights.length === 0) {
     return (
-      <Card className="glass-card border-outline-variant shadow-lg shadow-black/5 animate-fade-in">
+      <Card className="glass-card border-border shadow-lg shadow-black/5 animate-fade-in">
         <CardHeader className="pb-2">
           <CardTitle>Insights</CardTitle>
         </CardHeader>
@@ -236,7 +236,7 @@ export function Insights() {
   }
 
   return (
-    <Card className="glass-card border-outline-variant shadow-lg shadow-black/5 animate-fade-in delay-300">
+    <Card className="glass-card border-border shadow-lg shadow-black/5 animate-fade-in delay-300">
       <CardHeader className="pb-2">
         <CardTitle>Insights</CardTitle>
       </CardHeader>

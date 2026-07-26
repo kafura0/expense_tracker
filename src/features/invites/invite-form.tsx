@@ -33,7 +33,7 @@ export function InviteForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5">
-        <label htmlFor="invite-email" className="text-sm font-medium text-on-surface">
+        <label htmlFor="invite-email" className="text-sm font-medium text-foreground">
           Email address
         </label>
         <Input
@@ -48,7 +48,7 @@ export function InviteForm() {
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-sm font-medium text-on-surface">Role</label>
+        <label className="text-sm font-medium text-foreground">Role</label>
         <div className="flex gap-2">
           <button
             type="button"
@@ -56,7 +56,7 @@ export function InviteForm() {
             className={`flex-1 flex items-center justify-center gap-2 h-10 rounded-lg border text-sm font-medium transition-all duration-200 ${
               role === 'client'
                 ? 'border-primary bg-primary/10 text-primary'
-                : 'border-border bg-muted/50 text-on-surface-variant hover:border-muted-foreground/50'
+                : 'border-border bg-muted/50 text-muted-foreground hover:border-muted-foreground/50'
             }`}
           >
             <Users className="h-4 w-4" />
@@ -68,14 +68,14 @@ export function InviteForm() {
             className={`flex-1 flex items-center justify-center gap-2 h-10 rounded-lg border text-sm font-medium transition-all duration-200 ${
               role === 'manager'
                 ? 'border-primary bg-primary/10 text-primary'
-                : 'border-border bg-muted/50 text-on-surface-variant hover:border-muted-foreground/50'
+                : 'border-border bg-muted/50 text-muted-foreground hover:border-muted-foreground/50'
             }`}
           >
             <Shield className="h-4 w-4" />
             Manager
           </button>
         </div>
-        <p className="text-xs text-on-surface-variant/60">
+        <p className="text-xs text-muted-foreground/60">
           {role === 'client'
             ? 'Can view and submit expenses'
             : 'Can manage expenses, categories, and invite others'}

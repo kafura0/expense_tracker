@@ -172,18 +172,18 @@ export default function SettingsPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6 p-4 md:p-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-bold text-on-surface font-headline">Settings</h1>
-        <p className="text-sm text-on-surface-variant">Manage your account preferences and settings</p>
+        <h1 className="font-headline text-2xl font-bold text-foreground tracking-tight">Settings</h1>
+        <p className="text-sm text-muted-foreground">Manage your account preferences and settings</p>
       </div>
 
-      <Card className="glass-card border-outline-variant">
+      <Card className="glass-card border-border">
         <CardHeader>
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
               <User className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-on-surface font-headline">Profile</CardTitle>
+              <CardTitle className="text-foreground font-headline">Profile</CardTitle>
               <CardDescription>Update your personal information</CardDescription>
             </div>
           </div>
@@ -191,12 +191,12 @@ export default function SettingsPage() {
         <CardContent className="space-y-6">
           <div className="flex flex-col sm:flex-row items-start gap-6">
             <div className="relative group">
-              <div className="w-24 h-24 rounded-2xl bg-surface-container-high flex items-center justify-center overflow-hidden ring-2 ring-outline-variant/30">
+              <div className="w-24 h-24 rounded-2xl bg-muted flex items-center justify-center overflow-hidden ring-2 ring-border">
                 {avatarPreview ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-3xl font-bold text-on-surface-variant">
+                  <span className="text-3xl font-bold text-foreground-variant">
                     {formState.displayName?.charAt(0)?.toUpperCase() || '?'}
                   </span>
                 )}
@@ -216,7 +216,7 @@ export default function SettingsPage() {
             </div>
             <div className="flex-1 space-y-4 w-full">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-on-surface">Display Name</label>
+                <label className="text-sm font-medium text-foreground">Display Name</label>
                 <Input
                   value={formState.displayName}
                   onChange={(e) => updateField('displayName', e.target.value)}
@@ -228,7 +228,7 @@ export default function SettingsPage() {
                 )}
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-on-surface">Email</label>
+                <label className="text-sm font-medium text-foreground">Email</label>
                 <Input
                   value={settings?.display_name ? `${settings.display_name.toLowerCase().replace(/\s/g, '.')}@email.com` : 'user@email.com'}
                   readOnly
@@ -236,7 +236,7 @@ export default function SettingsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-on-surface">Role</label>
+                <label className="text-sm font-medium text-foreground">Role</label>
                 <div>
                   <Badge variant="secondary">Member</Badge>
                 </div>
@@ -255,11 +255,11 @@ export default function SettingsPage() {
               </Button>
             </div>
           )}
-          <div className="flex justify-end pt-2 border-t border-outline-variant/20">
+          <div className="flex justify-end pt-2 border-t border-border/20">
             <Button
               onClick={handleSaveProfile}
               disabled={updateMutation.isPending}
-              className="bg-primary text-on-primary hover:bg-primary/90"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               <Save className="h-4 w-4 mr-2" />
               {updateMutation.isPending ? 'Saving...' : 'Save Profile'}
@@ -268,21 +268,21 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card className="glass-card border-outline-variant">
+      <Card className="glass-card border-border">
         <CardHeader>
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
               <Globe className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-on-surface font-headline">Currency & Region</CardTitle>
+              <CardTitle className="text-foreground font-headline">Currency & Region</CardTitle>
               <CardDescription>Configure your default currency and regional preferences</CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-on-surface">Theme</label>
+            <label className="text-sm font-medium text-foreground">Theme</label>
             <select
               value={formState.theme}
               onChange={(e) => updateField('theme', e.target.value as 'light' | 'dark' | 'system')}
@@ -294,7 +294,7 @@ export default function SettingsPage() {
             </select>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-on-surface">Base Currency</label>
+            <label className="text-sm font-medium text-foreground">Base Currency</label>
             <div className="relative">
               <div className="absolute left-3 top-1/2 -translate-y-1/2 text-lg">
                 {currentCurrency.flag}
@@ -311,15 +311,15 @@ export default function SettingsPage() {
                 ))}
               </select>
             </div>
-            <p className="text-xs text-on-surface-variant">
+            <p className="text-xs text-foreground-variant">
               Dashboard totals will be converted to this currency
             </p>
           </div>
-          <div className="flex justify-end pt-2 border-t border-outline-variant/20">
+          <div className="flex justify-end pt-2 border-t border-border/20">
             <Button
               onClick={handleSavePreferences}
               disabled={updateMutation.isPending}
-              className="bg-primary text-on-primary hover:bg-primary/90"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               <Save className="h-4 w-4 mr-2" />
               {updateMutation.isPending ? 'Saving...' : 'Save Preferences'}
@@ -328,21 +328,21 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card className="glass-card border-outline-variant">
+      <Card className="glass-card border-border">
         <CardHeader>
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
               <Percent className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-on-surface font-headline">VAT Settings</CardTitle>
+              <CardTitle className="text-foreground font-headline">VAT Settings</CardTitle>
               <CardDescription>Configure default tax rates for your expenses</CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-on-surface">Default VAT Rate</label>
+            <label className="text-sm font-medium text-foreground">Default VAT Rate</label>
             <div className="relative">
               <Input
                 type="number"
@@ -354,22 +354,22 @@ export default function SettingsPage() {
                 error={!!validateVatRate(formState.vatRate)}
                 className="pr-10"
               />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium text-on-surface-variant">
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium text-foreground-variant">
                 %
               </div>
             </div>
             {validateVatRate(formState.vatRate) && (
               <p className="text-xs text-red-400">{validateVatRate(formState.vatRate)}</p>
             )}
-            <p className="text-xs text-on-surface-variant">
+            <p className="text-xs text-foreground-variant">
               Applied to new expenses when tax is enabled
             </p>
           </div>
-          <div className="flex justify-end pt-2 border-t border-outline-variant/20">
+          <div className="flex justify-end pt-2 border-t border-border/20">
             <Button
               onClick={handleSavePreferences}
               disabled={updateMutation.isPending}
-              className="bg-primary text-on-primary hover:bg-primary/90"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               <Save className="h-4 w-4 mr-2" />
               {updateMutation.isPending ? 'Saving...' : 'Save VAT Settings'}
@@ -393,8 +393,8 @@ export default function SettingsPage() {
         <CardContent>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-xl border border-red-500/20 bg-red-500/5 gap-3">
             <div className="space-y-1">
-              <p className="text-sm font-medium text-on-surface">Delete Account</p>
-              <p className="text-xs text-on-surface-variant">
+              <p className="text-sm font-medium text-foreground">Delete Account</p>
+              <p className="text-xs text-foreground-variant">
                 Permanently delete your account and all associated data. This action cannot be undone.
               </p>
             </div>

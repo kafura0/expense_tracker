@@ -33,7 +33,7 @@ export function RefreshRatesButton() {
       size="sm"
       onClick={handleRefresh}
       disabled={isRefreshing}
-      className="border-outline-variant text-on-surface-variant hover:text-primary hover:border-primary"
+      className="border-border text-muted-foreground hover:text-primary hover:border-primary"
     >
       <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
       Refresh Rates

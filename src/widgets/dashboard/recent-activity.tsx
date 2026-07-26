@@ -47,21 +47,21 @@ export function RecentActivity() {
 
   if (orgId === undefined || orgId === null) {
     return (
-      <Card className="glass-card border-outline-variant shadow-lg shadow-black/5 animate-fade-in">
+      <Card className="glass-card border-border shadow-lg shadow-black/5 animate-fade-in">
         <CardHeader>
-          <Skeleton className="h-6 w-40 bg-surface-container-high rounded-md" />
-          <Skeleton className="h-4 w-32 bg-surface-container-high rounded-md" />
+          <Skeleton className="h-6 w-40 bg-muted rounded-md" />
+          <Skeleton className="h-4 w-32 bg-muted rounded-md" />
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="flex items-center gap-4">
-                <Skeleton className="h-11 w-11 rounded-xl bg-surface-container-high" />
+                <Skeleton className="h-11 w-11 rounded-xl bg-muted" />
                 <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-32 bg-surface-container-high rounded-md" />
-                  <Skeleton className="h-3 w-20 bg-surface-container-high rounded-md" />
+                  <Skeleton className="h-4 w-32 bg-muted rounded-md" />
+                  <Skeleton className="h-3 w-20 bg-muted rounded-md" />
                 </div>
-                <Skeleton className="h-6 w-20 bg-surface-container-high rounded-full" />
+                <Skeleton className="h-6 w-20 bg-muted rounded-full" />
               </div>
             ))}
           </div>
@@ -76,21 +76,21 @@ export function RecentActivity() {
 
   if (isLoading) {
     return (
-      <Card className="glass-card border-outline-variant shadow-lg shadow-black/5 animate-fade-in">
+      <Card className="glass-card border-border shadow-lg shadow-black/5 animate-fade-in">
         <CardHeader>
-          <Skeleton className="h-6 w-40 bg-surface-container-high rounded-md" />
-          <Skeleton className="h-4 w-32 bg-surface-container-high rounded-md" />
+          <Skeleton className="h-6 w-40 bg-muted rounded-md" />
+          <Skeleton className="h-4 w-32 bg-muted rounded-md" />
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="flex items-center gap-4">
-                <Skeleton className="h-11 w-11 rounded-xl bg-surface-container-high" />
+                <Skeleton className="h-11 w-11 rounded-xl bg-muted" />
                 <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-32 bg-surface-container-high rounded-md" />
-                  <Skeleton className="h-3 w-20 bg-surface-container-high rounded-md" />
+                  <Skeleton className="h-4 w-32 bg-muted rounded-md" />
+                  <Skeleton className="h-3 w-20 bg-muted rounded-md" />
                 </div>
-                <Skeleton className="h-6 w-20 bg-surface-container-high rounded-full" />
+                <Skeleton className="h-6 w-20 bg-muted rounded-full" />
               </div>
             ))}
           </div>
@@ -100,12 +100,12 @@ export function RecentActivity() {
   }
 
   if (error) {
-    return <Card className="glass-card border-outline-variant shadow-lg shadow-black/5"><CardContent className="p-6 text-center text-destructive">Error loading recent activity</CardContent></Card>
+    return <Card className="glass-card border-border shadow-lg shadow-black/5"><CardContent className="p-6 text-center text-destructive">Error loading recent activity</CardContent></Card>
   }
 
   if (!data || data.length === 0) {
     return (
-      <Card className="glass-card border-outline-variant shadow-lg shadow-black/5 animate-fade-in">
+      <Card className="glass-card border-border shadow-lg shadow-black/5 animate-fade-in">
         <CardHeader>
           <CardTitle>Recent Activity</CardTitle>
           <CardDescription>Your latest expenses</CardDescription>
@@ -124,7 +124,7 @@ export function RecentActivity() {
   }
 
   return (
-    <Card className="glass-card border-outline-variant shadow-lg shadow-black/5 animate-fade-in delay-200">
+    <Card className="glass-card border-border shadow-lg shadow-black/5 animate-fade-in delay-200">
       <CardHeader className="flex flex-row items-center justify-between pb-4">
         <div>
           <CardTitle>Recent Activity</CardTitle>

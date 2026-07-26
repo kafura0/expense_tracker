@@ -39,11 +39,11 @@ export default function AdminDashboard() {
     <div className="space-y-6 p-4 md:p-6">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-on-surface font-headline flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-foreground font-headline flex items-center gap-2">
             <Shield className="h-6 w-6 text-primary" />
             Admin Dashboard
           </h1>
-          <p className="text-on-surface-variant">Manage clients, users, announcements, and messages</p>
+          <p className="text-muted-foreground">Manage clients, users, announcements, and messages</p>
         </div>
         <Button
           variant="outline"
@@ -55,15 +55,15 @@ export default function AdminDashboard() {
         </Button>
       </div>
 
-      <div className="bg-surface-container rounded-xl p-1.5 flex gap-1 overflow-x-auto">
+      <div className="bg-muted rounded-xl p-1.5 flex gap-1 overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`relative flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap justify-center ${
               activeTab === tab.id
-                ? 'bg-surface text-on-surface shadow-sm'
-                : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high'
+                ? 'bg-card text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted-high'
             }`}
           >
             <tab.icon className={`h-4 w-4 ${activeTab === tab.id ? 'text-primary' : ''}`} />
@@ -168,30 +168,30 @@ function UsersTab() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="glass-card border-outline-variant">
+        <Card className="glass-card border-border">
           <CardContent className="p-4">
-            <p className="text-xs font-medium text-on-surface-variant uppercase tracking-wider">Total Users</p>
-            <p className="text-2xl font-bold text-on-surface mt-1">{totalUsers}</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Users</p>
+            <p className="text-2xl font-bold text-foreground mt-1">{totalUsers}</p>
           </CardContent>
         </Card>
-        <Card className="glass-card border-outline-variant">
+        <Card className="glass-card border-border">
           <CardContent className="p-4">
-            <p className="text-xs font-medium text-on-surface-variant uppercase tracking-wider">Active Orgs</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Active Orgs</p>
             <p className="text-2xl font-bold text-green-400 mt-1">{activeOrgs}</p>
           </CardContent>
         </Card>
-        <Card className="glass-card border-outline-variant">
+        <Card className="glass-card border-border">
           <CardContent className="p-4">
-            <p className="text-xs font-medium text-on-surface-variant uppercase tracking-wider">Suspended Orgs</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Suspended Orgs</p>
             <p className="text-2xl font-bold text-red-400 mt-1">{clients.length - activeOrgs}</p>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="glass-card border-outline-variant">
+      <Card className="glass-card border-border">
         <CardContent className="p-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-on-surface-variant" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search users by name, email, or organization..."
               value={searchQuery}
@@ -202,7 +202,7 @@ function UsersTab() {
         </CardContent>
       </Card>
 
-      <Card className="glass-card border-outline-variant">
+      <Card className="glass-card border-border">
         <CardHeader>
           <CardTitle className="font-headline">All Users</CardTitle>
         </CardHeader>
@@ -218,17 +218,17 @@ function UsersTab() {
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-outline-variant/20">
-                      <th className="text-left py-3 px-3 text-on-surface-variant font-medium">User</th>
-                      <th className="text-left py-3 px-3 text-on-surface-variant font-medium">Organization</th>
-                      <th className="text-left py-3 px-3 text-on-surface-variant font-medium">Role</th>
-                      <th className="text-left py-3 px-3 text-on-surface-variant font-medium">Status</th>
-                      <th className="text-right py-3 px-3 text-on-surface-variant font-medium">Actions</th>
+                    <tr className="border-b border-border/20">
+                      <th className="text-left py-3 px-3 text-muted-foreground font-medium">User</th>
+                      <th className="text-left py-3 px-3 text-muted-foreground font-medium">Organization</th>
+                      <th className="text-left py-3 px-3 text-muted-foreground font-medium">Role</th>
+                      <th className="text-left py-3 px-3 text-muted-foreground font-medium">Status</th>
+                      <th className="text-right py-3 px-3 text-muted-foreground font-medium">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {allUsers.map((user) => (
-                      <tr key={`${user.userId}-${user.orgId}`} className="border-b border-outline-variant/10 hover:bg-surface-container/50 transition-colors">
+                      <tr key={`${user.userId}-${user.orgId}`} className="border-b border-border/10 hover:bg-muted/50 transition-colors">
                         <td className="py-3 px-3">
                           <div className="flex items-center gap-3">
                             <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -237,14 +237,14 @@ function UsersTab() {
                               </span>
                             </div>
                             <div>
-                              <p className="font-medium text-on-surface">{user.name}</p>
-                              <p className="text-xs text-on-surface-variant">{user.email}</p>
+                              <p className="font-medium text-foreground">{user.name}</p>
+                              <p className="text-xs text-muted-foreground">{user.email}</p>
                             </div>
                           </div>
                         </td>
                         <td className="py-3 px-3">
-                          <p className="text-on-surface-variant">{user.orgName}</p>
-                          <p className="text-xs text-on-surface-variant">{user.orgSlug}</p>
+                          <p className="text-muted-foreground">{user.orgName}</p>
+                          <p className="text-xs text-muted-foreground">{user.orgSlug}</p>
                         </td>
                         <td className="py-3 px-3">
                           <Badge variant="secondary">{user.role}</Badge>
@@ -282,7 +282,7 @@ function UsersTab() {
               </div>
               <div className="md:hidden space-y-3">
                 {allUsers.map((user) => (
-                  <div key={`${user.userId}-${user.orgId}`} className="p-4 bg-surface-container rounded-xl">
+                  <div key={`${user.userId}-${user.orgId}`} className="p-4 bg-muted rounded-xl">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                         <span className="text-sm font-bold text-primary">
@@ -290,8 +290,8 @@ function UsersTab() {
                         </span>
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium text-on-surface">{user.name}</p>
-                        <p className="text-xs text-on-surface-variant">{user.email}</p>
+                        <p className="font-medium text-foreground">{user.name}</p>
+                        <p className="text-xs text-muted-foreground">{user.email}</p>
                       </div>
                       <Badge variant={user.orgStatus === 'active' ? 'success' : 'destructive'}>
                         {user.orgStatus}
@@ -299,7 +299,7 @@ function UsersTab() {
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-on-surface-variant">{user.orgName}</span>
+                        <span className="text-xs text-muted-foreground">{user.orgName}</span>
                         <Badge variant="secondary" className="text-xs">{user.role}</Badge>
                       </div>
                       {user.orgStatus === 'active' ? (
@@ -375,23 +375,23 @@ function ClientsTab() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="glass-card border-outline-variant">
+        <Card className="glass-card border-border">
           <CardContent className="p-4">
-            <p className="text-xs font-medium text-on-surface-variant uppercase tracking-wider">Total Clients</p>
-            <p className="text-2xl font-bold text-on-surface mt-1">{clients.length}</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Clients</p>
+            <p className="text-2xl font-bold text-foreground mt-1">{clients.length}</p>
           </CardContent>
         </Card>
-        <Card className="glass-card border-outline-variant">
+        <Card className="glass-card border-border">
           <CardContent className="p-4">
-            <p className="text-xs font-medium text-on-surface-variant uppercase tracking-wider">Active</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Active</p>
             <p className="text-2xl font-bold text-green-400 mt-1">
               {clients.filter(c => c.status === 'active').length}
             </p>
           </CardContent>
         </Card>
-        <Card className="glass-card border-outline-variant">
+        <Card className="glass-card border-border">
           <CardContent className="p-4">
-            <p className="text-xs font-medium text-on-surface-variant uppercase tracking-wider">Total Members</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Members</p>
             <p className="text-2xl font-bold text-primary mt-1">
               {clients.reduce((acc, c) => {
                 const members = (c.org_members as Array<unknown>) || []
@@ -402,7 +402,7 @@ function ClientsTab() {
         </Card>
       </div>
 
-      <Card className="glass-card border-outline-variant">
+      <Card className="glass-card border-border">
         <CardHeader>
           <CardTitle className="font-headline">Client Organizations</CardTitle>
         </CardHeader>
@@ -424,9 +424,9 @@ function ClientsTab() {
                 const isExpanded = expandedOrg === (org.id as string)
 
                 return (
-                  <div key={org.id as string} className="rounded-xl border border-outline-variant/20 overflow-hidden">
+                  <div key={org.id as string} className="rounded-xl border border-border/20 overflow-hidden">
                     <div
-                      className="p-4 bg-surface-container/50 cursor-pointer hover:bg-surface-container transition-colors"
+                      className="p-4 bg-muted/50 cursor-pointer hover:bg-muted transition-colors"
                       onClick={() => setExpandedOrg(isExpanded ? null : (org.id as string))}
                     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -435,8 +435,8 @@ function ClientsTab() {
                             <Building2 className="h-5 w-5 text-primary" />
                           </div>
                           <div>
-                            <p className="font-medium text-on-surface">{org.name as string}</p>
-                            <p className="text-xs text-on-surface-variant">{org.slug as string}</p>
+                            <p className="font-medium text-foreground">{org.name as string}</p>
+                            <p className="text-xs text-muted-foreground">{org.slug as string}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
@@ -444,35 +444,35 @@ function ClientsTab() {
                             {status}
                           </Badge>
                           {isExpanded ? (
-                            <ChevronUp className="h-4 w-4 text-on-surface-variant" />
+                            <ChevronUp className="h-4 w-4 text-muted-foreground" />
                           ) : (
-                            <ChevronDown className="h-4 w-4 text-on-surface-variant" />
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
                           )}
                         </div>
                       </div>
                     </div>
                     {isExpanded && (
-                      <div className="p-4 border-t border-outline-variant/20 space-y-4 bg-surface/50">
+                      <div className="p-4 border-t border-border/20 space-y-4 bg-card/50">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                           <div className="space-y-1">
-                            <p className="text-xs text-on-surface-variant">Plan</p>
-                            <p className="text-sm font-medium text-on-surface">{planName}</p>
+                            <p className="text-xs text-muted-foreground">Plan</p>
+                            <p className="text-sm font-medium text-foreground">{planName}</p>
                             {planPrice != null && (
-                              <p className="text-xs text-on-surface-variant">${Number(planPrice).toFixed(2)}/mo</p>
+                              <p className="text-xs text-muted-foreground">${Number(planPrice).toFixed(2)}/mo</p>
                             )}
                           </div>
                           <div className="space-y-1">
-                            <p className="text-xs text-on-surface-variant">Members</p>
-                            <p className="text-sm font-medium text-on-surface">{members.length}</p>
+                            <p className="text-xs text-muted-foreground">Members</p>
+                            <p className="text-sm font-medium text-foreground">{members.length}</p>
                           </div>
                           <div className="space-y-1">
-                            <p className="text-xs text-on-surface-variant">Created</p>
-                            <p className="text-sm font-medium text-on-surface">
+                            <p className="text-xs text-muted-foreground">Created</p>
+                            <p className="text-sm font-medium text-foreground">
                               {new Date(org.created_at as string).toLocaleDateString()}
                             </p>
                           </div>
                           <div className="space-y-1">
-                            <p className="text-xs text-on-surface-variant">Status</p>
+                            <p className="text-xs text-muted-foreground">Status</p>
                             <Badge variant={status === 'active' ? 'success' : 'destructive'}>
                               {status}
                             </Badge>
@@ -480,20 +480,20 @@ function ClientsTab() {
                         </div>
                         {members.length > 0 && (
                           <div className="space-y-2">
-                            <p className="text-xs font-medium text-on-surface-variant uppercase tracking-wider">Members</p>
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Members</p>
                             <div className="space-y-2">
                               {members.map((member) => (
-                                <div key={member.user_id} className="flex items-center gap-3 p-2 rounded-lg bg-surface-container/50">
+                                <div key={member.user_id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
                                   <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                                     <span className="text-xs font-bold text-primary">
                                       {member.profiles?.display_name?.charAt(0)?.toUpperCase() || '?'}
                                     </span>
                                   </div>
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-sm text-on-surface truncate">
+                                    <p className="text-sm text-foreground truncate">
                                       {member.profiles?.display_name || 'Unknown'}
                                     </p>
-                                    <p className="text-xs text-on-surface-variant truncate">
+                                    <p className="text-xs text-muted-foreground truncate">
                                       {member.profiles?.email || ''}
                                     </p>
                                   </div>
@@ -502,7 +502,7 @@ function ClientsTab() {
                             </div>
                           </div>
                         )}
-                        <div className="flex justify-end gap-2 pt-2 border-t border-outline-variant/20">
+                        <div className="flex justify-end gap-2 pt-2 border-t border-border/20">
                           {status === 'active' ? (
                             <Button
                               size="sm"
@@ -582,7 +582,7 @@ function AnnouncementsTab() {
 
   return (
     <div className="space-y-4">
-      <Card className="glass-card border-outline-variant">
+      <Card className="glass-card border-border">
         <CardHeader>
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
@@ -596,7 +596,7 @@ function AnnouncementsTab() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-on-surface">Title</label>
+            <label className="text-sm font-medium text-foreground">Title</label>
             <Input
               placeholder="Announcement title"
               value={announcementTitle}
@@ -604,7 +604,7 @@ function AnnouncementsTab() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-on-surface">Message</label>
+            <label className="text-sm font-medium text-foreground">Message</label>
             <textarea
               placeholder="Write your announcement here..."
               value={announcementBody}
@@ -617,7 +617,7 @@ function AnnouncementsTab() {
             <Button
               onClick={handleCreateAnnouncement}
               disabled={!announcementTitle.trim() || !announcementBody.trim()}
-              className="bg-primary text-on-primary hover:bg-primary/90"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               <Send className="h-4 w-4 mr-2" />
               Send Announcement
@@ -626,7 +626,7 @@ function AnnouncementsTab() {
         </CardContent>
       </Card>
 
-      <Card className="glass-card border-outline-variant">
+      <Card className="glass-card border-border">
         <CardHeader>
           <CardTitle className="font-headline">Existing Announcements</CardTitle>
         </CardHeader>
@@ -642,7 +642,7 @@ function AnnouncementsTab() {
               {messages.map((msg) => {
                 const status = msg.status as string
                 return (
-                  <div key={msg.id as string} className="p-4 bg-surface-container rounded-xl">
+                  <div key={msg.id as string} className="p-4 bg-muted rounded-xl">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <Badge variant="info">announcement</Badge>
@@ -650,12 +650,12 @@ function AnnouncementsTab() {
                           {status}
                         </Badge>
                       </div>
-                      <span className="text-xs text-on-surface-variant whitespace-nowrap">
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
                         {new Date(msg.created_at as string).toLocaleDateString()}
                       </span>
                     </div>
-                    <h4 className="font-medium text-on-surface">{msg.subject as string}</h4>
-                    <p className="text-sm text-on-surface-variant mt-1 whitespace-pre-wrap">{msg.body as string}</p>
+                    <h4 className="font-medium text-foreground">{msg.subject as string}</h4>
+                    <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{msg.body as string}</p>
                   </div>
                 )
               })}
@@ -728,14 +728,14 @@ function MessagesTab() {
 
   return (
     <div className="space-y-4">
-      <Card className="glass-card border-outline-variant">
+      <Card className="glass-card border-border">
         <CardContent className="p-4">
           <div className="flex items-center gap-3 flex-wrap">
-            <Filter className="h-4 w-4 text-on-surface-variant shrink-0" />
+            <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="bg-surface-container border border-outline-variant rounded-lg px-3 py-1.5 text-sm text-on-surface"
+              className="bg-muted border border-border rounded-lg px-3 py-1.5 text-sm text-foreground"
             >
               <option value="">All types</option>
               <option value="support">Support tickets</option>
@@ -744,14 +744,14 @@ function MessagesTab() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-surface-container border border-outline-variant rounded-lg px-3 py-1.5 text-sm text-on-surface"
+              className="bg-muted border border-border rounded-lg px-3 py-1.5 text-sm text-foreground"
             >
               <option value="">All statuses</option>
               <option value="open">Open</option>
               <option value="replied">Replied</option>
               <option value="closed">Closed</option>
             </select>
-            <span className="text-xs text-on-surface-variant ml-auto">
+            <span className="text-xs text-muted-foreground ml-auto">
               {messages.length} message{messages.length !== 1 ? 's' : ''}
             </span>
           </div>
@@ -759,7 +759,7 @@ function MessagesTab() {
       </Card>
 
       {messages.length === 0 ? (
-        <Card className="glass-card border-outline-variant">
+        <Card className="glass-card border-border">
           <CardContent>
             <EmptyState
               icon={<MessageSquare className="h-8 w-8" />}
@@ -777,7 +777,7 @@ function MessagesTab() {
             const priority = msg.priority as string
 
             return (
-              <Card key={msg.id as string} className="glass-card border-outline-variant">
+              <Card key={msg.id as string} className="glass-card border-border">
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-start justify-between">
                     <div className="space-y-2">
@@ -796,24 +796,24 @@ function MessagesTab() {
                         )}
                       </div>
                       <div>
-                        <h4 className="font-medium text-on-surface">{msg.subject as string}</h4>
-                        <p className="text-sm text-on-surface-variant">
+                        <h4 className="font-medium text-foreground">{msg.subject as string}</h4>
+                        <p className="text-sm text-muted-foreground">
                           {profile?.display_name || profile?.email || 'Unknown user'}
                           {org?.name ? ` \u2014 ${org.name}` : ''}
                         </p>
                       </div>
                     </div>
-                    <span className="text-xs text-on-surface-variant whitespace-nowrap">
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
                       {new Date(msg.created_at as string).toLocaleString()}
                     </span>
                   </div>
 
-                  <p className="text-sm text-on-surface-variant whitespace-pre-wrap">{msg.body as string}</p>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{msg.body as string}</p>
 
                   {typeof msg.admin_reply === 'string' && msg.admin_reply && (
                     <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
                       <p className="text-xs text-primary font-medium mb-1">Admin Reply</p>
-                      <p className="text-sm text-on-surface">{msg.admin_reply as string}</p>
+                      <p className="text-sm text-foreground">{msg.admin_reply as string}</p>
                     </div>
                   )}
 
@@ -830,7 +830,7 @@ function MessagesTab() {
                         size="sm"
                         onClick={() => replyMutation.mutate({ messageId: msg.id as string, reply: replyText })}
                         disabled={!replyText.trim() || replyMutation.isPending}
-                        className="bg-primary text-on-primary"
+                        className="bg-primary text-primary-foreground"
                       >
                         <Send className="h-4 w-4" />
                       </Button>
@@ -861,7 +861,7 @@ function MessagesTab() {
                           variant="outline"
                           onClick={() => closeMutation.mutate(msg.id as string)}
                           disabled={closeMutation.isPending}
-                          className="text-on-surface-variant"
+                          className="text-muted-foreground"
                         >
                           Close
                         </Button>
@@ -927,7 +927,7 @@ function InvitesTab() {
 
   return (
     <div className="space-y-6">
-      <Card className="glass-card border-outline-variant">
+      <Card className="glass-card border-border">
         <CardHeader>
           <CardTitle className="font-headline">Send Invite</CardTitle>
           <CardDescription>Invite a client or manager to your organization</CardDescription>
@@ -944,7 +944,7 @@ function InvitesTab() {
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as 'client' | 'manager')}
-              className="h-10 rounded-lg border border-outline-variant bg-surface-container px-3 text-sm text-on-surface"
+              className="h-10 rounded-lg border border-border bg-muted px-3 text-sm text-foreground"
             >
               <option value="client">Client</option>
               <option value="manager">Manager</option>
@@ -961,20 +961,20 @@ function InvitesTab() {
         </CardContent>
       </Card>
 
-      <Card className="glass-card border-outline-variant">
+      <Card className="glass-card border-border">
         <CardHeader>
           <CardTitle className="font-headline">Pending Invites</CardTitle>
         </CardHeader>
         <CardContent>
           {invites.length === 0 ? (
-            <p className="text-sm text-on-surface-variant text-center py-8">No invites sent yet</p>
+            <p className="text-sm text-muted-foreground text-center py-8">No invites sent yet</p>
           ) : (
             <div className="space-y-2">
               {invites.map((invite: { id: string; email: string; role: string; status: string }) => (
-                <div key={invite.id} className="flex items-center justify-between p-3 rounded-xl bg-surface-container/50">
+                <div key={invite.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/50">
                   <div>
-                    <p className="text-sm font-medium text-on-surface">{invite.email}</p>
-                    <p className="text-xs text-on-surface-variant">{invite.role} · {invite.status}</p>
+                    <p className="text-sm font-medium text-foreground">{invite.email}</p>
+                    <p className="text-xs text-muted-foreground">{invite.role} · {invite.status}</p>
                   </div>
                   {invite.status === 'pending' && (
                     <Button variant="ghost" size="sm" onClick={() => handleRevoke(invite.id)}>

@@ -109,14 +109,14 @@ export function CategoryChart() {
 
   if (orgId === undefined || orgId === null) {
     return (
-      <Card className="glass-card border-outline-variant shadow-lg shadow-black/5 animate-fade-in">
+      <Card className="glass-card border-border shadow-lg shadow-black/5 animate-fade-in">
         <CardHeader className="pb-2">
-          <Skeleton className="h-6 w-40 bg-surface-container-high rounded-md" />
-          <Skeleton className="h-4 w-48 bg-surface-container-high rounded-md" />
+          <Skeleton className="h-6 w-40 bg-muted rounded-md" />
+          <Skeleton className="h-4 w-48 bg-muted rounded-md" />
         </CardHeader>
         <CardContent>
           <div className="h-[300px] w-full rounded-xl overflow-hidden">
-            <Skeleton className="h-full w-full bg-surface-container-high" />
+            <Skeleton className="h-full w-full bg-muted" />
           </div>
         </CardContent>
       </Card>
@@ -125,14 +125,14 @@ export function CategoryChart() {
 
   if (isLoading) {
     return (
-      <Card className="glass-card border-outline-variant shadow-lg shadow-black/5 animate-fade-in">
+      <Card className="glass-card border-border shadow-lg shadow-black/5 animate-fade-in">
         <CardHeader className="pb-2">
-          <Skeleton className="h-6 w-40 bg-surface-container-high rounded-md" />
-          <Skeleton className="h-4 w-48 bg-surface-container-high rounded-md" />
+          <Skeleton className="h-6 w-40 bg-muted rounded-md" />
+          <Skeleton className="h-4 w-48 bg-muted rounded-md" />
         </CardHeader>
         <CardContent>
           <div className="h-[300px] w-full rounded-xl overflow-hidden">
-            <Skeleton className="h-full w-full bg-surface-container-high" />
+            <Skeleton className="h-full w-full bg-muted" />
           </div>
         </CardContent>
       </Card>
@@ -140,12 +140,12 @@ export function CategoryChart() {
   }
 
   if (error) {
-    return <Card className="glass-card border-outline-variant shadow-lg shadow-black/5"><CardContent className="p-6 text-center text-destructive">Error loading category data</CardContent></Card>
+    return <Card className="glass-card border-border shadow-lg shadow-black/5"><CardContent className="p-6 text-center text-destructive">Error loading category data</CardContent></Card>
   }
 
   if (!data || data.length === 0) {
     return (
-      <Card className="glass-card border-outline-variant shadow-lg shadow-black/5 animate-fade-in">
+      <Card className="glass-card border-border shadow-lg shadow-black/5 animate-fade-in">
         <CardHeader className="pb-2">
           <CardTitle>Category Breakdown</CardTitle>
           <CardDescription>Spending distribution by category</CardDescription>
@@ -160,7 +160,7 @@ export function CategoryChart() {
   const total = data.reduce((sum, d) => sum + d.value, 0)
 
   return (
-    <Card className="glass-card border-outline-variant shadow-lg shadow-black/5 animate-fade-in delay-150">
+    <Card className="glass-card border-border shadow-lg shadow-black/5 animate-fade-in delay-150">
       <CardHeader className="pb-2">
         <CardTitle>Category Breakdown</CardTitle>
         <CardDescription>Spending distribution by category</CardDescription>

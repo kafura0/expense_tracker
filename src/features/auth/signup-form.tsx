@@ -52,10 +52,10 @@ export function SignupForm() {
         <div className="mx-auto w-12 h-12 rounded-full bg-emerald-500/15 flex items-center justify-center">
           <CheckCircle className="h-6 w-6 text-emerald-400" />
         </div>
-        <h2 className="text-xl font-semibold text-on-surface">
+        <h2 className="text-xl font-semibold text-foreground">
           Check your email
         </h2>
-        <p className="text-on-surface-variant text-sm">
+        <p className="text-muted-foreground text-sm">
           We sent a verification code to <strong>{email}</strong>
         </p>
         <Button
@@ -77,7 +77,7 @@ export function SignupForm() {
       )}
 
       <div className="space-y-1.5">
-        <label htmlFor="full_name" className="text-sm font-medium text-on-surface">
+        <label htmlFor="full_name" className="text-sm font-medium text-foreground">
           Full Name
         </label>
         <Input
@@ -91,7 +91,7 @@ export function SignupForm() {
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="email" className="text-sm font-medium text-on-surface">
+        <label htmlFor="email" className="text-sm font-medium text-foreground">
           Email
         </label>
         <Input
@@ -105,7 +105,7 @@ export function SignupForm() {
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="password" className="text-sm font-medium text-on-surface">
+        <label htmlFor="password" className="text-sm font-medium text-foreground">
           Password
         </label>
         <div className="relative">
@@ -123,7 +123,7 @@ export function SignupForm() {
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
           >
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
@@ -143,12 +143,12 @@ export function SignupForm() {
                           : score <= 3
                             ? 'bg-yellow-500'
                             : 'bg-emerald-500'
-                      : 'bg-on-surface-variant/20'
+                      : 'bg-muted/20'
                   }`}
                 />
               ))}
             </div>
-            <p className="text-xs text-on-surface-variant/60">
+            <p className="text-xs text-muted-foreground/60">
               {score === 0 && 'Add uppercase, lowercase, number & symbol'}
               {score === 1 && 'Weak — add more character types'}
               {score === 2 && 'Fair — add more character types'}
@@ -163,7 +163,7 @@ export function SignupForm() {
         Create account
       </Button>
 
-      <p className="text-center text-sm text-on-surface-variant">
+      <p className="text-center text-sm text-muted-foreground">
         Already have an account?{' '}
         <Link href="/login" className="text-primary hover:text-primary/80 transition-colors font-medium">
           Sign in

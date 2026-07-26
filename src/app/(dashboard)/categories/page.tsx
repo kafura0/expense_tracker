@@ -54,7 +54,7 @@ export default function CategoriesPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Categories</h1>
+            <h1 className="font-headline text-3xl font-bold tracking-tight">Categories</h1>
             <p className="text-muted-foreground">Manage your spending categories</p>
           </div>
         </div>
@@ -72,7 +72,7 @@ export default function CategoriesPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Categories</h1>
+          <h1 className="font-headline text-3xl font-bold tracking-tight">Categories</h1>
           <p className="text-muted-foreground">Manage your spending categories</p>
         </div>
         <Button>

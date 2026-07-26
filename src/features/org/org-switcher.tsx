@@ -43,28 +43,28 @@ export function OrgSwitcher() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm bg-surface-container hover:bg-surface-container-high transition-colors text-left"
+        className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm bg-muted hover:bg-muted transition-colors text-left"
       >
-        <Building2 className="h-4 w-4 shrink-0 text-on-surface-variant" />
+        <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-on-surface truncate">
+          <p className="font-medium text-foreground truncate">
             {activeOrg?.org_name || 'Select Organization'}
           </p>
           {activeOrg && (
-            <p className="text-xs text-on-surface-variant truncate">
+            <p className="text-xs text-muted-foreground truncate">
               {roleLabels[activeOrg.role] || activeOrg.role}
             </p>
           )}
         </div>
         <ChevronDown className={cn(
-          'h-4 w-4 shrink-0 text-on-surface-variant transition-transform',
+          'h-4 w-4 shrink-0 text-muted-foreground transition-transform',
           open && 'rotate-180'
         )} />
       </button>
 
       {open && orgs.length > 1 && (
-        <div className="absolute bottom-full left-0 right-0 mb-1 bg-surface rounded-lg shadow-lg border border-outline-variant z-50 max-h-64 overflow-y-auto">
-          <p className="px-3 py-2 text-xs font-medium text-on-surface-variant border-b border-outline-variant">
+        <div className="absolute bottom-full left-0 right-0 mb-1 bg-card rounded-lg shadow-lg border border-border z-50 max-h-64 overflow-y-auto">
+          <p className="px-3 py-2 text-xs font-medium text-muted-foreground border-b border-border">
             Switch Organization
           </p>
           {orgs.map((org) => {
@@ -78,22 +78,22 @@ export function OrgSwitcher() {
                   setOpen(false)
                 }}
                 className={cn(
-                  'flex items-center gap-2 w-full px-3 py-2.5 text-sm text-left hover:bg-surface-container-high transition-colors',
+                  'flex items-center gap-2 w-full px-3 py-2.5 text-sm text-left hover:bg-muted transition-colors',
                   isActive && 'bg-primary/10'
                 )}
               >
                 <Icon className={cn(
                   'h-4 w-4 shrink-0',
-                  isActive ? 'text-primary' : 'text-on-surface-variant'
+                  isActive ? 'text-primary' : 'text-muted-foreground'
                 )} />
                 <div className="flex-1 min-w-0">
                   <p className={cn(
                     'font-medium truncate',
-                    isActive ? 'text-primary' : 'text-on-surface'
+                    isActive ? 'text-primary' : 'text-foreground'
                   )}>
                     {org.org_name}
                   </p>
-                  <p className="text-xs text-on-surface-variant truncate">
+                  <p className="text-xs text-muted-foreground truncate">
                     {roleLabels[org.role] || org.role}
                   </p>
                 </div>
