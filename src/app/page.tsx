@@ -23,26 +23,10 @@ import {
 
 const FEATURES = [
   {
-    icon: Brain,
-    title: 'Smart Insights',
+    icon: Shield,
+    title: 'Bank-Grade Security',
     description:
-      'AI-driven patterns that detect anomalies and spending trends before they impact your runway.',
-    color: 'text-primary',
-    bg: 'bg-primary/10',
-  },
-  {
-    icon: Receipt,
-    title: 'VAT Calculations',
-    description:
-      'Automatic tax extraction and VAT compliance across 120+ jurisdictions.',
-    color: 'text-secondary',
-    bg: 'bg-secondary/10',
-  },
-  {
-    icon: Globe,
-    title: 'Multi-Currency',
-    description:
-      'Real-time spot rates with historical data syncing for seamless cross-border reporting.',
+      'End-to-end encryption with SOC 2 Type II compliance. Your financial data never leaves your control.',
     color: 'text-primary',
     bg: 'bg-primary/10',
   },
@@ -55,18 +39,34 @@ const FEATURES = [
     bg: 'bg-secondary/10',
   },
   {
-    icon: BarChart3,
-    title: 'Smart Analytics',
+    icon: Globe,
+    title: 'Multi-Currency',
     description:
-      'Real-time dashboards and AI-driven insights that surface spending anomalies before they impact your runway.',
+      'Real-time spot rates with historical data syncing for seamless cross-border reporting.',
     color: 'text-primary',
     bg: 'bg-primary/10',
   },
   {
-    icon: Shield,
-    title: 'Bank-Grade Security',
+    icon: BarChart3,
+    title: 'Smart Analytics',
     description:
-      'End-to-end encryption with SOC 2 Type II compliance. Your financial data never leaves your control.',
+      'Real-time dashboards and AI-driven insights that surface spending anomalies before they impact your runway.',
+    color: 'text-secondary',
+    bg: 'bg-secondary/10',
+  },
+  {
+    icon: Brain,
+    title: 'Smart Insights',
+    description:
+      'AI-driven patterns that detect anomalies and spending trends before they impact your runway.',
+    color: 'text-primary',
+    bg: 'bg-primary/10',
+  },
+  {
+    icon: Receipt,
+    title: 'VAT Calculations',
+    description:
+      'Automatic tax extraction and VAT compliance across 120+ jurisdictions.',
     color: 'text-secondary',
     bg: 'bg-secondary/10',
   },
