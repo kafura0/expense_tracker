@@ -3,10 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import {
-  BarChart3,
-  Shield,
   Globe,
-  Zap,
   Receipt,
   Brain,
   ArrowRight,
@@ -19,9 +16,44 @@ import {
   Users,
   ShieldCheck,
   Handshake,
+  Zap,
+  BarChart3,
+  Shield,
 } from 'lucide-react'
 
 const FEATURES = [
+  {
+    icon: Brain,
+    title: 'Smart Insights',
+    description:
+      'AI-driven patterns that detect anomalies and spending trends before they impact your runway.',
+    color: 'text-primary',
+    bg: 'bg-primary/10',
+  },
+  {
+    icon: Receipt,
+    title: 'VAT Calculations',
+    description:
+      'Automatic tax extraction and VAT compliance across 120+ jurisdictions.',
+    color: 'text-secondary',
+    bg: 'bg-secondary/10',
+  },
+  {
+    icon: Globe,
+    title: 'Multi-Currency',
+    description:
+      'Real-time spot rates with historical data syncing for seamless cross-border reporting.',
+    color: 'text-primary',
+    bg: 'bg-primary/10',
+  },
+  {
+    icon: Zap,
+    title: 'Global Bank Sync',
+    description:
+      'Connect to 15,000+ financial institutions via Plaid, Salt Edge, and direct API endpoints.',
+    color: 'text-secondary',
+    bg: 'bg-secondary/10',
+  },
   {
     icon: BarChart3,
     title: 'Smart Analytics',
@@ -35,38 +67,6 @@ const FEATURES = [
     title: 'Bank-Grade Security',
     description:
       'End-to-end encryption with SOC 2 Type II compliance. Your financial data never leaves your control.',
-    color: 'text-secondary',
-    bg: 'bg-secondary/10',
-  },
-  {
-    icon: Globe,
-    title: 'Multi-Currency',
-    description:
-      'Real-time spot rates across 40+ currencies with automatic conversion and historical tracking.',
-    color: 'text-primary',
-    bg: 'bg-primary/10',
-  },
-  {
-    icon: Zap,
-    title: 'Instant Sync',
-    description:
-      'Connect to 15,000+ banks via Plaid and Salt Edge. Transactions appear in real-time, not batches.',
-    color: 'text-secondary',
-    bg: 'bg-secondary/10',
-  },
-  {
-    icon: Receipt,
-    title: 'Smart Receipts',
-    description:
-      'OCR-powered receipt scanning that auto-categorizes expenses and matches them to transactions.',
-    color: 'text-primary',
-    bg: 'bg-primary/10',
-  },
-  {
-    icon: Brain,
-    title: 'AI Forecasting',
-    description:
-      'Machine learning models that predict cash flow patterns and alert you to budget overruns early.',
     color: 'text-secondary',
     bg: 'bg-secondary/10',
   },
@@ -316,14 +316,14 @@ export default function LandingPage() {
                 Features
               </p>
               <h2 className="font-headline text-headline-lg mb-sm text-foreground">
-                Everything you need to master your finances
+                Engineered for Precision
               </h2>
               <p className="text-muted-foreground font-body-md text-body-md max-w-xl mx-auto">
-                Powerful tools designed for modern financial operations.
+                Tools built for the modern financial operator.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-lg">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-lg">
               {FEATURES.map((feature) => {
                 const IconComp = feature.icon
                 return (
