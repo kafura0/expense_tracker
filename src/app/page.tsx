@@ -233,7 +233,7 @@ export default function LandingPage() {
               Future
             </h1>
 
-            <p className="font-body-md text-body-lg md:text-xl leading-relaxed text-muted-foreground max-w-2xl mb-xl md:mb-2xl animate-slide-up delay-75">
+            <p className="font-body-md text-body-lg md:text-xl leading-relaxed text-muted-foreground text-center mx-auto max-w-2xl mb-xl md:mb-2xl animate-slide-up delay-75">
               Transform chaotic financial data into precise strategic assets.
               Automated reconciliation, multi-currency mastery, and bank-grade
               security — all in one platform.
