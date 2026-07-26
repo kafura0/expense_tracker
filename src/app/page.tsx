@@ -329,7 +329,7 @@ export default function LandingPage() {
                 return (
                   <div
                     key={feature.title}
-                    className="group p-lg md:p-xl rounded-2xl bg-card border border-border flex flex-col hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300"
+                    className="group p-lg md:p-xl rounded-2xl bg-card border border-border flex flex-col items-center text-center hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300"
                   >
                     <div className={`w-12 h-12 ${feature.bg} rounded-xl flex items-center justify-center mb-lg`}>
                       <IconComp className={`w-6 h-6 ${feature.color}`} />
@@ -406,7 +406,7 @@ export default function LandingPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-lg">
-              <div className="p-lg md:p-xl rounded-2xl bg-card border border-border flex flex-col hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+              <div className="p-lg md:p-xl rounded-2xl bg-card border border-border flex flex-col items-center text-center hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
                 <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-lg">
                   <Users className="w-6 h-6 text-primary" />
                 </div>
@@ -417,7 +417,7 @@ export default function LandingPage() {
                   Create client accounts, assign roles, and manage access with ease
                 </p>
               </div>
-              <div className="p-lg md:p-xl rounded-2xl bg-card border border-border flex flex-col hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+              <div className="p-lg md:p-xl rounded-2xl bg-card border border-border flex flex-col items-center text-center hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
                 <div className="w-12 h-12 bg-secondary/10 rounded-xl flex items-center justify-center mb-lg">
                   <ShieldCheck className="w-6 h-6 text-secondary" />
                 </div>
@@ -428,7 +428,7 @@ export default function LandingPage() {
                   Managers get full control, clients see only their own data
                 </p>
               </div>
-              <div className="p-lg md:p-xl rounded-2xl bg-card border border-border flex flex-col hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+              <div className="p-lg md:p-xl rounded-2xl bg-card border border-border flex flex-col items-center text-center hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
                 <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-lg">
                   <Handshake className="w-6 h-6 text-primary" />
                 </div>
@@ -482,16 +482,16 @@ export default function LandingPage() {
                       Most Popular
                     </div>
                   )}
-                  <span className="font-label-sm text-label-sm uppercase mb-md text-muted-foreground">
+                  <span className="font-label-sm text-label-sm uppercase mb-md text-muted-foreground text-center block">
                     {plan.name}
                   </span>
-                  <div className="flex items-end gap-xs mb-sm">
+                  <div className="flex items-end justify-center gap-xs mb-sm">
                     <span className="font-headline text-headline-lg text-foreground">{plan.price}</span>
                     {plan.period && (
                       <span className="text-muted-foreground mb-xs font-body-md">{plan.period}</span>
                     )}
                   </div>
-                  <p className="text-muted-foreground font-body-md text-body-md mb-lg">
+                  <p className="text-muted-foreground font-body-md text-body-md mb-lg text-center">
                     {plan.description}
                   </p>
                   <div className="h-px bg-border mb-lg" />
@@ -625,11 +625,11 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-        <div className="max-w-container-max mx-auto flex flex-col md:flex-row justify-between items-center border-t border-border pt-xl">
-          <p className="text-muted-foreground font-label-sm text-label-sm">
+        <div className="max-w-container-max mx-auto flex flex-col md:flex-row justify-center items-center gap-lg border-t border-border pt-xl">
+          <p className="text-muted-foreground font-label-sm text-label-sm text-center">
             &copy; {currentYear} Ledgerly Inc. All rights reserved.
           </p>
-          <div className="flex gap-xl mt-md md:mt-0">
+          <div className="flex gap-xl">
             <a href="#" className="text-muted-foreground font-label-sm text-label-sm hover:text-foreground transition-colors">Security</a>
             <a href="#" className="text-muted-foreground font-label-sm text-label-sm hover:text-foreground transition-colors">Privacy Policy</a>
             <a href="#" className="text-muted-foreground font-label-sm text-label-sm hover:text-foreground transition-colors">Terms</a>
