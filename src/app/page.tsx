@@ -236,7 +236,7 @@ export default function LandingPage() {
               Future
             </h1>
 
-            <p className="font-body-lg text-body-lg text-muted-foreground max-w-2xl mx-auto mb-xl animate-slide-up delay-75">
+            <p className="text-muted-foreground font-body-lg text-body-lg max-w-2xl mx-auto mb-xl animate-slide-up delay-75">
               Transform chaotic financial data into precise strategic assets.
               Automated reconciliation, multi-currency mastery, and bank-grade
               security — all in one platform.
@@ -356,7 +356,7 @@ export default function LandingPage() {
               <h2 className="font-headline text-headline-lg mb-sm text-foreground">
                 Start tracking in 3 simple steps
               </h2>
-              <p className="text-muted-foreground font-body-md text-body-md">
+              <p className="text-muted-foreground font-body-md text-body-md max-w-xl mx-auto">
                 Get up and running in minutes, not days.
               </p>
             </div>
@@ -462,7 +462,7 @@ export default function LandingPage() {
               <h2 className="font-headline text-headline-lg mb-sm text-foreground">
                 Simple, transparent pricing
               </h2>
-              <p className="text-muted-foreground font-body-md text-body-md">
+              <p className="text-muted-foreground font-body-md text-body-md max-w-xl mx-auto">
                 Choose the plan that fits your needs.
               </p>
             </div>
