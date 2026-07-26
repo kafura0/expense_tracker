@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { getInviteDetails, acceptInviteAction } from './actions'
@@ -16,7 +16,7 @@ interface InviteDetails {
   org_name: string
 }
 
-export default function InvitePage() {
+function InviteContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const token = searchParams.get('token')
@@ -154,5 +154,19 @@ export default function InvitePage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+export default function InvitePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <Skeleton className="h-64 w-full max-w-md rounded-2xl" />
+        </div>
+      }
+    >
+      <InviteContent />
+    </Suspense>
   )
 }
