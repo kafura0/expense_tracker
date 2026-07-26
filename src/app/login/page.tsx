@@ -122,7 +122,7 @@ export default function LoginPage() {
               <div className="w-full border-t border-outline-variant" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-gray-900 px-2 text-on-surface-variant">or continue with</span>
+              <span className="bg-background px-2 text-on-surface-variant">or continue with</span>
             </div>
           </div>
 

@@ -4,10 +4,14 @@ import { useState } from 'react'
 import { login } from '@/features/auth/actions'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { Input } from '@/shared/ui/input'
+import { Button } from '@/shared/ui/button'
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 
 export function LoginForm() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -35,63 +39,55 @@ export function LoginForm() {
         </div>
       )}
 
-      <div>
-        <label
-          htmlFor="email"
-          className="block text-sm font-medium text-on-surface mb-1.5"
-        >
+      <div className="space-y-1.5">
+        <label htmlFor="email" className="text-sm font-medium text-on-surface">
           Email
         </label>
-        <input
+        <Input
           id="email"
           name="email"
           type="email"
           required
-          className="block w-full px-4 py-2.5 bg-surface-dim border border-outline-variant rounded-lg text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
           placeholder="you@example.com"
+          icon={<Mail className="h-4 w-4" />}
         />
       </div>
 
-      <div>
-        <label
-          htmlFor="password"
-          className="block text-sm font-medium text-on-surface mb-1.5"
-        >
-          Password
-        </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          required
-          className="block w-full px-4 py-2.5 bg-surface-dim border border-outline-variant rounded-lg text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-          placeholder="Enter your password"
-        />
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <label htmlFor="password" className="text-sm font-medium text-on-surface">
+            Password
+          </label>
+          <Link href="/reset-password" className="text-xs text-primary hover:text-primary/80 transition-colors">
+            Forgot password?
+          </Link>
+        </div>
+        <div className="relative">
+          <Input
+            id="password"
+            name="password"
+            type={showPassword ? 'text' : 'password'}
+            required
+            placeholder="Enter your password"
+            icon={<Lock className="h-4 w-4" />}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface transition-colors"
+          >
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
       </div>
 
-      <div className="flex items-center justify-between">
-        <Link
-          href="/reset-password"
-          className="text-sm text-primary hover:text-primary/80 transition-colors"
-        >
-          Forgot password?
-        </Link>
-      </div>
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full flex justify-center py-2.5 px-4 rounded-lg text-sm font-semibold text-on-primary bg-primary hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all disabled:opacity-50"
-      >
-        {loading ? 'Signing in...' : 'Sign in'}
-      </button>
+      <Button type="submit" disabled={loading} loading={loading} className="w-full h-11">
+        Sign in
+      </Button>
 
       <p className="text-center text-sm text-on-surface-variant">
         Don&apos;t have an account?{' '}
-        <Link
-          href="/signup"
-          className="text-primary hover:text-primary/80 transition-colors font-medium"
-        >
+        <Link href="/signup" className="text-primary hover:text-primary/80 transition-colors font-medium">
           Sign up
         </Link>
       </p>

@@ -4,13 +4,26 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { signup } from '@/features/auth/signup-actions'
+import { Input } from '@/shared/ui/input'
+import { Button } from '@/shared/ui/button'
+import { Mail, Lock, User, Eye, EyeOff, CheckCircle } from 'lucide-react'
 
 export function SignupForm() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [email, setEmail] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [password, setPassword] = useState('')
   const router = useRouter()
+
+  const strength = {
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /[0-9]/.test(password),
+    special: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+  }
+  const score = Object.values(strength).filter(Boolean).length
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -36,10 +49,8 @@ export function SignupForm() {
   if (success) {
     return (
       <div className="text-center space-y-4 py-4">
-        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-          <span className="material-symbols-outlined text-primary text-3xl">
-            mail
-          </span>
+        <div className="mx-auto w-12 h-12 rounded-full bg-emerald-500/15 flex items-center justify-center">
+          <CheckCircle className="h-6 w-6 text-emerald-400" />
         </div>
         <h2 className="text-xl font-semibold text-on-surface">
           Check your email
@@ -47,12 +58,12 @@ export function SignupForm() {
         <p className="text-on-surface-variant text-sm">
           We sent a verification code to <strong>{email}</strong>
         </p>
-        <Link
-          href={`/verify-otp?email=${encodeURIComponent(email)}`}
-          className="inline-block w-full py-2.5 px-4 rounded-lg text-sm font-semibold text-on-primary bg-primary hover:brightness-110 transition-all text-center"
+        <Button
+          onClick={() => router.push(`/verify-otp?email=${encodeURIComponent(email)}`)}
+          className="w-full h-11"
         >
           Enter verification code
-        </Link>
+        </Button>
       </div>
     )
   }
@@ -65,75 +76,96 @@ export function SignupForm() {
         </div>
       )}
 
-      <div>
-        <label
-          htmlFor="full_name"
-          className="block text-sm font-medium text-on-surface mb-1.5"
-        >
+      <div className="space-y-1.5">
+        <label htmlFor="full_name" className="text-sm font-medium text-on-surface">
           Full Name
         </label>
-        <input
+        <Input
           id="full_name"
           name="full_name"
           type="text"
           required
-          className="block w-full px-4 py-2.5 bg-surface-dim border border-outline-variant rounded-lg text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
           placeholder="John Doe"
+          icon={<User className="h-4 w-4" />}
         />
       </div>
 
-      <div>
-        <label
-          htmlFor="email"
-          className="block text-sm font-medium text-on-surface mb-1.5"
-        >
+      <div className="space-y-1.5">
+        <label htmlFor="email" className="text-sm font-medium text-on-surface">
           Email
         </label>
-        <input
+        <Input
           id="email"
           name="email"
           type="email"
           required
-          className="block w-full px-4 py-2.5 bg-surface-dim border border-outline-variant rounded-lg text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
           placeholder="you@example.com"
+          icon={<Mail className="h-4 w-4" />}
         />
       </div>
 
-      <div>
-        <label
-          htmlFor="password"
-          className="block text-sm font-medium text-on-surface mb-1.5"
-        >
+      <div className="space-y-1.5">
+        <label htmlFor="password" className="text-sm font-medium text-on-surface">
           Password
         </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          required
-          minLength={8}
-          className="block w-full px-4 py-2.5 bg-surface-dim border border-outline-variant rounded-lg text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-          placeholder="Min 8 characters"
-        />
-        <p className="mt-1.5 text-xs text-on-surface-variant/60">
-          Must include uppercase, lowercase, number, and special character
-        </p>
+        <div className="relative">
+          <Input
+            id="password"
+            name="password"
+            type={showPassword ? 'text' : 'password'}
+            required
+            minLength={8}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Min 8 characters"
+            icon={<Lock className="h-4 w-4" />}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface transition-colors"
+          >
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+        {password.length > 0 && (
+          <div className="mt-2 space-y-1.5">
+            <div className="flex gap-1">
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className={`h-1 flex-1 rounded-full transition-colors duration-300 ${
+                    score >= i
+                      ? score <= 1
+                        ? 'bg-red-500'
+                        : score <= 2
+                          ? 'bg-amber-500'
+                          : score <= 3
+                            ? 'bg-yellow-500'
+                            : 'bg-emerald-500'
+                      : 'bg-on-surface-variant/20'
+                  }`}
+                />
+              ))}
+            </div>
+            <p className="text-xs text-on-surface-variant/60">
+              {score === 0 && 'Add uppercase, lowercase, number & symbol'}
+              {score === 1 && 'Weak — add more character types'}
+              {score === 2 && 'Fair — add more character types'}
+              {score === 3 && 'Good — almost there'}
+              {score === 4 && 'Strong password'}
+            </p>
+          </div>
+        )}
       </div>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full flex justify-center py-2.5 px-4 rounded-lg text-sm font-semibold text-on-primary bg-primary hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all disabled:opacity-50"
-      >
-        {loading ? 'Creating account...' : 'Create account'}
-      </button>
+      <Button type="submit" disabled={loading} loading={loading} className="w-full h-11">
+        Create account
+      </Button>
 
       <p className="text-center text-sm text-on-surface-variant">
         Already have an account?{' '}
-        <Link
-          href="/login"
-          className="text-primary hover:text-primary/80 transition-colors font-medium"
-        >
+        <Link href="/login" className="text-primary hover:text-primary/80 transition-colors font-medium">
           Sign in
         </Link>
       </p>

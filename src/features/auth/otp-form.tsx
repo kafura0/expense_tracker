@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { verifyOtp, resendOtp } from '@/features/auth/signup-actions'
+import { Button } from '@/shared/ui/button'
 
 export function OtpForm() {
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
@@ -106,7 +107,7 @@ export function OtpForm() {
           <strong className="text-on-surface">{email}</strong>
         </p>
 
-        <div className="flex gap-2 justify-center">
+        <div className="flex gap-2.5 justify-center">
           {otp.map((digit, i) => (
             <input
               key={i}
@@ -118,19 +119,15 @@ export function OtpForm() {
               onChange={(e) => handleChange(i, e.target.value)}
               onKeyDown={(e) => handleKeyDown(i, e)}
               onPaste={i === 0 ? handlePaste : undefined}
-              className="w-12 h-14 text-center text-xl font-mono bg-surface-dim border border-outline-variant rounded-lg text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+              className="w-12 h-14 text-center text-xl font-mono bg-muted/50 border border-input rounded-lg text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 hover:border-muted-foreground/50"
             />
           ))}
         </div>
       </div>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full flex justify-center py-2.5 px-4 rounded-lg text-sm font-semibold text-on-primary bg-primary hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all disabled:opacity-50"
-      >
-        {loading ? 'Verifying...' : 'Verify email'}
-      </button>
+      <Button type="submit" disabled={loading} loading={loading} className="w-full h-11">
+        Verify email
+      </Button>
 
       <div className="text-center">
         <button

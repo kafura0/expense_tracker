@@ -4,12 +4,16 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/shared/lib/supabase/client'
 import Link from 'next/link'
+import { Input } from '@/shared/ui/input'
+import { Button } from '@/shared/ui/button'
+import { Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react'
 
 export default function UpdatePasswordPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -43,25 +47,25 @@ export default function UpdatePasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-6 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-12 relative overflow-hidden">
       <div className="absolute inset-0 hero-gradient pointer-events-none" />
 
-      <div className="max-w-md w-full space-y-8 relative z-10">
-        <div className="text-center">
-          <Link href="/" className="inline-block mb-6">
-            <span className="font-headline-md text-headline-lg font-bold text-on-surface">
+      <div className="max-w-md w-full space-y-8 relative z-10 animate-fade-in">
+        <div className="text-center space-y-2">
+          <Link href="/" className="inline-block mb-4">
+            <span className="text-2xl font-bold text-on-surface tracking-tight">
               Ledgerly
             </span>
           </Link>
-          <h2 className="text-3xl font-headline font-bold text-on-surface tracking-tight">
+          <h2 className="text-3xl font-bold text-on-surface tracking-tight">
             Update your password
           </h2>
-          <p className="mt-2 text-sm text-on-surface-variant">
+          <p className="text-sm text-on-surface-variant">
             Enter your new password below
           </p>
         </div>
 
-        <div className="glass-card border-outline-variant rounded-xl p-6">
+        <div className="glass-card rounded-2xl p-8 animate-slide-up">
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
               <div className="p-3 text-sm text-red-400 bg-red-900/20 border border-red-800/30 rounded-lg">
@@ -69,56 +73,64 @@ export default function UpdatePasswordPage() {
               </div>
             )}
 
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-on-surface mb-1.5"
-              >
+            <div className="space-y-1.5">
+              <label htmlFor="password" className="text-sm font-medium text-on-surface">
                 New Password
               </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="block w-full px-4 py-2.5 bg-surface-dim border border-outline-variant rounded-lg text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                placeholder="Min 8 characters"
-              />
-              <p className="mt-1.5 text-xs text-on-surface-variant/60">
-                Must be at least 8 characters with uppercase, lowercase, number,
-                and special character
+              <div className="relative">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Min 8 characters"
+                  icon={<Lock className="h-4 w-4" />}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <p className="text-xs text-on-surface-variant/60">
+                Must be at least 8 characters with uppercase, lowercase, number, and special character
               </p>
             </div>
 
-            <div>
-              <label
-                htmlFor="confirmPassword"
-                className="block text-sm font-medium text-on-surface mb-1.5"
-              >
+            <div className="space-y-1.5">
+              <label htmlFor="confirmPassword" className="text-sm font-medium text-on-surface">
                 Confirm New Password
               </label>
-              <input
+              <Input
                 id="confirmPassword"
                 name="confirmPassword"
                 type="password"
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="block w-full px-4 py-2.5 bg-surface-dim border border-outline-variant rounded-lg text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
                 placeholder="Re-enter password"
+                icon={<Lock className="h-4 w-4" />}
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex justify-center py-2.5 px-4 rounded-lg text-sm font-semibold text-on-primary bg-primary hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all disabled:opacity-50"
-            >
-              {loading ? 'Updating...' : 'Update password'}
-            </button>
+            <Button type="submit" disabled={loading} loading={loading} className="w-full h-11">
+              Update password
+            </Button>
           </form>
+
+          <div className="mt-6 text-center">
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-1.5 text-sm text-on-surface-variant hover:text-on-surface transition-colors"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Back to login
+            </Link>
+          </div>
         </div>
       </div>
     </div>
