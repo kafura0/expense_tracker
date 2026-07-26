@@ -205,7 +205,7 @@ export default function LandingPage() {
       </header>
 
       <main className="relative overflow-hidden pb-20 md:pb-0">
-        <section className="hero-gradient relative pt-24 pb-16 md:pt-32 md:pb-24 px-md md:px-xl overflow-hidden">
+        <section className="hero-gradient relative pt-24 pb-16 md:pt-32 md:pb-24 px-md md:px-xl overflow-hidden flex flex-col items-center">
           <div className="absolute top-20 left-[10%] w-72 h-72 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute top-40 right-[5%] w-96 h-96 bg-secondary/5 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-[40%] w-64 h-64 bg-primary/3 rounded-full blur-3xl pointer-events-none" />
@@ -214,7 +214,7 @@ export default function LandingPage() {
           <div className="absolute top-60 left-[60%] w-1 h-1 bg-primary/30 rounded-full animate-pulse delay-300" />
           <div className="absolute top-24 right-[40%] w-2.5 h-2.5 bg-secondary/30 rounded-full animate-pulse delay-200" />
 
-          <div className="max-w-container-max mx-auto text-center relative z-10">
+          <div className="max-w-container-max w-full flex flex-col items-center text-center relative z-10">
             <div className="inline-flex items-center gap-sm px-4 py-1.5 rounded-full border border-border bg-card/50 mb-xl animate-fade-in">
               <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
               <span className="font-label-sm text-label-sm text-primary uppercase tracking-widest">
@@ -222,10 +222,7 @@ export default function LandingPage() {
               </span>
             </div>
 
-            <h1
-              className="font-headline text-display-lg md:text-[72px] md:leading-[1.1] mb-lg max-w-4xl mx-auto animate-slide-up"
-              style={{ lineHeight: '1.1' }}
-            >
+            <h1 className="font-headline text-display-lg md:text-[72px] leading-[1.1] tracking-tight mb-lg max-w-4xl animate-slide-up">
               Master Your{' '}
               <span
                 className="bg-gradient-to-r from-primary via-emerald-300 to-secondary bg-clip-text"
@@ -236,7 +233,7 @@ export default function LandingPage() {
               Future
             </h1>
 
-            <p className="text-muted-foreground font-body-lg text-body-lg max-w-2xl mx-auto mb-xl animate-slide-up delay-75">
+            <p className="text-muted-foreground font-body-lg text-body-lg leading-relaxed max-w-2xl mb-xl animate-slide-up delay-75">
               Transform chaotic financial data into precise strategic assets.
               Automated reconciliation, multi-currency mastery, and bank-grade
               security — all in one platform.
@@ -273,13 +270,13 @@ export default function LandingPage() {
                     <div className="w-2.5 h-2.5 rounded-full bg-primary/60" />
                   </div>
                   <div className="p-lg md:p-2xl">
-                    <div className="w-full aspect-[16/9] bg-muted/30 rounded-lg flex items-center justify-center relative overflow-hidden">
+                    <div className="w-full aspect-[16/9] bg-muted/30 rounded-lg flex flex-col items-center justify-center relative overflow-hidden">
                       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5" />
-                      <div className="text-center relative z-10">
-                        <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-lg">
+                      <div className="flex flex-col items-center text-center relative z-10">
+                        <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-lg">
                           <TrendingUp className="w-10 h-10 text-primary/60" />
                         </div>
-                        <p className="text-muted-foreground font-body-md text-body-md">
+                        <p className="text-muted-foreground font-body-md text-body-md leading-relaxed">
                           Your expense dashboard
                         </p>
                       </div>
@@ -291,8 +288,8 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="py-lg md:py-xl bg-card/30 border-y border-border overflow-hidden">
-          <div className="max-w-container-max mx-auto px-md md:px-xl">
+        <section className="py-lg md:py-xl bg-card/30 border-y border-border overflow-hidden flex flex-col items-center">
+          <div className="max-w-container-max w-full flex flex-col items-center px-md md:px-xl">
             <p className="font-label-sm text-label-sm text-center text-muted-foreground uppercase tracking-widest mb-xl">
               Trusted by forward-thinking finance teams
             </p>
@@ -300,7 +297,7 @@ export default function LandingPage() {
               {['VERTEX', 'LINEAR', 'VULCAN', 'AETHER', 'SYNERGY'].map((name) => (
                 <span
                   key={name}
-                  className="font-headline text-headline-md font-bold text-muted-foreground/40 hover:text-muted-foreground/70 transition-all duration-300 cursor-default"
+                  className="font-headline text-headline-md font-bold text-muted-foreground/40 hover:text-muted-foreground/70 transition-all duration-300 cursor-default tracking-tight"
                 >
                   {name}
                 </span>
@@ -309,16 +306,16 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="py-xl md:py-2xl px-md md:px-xl" id="features">
-          <div className="max-w-container-max mx-auto">
-            <div className="text-center mb-2xl">
+        <section className="py-xl md:py-2xl px-md md:px-xl flex flex-col items-center" id="features">
+          <div className="max-w-container-max w-full flex flex-col items-center">
+            <div className="flex flex-col items-center text-center mb-2xl">
               <p className="font-label-sm text-label-sm text-primary uppercase tracking-widest mb-md">
                 Features
               </p>
-              <h2 className="font-headline text-headline-lg mb-sm text-foreground">
+              <h2 className="font-headline text-headline-lg tracking-tight mb-sm text-foreground">
                 Engineered for Precision
               </h2>
-              <p className="text-muted-foreground font-body-md text-body-md max-w-xl mx-auto">
+              <p className="text-muted-foreground font-body-md text-body-md leading-relaxed max-w-xl">
                 Tools built for the modern financial operator.
               </p>
             </div>
@@ -334,7 +331,7 @@ export default function LandingPage() {
                     <div className={`w-14 h-14 ${feature.bg} rounded-2xl flex items-center justify-center mb-lg`}>
                       <IconComp className={`w-7 h-7 ${feature.color}`} />
                     </div>
-                    <h3 className="font-headline text-headline-md mb-sm text-foreground">
+                    <h3 className="font-headline text-headline-md tracking-tight mb-sm text-foreground">
                       {feature.title}
                     </h3>
                     <p className="text-muted-foreground font-body-md text-body-md leading-relaxed">
@@ -347,16 +344,16 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="py-xl md:py-2xl px-md md:px-xl bg-card/30 border-y border-border">
-          <div className="max-w-container-max mx-auto">
-            <div className="text-center mb-2xl">
+        <section className="py-xl md:py-2xl px-md md:px-xl bg-card/30 border-y border-border flex flex-col items-center">
+          <div className="max-w-container-max w-full flex flex-col items-center">
+            <div className="flex flex-col items-center text-center mb-2xl">
               <p className="font-label-sm text-label-sm text-primary uppercase tracking-widest mb-md">
                 How It Works
               </p>
-              <h2 className="font-headline text-headline-lg mb-sm text-foreground">
+              <h2 className="font-headline text-headline-lg tracking-tight mb-sm text-foreground">
                 Start tracking in 3 simple steps
               </h2>
-              <p className="text-muted-foreground font-body-md text-body-md max-w-xl mx-auto">
+              <p className="text-muted-foreground font-body-md text-body-md leading-relaxed max-w-xl">
                 Get up and running in minutes, not days.
               </p>
             </div>
@@ -378,7 +375,7 @@ export default function LandingPage() {
                     <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-md">
                       <IconComp className="w-7 h-7 text-primary" />
                     </div>
-                    <h3 className="font-headline text-headline-md mb-sm text-foreground">
+                    <h3 className="font-headline text-headline-md tracking-tight mb-sm text-foreground">
                       {step.title}
                     </h3>
                     <p className="text-muted-foreground font-body-md text-body-md max-w-xs mx-auto leading-relaxed">
@@ -391,16 +388,16 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="py-xl md:py-2xl px-md md:px-xl bg-card/30 border-y border-border">
-          <div className="max-w-container-max mx-auto">
-            <div className="text-center mb-2xl">
+        <section className="py-xl md:py-2xl px-md md:px-xl bg-card/30 border-y border-border flex flex-col items-center">
+          <div className="max-w-container-max w-full flex flex-col items-center">
+            <div className="flex flex-col items-center text-center mb-2xl">
               <p className="font-label-sm text-label-sm text-primary uppercase tracking-widest mb-md">
                 For Teams
               </p>
-              <h2 className="font-headline text-headline-lg mb-sm text-foreground">
+              <h2 className="font-headline text-headline-lg tracking-tight mb-sm text-foreground">
                 Built for Teams
               </h2>
-              <p className="text-muted-foreground font-body-md text-body-md max-w-xl mx-auto">
+              <p className="text-muted-foreground font-body-md text-body-md leading-relaxed max-w-xl">
                 Invite clients, manage permissions, and track team expenses in one place
               </p>
             </div>
@@ -410,7 +407,7 @@ export default function LandingPage() {
                 <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-lg">
                   <Users className="w-7 h-7 text-primary" />
                 </div>
-                <h3 className="font-headline text-headline-md mb-sm text-foreground">
+                <h3 className="font-headline text-headline-md tracking-tight mb-sm text-foreground">
                   Client Management
                 </h3>
                 <p className="text-muted-foreground font-body-md text-body-md leading-relaxed">
@@ -421,7 +418,7 @@ export default function LandingPage() {
                 <div className="w-14 h-14 bg-secondary/10 rounded-2xl flex items-center justify-center mb-lg">
                   <ShieldCheck className="w-7 h-7 text-secondary" />
                 </div>
-                <h3 className="font-headline text-headline-md mb-sm text-foreground">
+                <h3 className="font-headline text-headline-md tracking-tight mb-sm text-foreground">
                   Role-Based Access
                 </h3>
                 <p className="text-muted-foreground font-body-md text-body-md leading-relaxed">
@@ -432,7 +429,7 @@ export default function LandingPage() {
                 <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-lg">
                   <Handshake className="w-7 h-7 text-primary" />
                 </div>
-                <h3 className="font-headline text-headline-md mb-sm text-foreground">
+                <h3 className="font-headline text-headline-md tracking-tight mb-sm text-foreground">
                   Team Collaboration
                 </h3>
                 <p className="text-muted-foreground font-body-md text-body-md leading-relaxed">
@@ -441,7 +438,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="text-center mt-2xl">
+            <div className="flex justify-center mt-2xl">
               <Link
                 href="/org-signup"
                 className="bg-primary text-primary-foreground font-medium px-xl py-md rounded-xl text-body-lg hover:brightness-110 transition-all emerald-drop inline-flex items-center justify-center gap-sm"
@@ -453,16 +450,16 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="py-xl md:py-2xl px-md md:px-xl" id="pricing">
-          <div className="max-w-container-max mx-auto">
-            <div className="text-center mb-2xl">
+        <section className="py-xl md:py-2xl px-md md:px-xl flex flex-col items-center" id="pricing">
+          <div className="max-w-container-max w-full flex flex-col items-center">
+            <div className="flex flex-col items-center text-center mb-2xl">
               <p className="font-label-sm text-label-sm text-primary uppercase tracking-widest mb-md">
                 Pricing
               </p>
-              <h2 className="font-headline text-headline-lg mb-sm text-foreground">
+              <h2 className="font-headline text-headline-lg tracking-tight mb-sm text-foreground">
                 Simple, transparent pricing
               </h2>
-              <p className="text-muted-foreground font-body-md text-body-md max-w-xl mx-auto">
+              <p className="text-muted-foreground font-body-md text-body-md leading-relaxed max-w-xl">
                 Choose the plan that fits your needs.
               </p>
             </div>
@@ -525,14 +522,14 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="py-xl md:py-2xl px-md md:px-xl relative">
+        <section className="py-xl md:py-2xl px-md md:px-xl relative flex flex-col items-center">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/3 via-transparent to-secondary/3 pointer-events-none" />
-          <div className="max-w-container-max mx-auto glass-card rounded-3xl p-lg md:p-2xl text-center border border-border overflow-hidden relative">
+          <div className="max-w-container-max w-full glass-card rounded-3xl p-lg md:p-2xl flex flex-col items-center text-center border border-border overflow-hidden relative">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-48 bg-primary/8 blur-[100px] rounded-full pointer-events-none" />
-            <h2 className="font-headline text-headline-lg md:text-display-lg mb-md text-foreground relative z-10">
+            <h2 className="font-headline text-headline-lg md:text-display-lg tracking-tight mb-md text-foreground relative z-10">
               Ready to take control of your finances?
             </h2>
-            <p className="text-muted-foreground font-body-lg text-body-lg mb-xl max-w-xl mx-auto relative z-10">
+            <p className="text-muted-foreground font-body-lg text-body-lg leading-relaxed mb-xl max-w-xl relative z-10">
               Get started for free. No credit card required.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-md relative z-10">
@@ -554,13 +551,13 @@ export default function LandingPage() {
         </section>
       </main>
 
-      <footer className="bg-card/50 border-t border-border pt-2xl pb-xl px-md md:px-xl">
-        <div className="max-w-container-max mx-auto flex flex-col md:flex-row md:flex-wrap justify-center items-start gap-2xl mb-2xl">
+      <footer className="bg-card/50 border-t border-border pt-2xl pb-xl px-md md:px-xl flex flex-col items-center">
+        <div className="max-w-container-max w-full flex flex-col md:flex-row md:flex-wrap justify-center items-start gap-2xl mb-2xl">
           <div className="flex flex-col min-w-[200px]">
-            <span className="font-headline text-headline-md font-bold text-foreground block mb-md">
+            <span className="font-headline text-headline-md font-bold text-foreground block mb-md tracking-tight">
               Ledgerly
             </span>
-            <p className="text-muted-foreground font-body-md text-body-md mb-xl max-w-xs">
+            <p className="text-muted-foreground font-body-md text-body-md leading-relaxed mb-xl max-w-xs">
               The premium operating system for modern financial management.
             </p>
             <div className="flex gap-md">
@@ -625,7 +622,7 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-        <div className="max-w-container-max mx-auto flex flex-col md:flex-row justify-center items-center gap-lg border-t border-border pt-xl">
+        <div className="max-w-container-max w-full flex flex-col md:flex-row justify-center items-center gap-lg border-t border-border pt-xl">
           <p className="text-muted-foreground font-label-sm text-label-sm text-center">
             &copy; {currentYear} Ledgerly Inc. All rights reserved.
           </p>
