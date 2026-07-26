@@ -141,6 +141,8 @@ export async function updateSession(request: NextRequest) {
     '/update-password',
     '/auth/callback',
     '/onboarding',
+    '/org-signup',
+    '/invite',
   ]
   const isPublicPath = publicPaths.some(
     (path) => pathname === path || pathname.startsWith(path + '/')
@@ -243,12 +245,9 @@ export async function updateSession(request: NextRequest) {
     }
 
     if (!memberships || memberships.length === 0) {
-      // User has no org membership — they can't access any app content.
-      // Redirect to request-access with a message so the UI can explain why.
-      if (isProtectedPath) {
+      if (isAdminPath) {
         const url = request.nextUrl.clone()
-        url.pathname = '/request-access'
-        url.searchParams.set('message', 'no_org')
+        url.pathname = '/'
         return NextResponse.redirect(url)
       }
     } else {

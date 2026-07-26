@@ -21,11 +21,12 @@ import {
   Mail, X, Send, ChevronDown, ChevronUp, AlertTriangle, Search, Filter,
 } from 'lucide-react'
 
-type Tab = 'users' | 'clients' | 'announcements' | 'messages'
+type Tab = 'users' | 'clients' | 'invites' | 'announcements' | 'messages'
 
 const tabs: { id: Tab; label: string; icon: typeof Users }[] = [
   { id: 'users', label: 'Users', icon: Users },
   { id: 'clients', label: 'Clients', icon: Building2 },
+  { id: 'invites', label: 'Invites', icon: Send },
   { id: 'announcements', label: 'Announcements', icon: Megaphone },
   { id: 'messages', label: 'Messages', icon: MessageSquare },
 ]
@@ -76,6 +77,7 @@ export default function AdminDashboard() {
 
       {activeTab === 'users' && <UsersTab />}
       {activeTab === 'clients' && <ClientsTab />}
+      {activeTab === 'invites' && <InvitesTab />}
       {activeTab === 'announcements' && <AnnouncementsTab />}
       {activeTab === 'messages' && <MessagesTab />}
     </div>
@@ -872,6 +874,119 @@ function MessagesTab() {
           })}
         </div>
       )}
+    </div>
+  )
+}
+
+function InvitesTab() {
+  const [email, setEmail] = useState('')
+  const [role, setRole] = useState<'client' | 'manager'>('client')
+  const [sending, setSending] = useState(false)
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  const { data: invitesData, refetch } = useQuery({
+    queryKey: ['admin', 'invites'],
+    queryFn: async () => {
+      const { listInvitesAction } = await import('@/features/invites/actions')
+      return listInvitesAction()
+    },
+  })
+
+  const handleSendInvite = async () => {
+    if (!email) return
+    setSending(true)
+    setMessage(null)
+    try {
+      const { createInviteAction } = await import('@/features/invites/actions')
+      const result = await createInviteAction(email, role)
+      if (result.error) {
+        setMessage({ type: 'error', text: result.error })
+      } else {
+        setMessage({ type: 'success', text: 'Invite sent successfully' })
+        setEmail('')
+        refetch()
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Failed to send invite' })
+    } finally {
+      setSending(false)
+    }
+  }
+
+  const handleRevoke = async (inviteId: string) => {
+    try {
+      const { revokeInviteAction } = await import('@/features/invites/actions')
+      await revokeInviteAction(inviteId)
+      refetch()
+    } catch {
+      // silently fail
+    }
+  }
+
+  const invites = invitesData?.data || []
+
+  return (
+    <div className="space-y-6">
+      <Card className="glass-card border-outline-variant">
+        <CardHeader>
+          <CardTitle className="font-headline">Send Invite</CardTitle>
+          <CardDescription>Invite a client or manager to your organization</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Input
+              placeholder="Email address"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="flex-1"
+            />
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as 'client' | 'manager')}
+              className="h-10 rounded-lg border border-outline-variant bg-surface-container px-3 text-sm text-on-surface"
+            >
+              <option value="client">Client</option>
+              <option value="manager">Manager</option>
+            </select>
+            <Button onClick={handleSendInvite} disabled={sending || !email}>
+              {sending ? 'Sending...' : 'Send Invite'}
+            </Button>
+          </div>
+          {message && (
+            <div className={`mt-3 text-sm ${message.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+              {message.text}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="glass-card border-outline-variant">
+        <CardHeader>
+          <CardTitle className="font-headline">Pending Invites</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {invites.length === 0 ? (
+            <p className="text-sm text-on-surface-variant text-center py-8">No invites sent yet</p>
+          ) : (
+            <div className="space-y-2">
+              {invites.map((invite: { id: string; email: string; role: string; status: string }) => (
+                <div key={invite.id} className="flex items-center justify-between p-3 rounded-xl bg-surface-container/50">
+                  <div>
+                    <p className="text-sm font-medium text-on-surface">{invite.email}</p>
+                    <p className="text-xs text-on-surface-variant">{invite.role} · {invite.status}</p>
+                  </div>
+                  {invite.status === 'pending' && (
+                    <Button variant="ghost" size="sm" onClick={() => handleRevoke(invite.id)}>
+                      Revoke
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

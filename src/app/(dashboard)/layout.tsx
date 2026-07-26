@@ -159,23 +159,27 @@ export default function DashboardLayout({
           </span>
         </div>
 
-        <div className="px-3 py-3 border-b border-sidebar-border">
-          <OrgSwitcher />
-        </div>
+        {activeOrg && (
+          <>
+            <div className="px-3 py-3 border-b border-sidebar-border">
+              <OrgSwitcher />
+            </div>
 
-        {userRole && (
-          <div className="px-5 py-2.5 border-b border-sidebar-border">
-            <span className={cn(
-              'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-200',
-              userRole === 'super_admin' && 'bg-purple-500/15 text-purple-400 ring-1 ring-purple-500/20',
-              userRole === 'manager' && 'bg-blue-500/15 text-blue-400 ring-1 ring-blue-500/20',
-              userRole === 'client' && 'bg-slate-500/15 text-slate-400 ring-1 ring-slate-500/20',
-            )}>
-              {userRole === 'super_admin' && <Shield className="h-3 w-3" />}
-              {userRole === 'manager' && <Users className="h-3 w-3" />}
-              {roleLabels[userRole] || userRole}
-            </span>
-          </div>
+            {userRole && (
+              <div className="px-5 py-2.5 border-b border-sidebar-border">
+                <span className={cn(
+                  'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-200',
+                  userRole === 'super_admin' && 'bg-purple-500/15 text-purple-400 ring-1 ring-purple-500/20',
+                  userRole === 'manager' && 'bg-blue-500/15 text-blue-400 ring-1 ring-blue-500/20',
+                  userRole === 'client' && 'bg-slate-500/15 text-slate-400 ring-1 ring-slate-500/20',
+                )}>
+                  {userRole === 'super_admin' && <Shield className="h-3 w-3" />}
+                  {userRole === 'manager' && <Users className="h-3 w-3" />}
+                  {roleLabels[userRole] || userRole}
+                </span>
+              </div>
+            )}
+          </>
         )}
 
         <div className="flex-1 px-3 py-4 overflow-y-auto">
@@ -230,23 +234,27 @@ export default function DashboardLayout({
               </button>
             </div>
 
-            <div className="px-3 py-3 border-b border-sidebar-border">
-              <OrgSwitcher />
-            </div>
+            {activeOrg && (
+              <>
+                <div className="px-3 py-3 border-b border-sidebar-border">
+                  <OrgSwitcher />
+                </div>
 
-            {userRole && (
-              <div className="px-5 py-2.5 border-b border-sidebar-border">
-                <span className={cn(
-                  'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-200',
-                  userRole === 'super_admin' && 'bg-purple-500/15 text-purple-400 ring-1 ring-purple-500/20',
-                  userRole === 'manager' && 'bg-blue-500/15 text-blue-400 ring-1 ring-blue-500/20',
-                  userRole === 'client' && 'bg-slate-500/15 text-slate-400 ring-1 ring-slate-500/20',
-                )}>
-                  {userRole === 'super_admin' && <Shield className="h-3 w-3" />}
-                  {userRole === 'manager' && <Users className="h-3 w-3" />}
-                  {roleLabels[userRole] || userRole}
-                </span>
-              </div>
+                {userRole && (
+                  <div className="px-5 py-2.5 border-b border-sidebar-border">
+                    <span className={cn(
+                      'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-200',
+                      userRole === 'super_admin' && 'bg-purple-500/15 text-purple-400 ring-1 ring-purple-500/20',
+                      userRole === 'manager' && 'bg-blue-500/15 text-blue-400 ring-1 ring-blue-500/20',
+                      userRole === 'client' && 'bg-slate-500/15 text-slate-400 ring-1 ring-slate-500/20',
+                    )}>
+                      {userRole === 'super_admin' && <Shield className="h-3 w-3" />}
+                      {userRole === 'manager' && <Users className="h-3 w-3" />}
+                      {roleLabels[userRole] || userRole}
+                    </span>
+                  </div>
+                )}
+              </>
             )}
 
             <div className="flex-1 px-3 py-4 overflow-y-auto">

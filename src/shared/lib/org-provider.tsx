@@ -64,6 +64,7 @@ interface OrgContextType {
   switchOrg: (orgId: string) => Promise<void>
   /** Manually refetch org memberships (e.g., after admin adds user to a new org). */
   refreshOrgs: () => Promise<void>
+  isSolo: boolean
 }
 
 /**
@@ -77,6 +78,7 @@ const OrgContext = createContext<OrgContextType>({
   loading: true,
   switchOrg: async () => {},
   refreshOrgs: async () => {},
+  isSolo: false,
 })
 
 /**
@@ -246,8 +248,10 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
     await fetchOrgs()
   }, [fetchOrgs])
 
+  const isSolo = !loading && orgs.length === 0
+
   return (
-    <OrgContext.Provider value={{ orgs, activeOrg, loading, switchOrg, refreshOrgs }}>
+    <OrgContext.Provider value={{ orgs, activeOrg, loading, switchOrg, refreshOrgs, isSolo }}>
       {children}
     </OrgContext.Provider>
   )

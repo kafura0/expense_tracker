@@ -15,28 +15,39 @@ export function KpiCards() {
   const supabase = createClient()
 
   const fetchKpis = async () => {
-    if (!orgId) throw new Error('No active organization')
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
 
     const now = new Date()
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
     const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0)
 
-    const { data: currentMonth, error: currentError } = await supabase
+    let currentQuery = supabase
       .from('expenses')
       .select('amount_cents')
       .eq('is_deleted', false)
-      .eq('org_id', orgId)
       .gte('date', startOfMonth.toISOString())
       .lte('date', now.toISOString())
+    if (orgId) {
+      currentQuery = currentQuery.eq('org_id', orgId)
+    } else {
+      currentQuery = currentQuery.eq('user_id', user.id).is('org_id', null)
+    }
+    const { data: currentMonth, error: currentError } = await currentQuery
 
-    const { data: lastMonth, error: lastError } = await supabase
+    let lastQuery = supabase
       .from('expenses')
       .select('amount_cents')
       .eq('is_deleted', false)
-      .eq('org_id', orgId)
       .gte('date', startOfLastMonth.toISOString())
       .lte('date', endOfLastMonth.toISOString())
+    if (orgId) {
+      lastQuery = lastQuery.eq('org_id', orgId)
+    } else {
+      lastQuery = lastQuery.eq('user_id', user.id).is('org_id', null)
+    }
+    const { data: lastMonth, error: lastError } = await lastQuery
 
     if (currentError || lastError) throw new Error('Failed to fetch KPIs')
 

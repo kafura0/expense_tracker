@@ -19,36 +19,52 @@ export function Insights() {
   const orgId = useActiveOrgId()
 
   const fetchInsights = async (): Promise<Insight[]> => {
-    if (!orgId) throw new Error('No active organization')
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
     const now = new Date()
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0)
 
-    const { data: currentExpenses, error: currentError } = await supabase
+    let currentQuery = supabase
       .from('expenses')
       .select('amount_cents, category_id')
       .eq('is_deleted', false)
-      .eq('org_id', orgId)
       .gte('date', currentMonthStart.toISOString())
       .lte('date', now.toISOString())
+    if (orgId) {
+      currentQuery = currentQuery.eq('org_id', orgId)
+    } else {
+      currentQuery = currentQuery.eq('user_id', user.id).is('org_id', null)
+    }
+    const { data: currentExpenses, error: currentError } = await currentQuery
 
     if (currentError) throw new Error(`Failed to fetch current month expenses: ${currentError.message}`)
 
-    const { data: lastExpenses, error: lastError } = await supabase
+    let lastQuery = supabase
       .from('expenses')
       .select('amount_cents, category_id')
       .eq('is_deleted', false)
-      .eq('org_id', orgId)
       .gte('date', lastMonthStart.toISOString())
       .lte('date', lastMonthEnd.toISOString())
+    if (orgId) {
+      lastQuery = lastQuery.eq('org_id', orgId)
+    } else {
+      lastQuery = lastQuery.eq('user_id', user.id).is('org_id', null)
+    }
+    const { data: lastExpenses, error: lastError } = await lastQuery
 
     if (lastError) throw new Error(`Failed to fetch last month expenses: ${lastError.message}`)
 
-    const { data: categories, error: catError } = await supabase
+    let categoryQuery = supabase
       .from('categories')
       .select('id, name')
-      .eq('org_id', orgId)
+    if (orgId) {
+      categoryQuery = categoryQuery.eq('org_id', orgId)
+    } else {
+      categoryQuery = categoryQuery.eq('user_id', user.id).is('org_id', null)
+    }
+    const { data: categories, error: catError } = await categoryQuery
 
     if (catError) throw new Error(`Failed to fetch categories: ${catError.message}`)
 

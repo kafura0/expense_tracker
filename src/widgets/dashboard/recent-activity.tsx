@@ -15,15 +15,21 @@ export function RecentActivity() {
   const orgId = useActiveOrgId()
 
   const fetchRecentExpenses = async () => {
-    if (!orgId) throw new Error('No active organization')
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('expenses')
       .select(`id, title, amount_cents, currency, date, category_id, categories (name, icon)`)
       .eq('is_deleted', false)
-      .eq('org_id', orgId)
       .order('date', { ascending: false })
       .limit(10)
+    if (orgId) {
+      query = query.eq('org_id', orgId)
+    } else {
+      query = query.eq('user_id', user.id).is('org_id', null)
+    }
+    const { data, error } = await query
 
     if (error) throw error
     return data?.map(expense => ({

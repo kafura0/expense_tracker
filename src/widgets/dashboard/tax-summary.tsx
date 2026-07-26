@@ -13,19 +13,25 @@ export function TaxSummary() {
   const orgId = useActiveOrgId()
 
   const fetchTaxSummary = async () => {
-    if (!orgId) throw new Error('No active organization')
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
     const now = new Date()
     const start = startOfMonth(now)
     const end = endOfMonth(now)
 
-    const { data: expenses, error } = await supabase
+    let query = supabase
       .from('expenses')
       .select('amount_cents, tax_amount_cents, currency')
       .eq('is_deleted', false)
-      .eq('org_id', orgId)
       .eq('is_taxable', true)
       .gte('date', start.toISOString())
       .lte('date', end.toISOString())
+    if (orgId) {
+      query = query.eq('org_id', orgId)
+    } else {
+      query = query.eq('user_id', user.id).is('org_id', null)
+    }
+    const { data: expenses, error } = await query
 
     if (error) throw error
 
@@ -50,10 +56,6 @@ export function TaxSummary() {
         <CardContent><div className="space-y-4">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-12 w-full bg-surface-container-high" />)}</div></CardContent>
       </Card>
     )
-  }
-
-  if (orgId === null) {
-    return <Card className="glass-card border-outline-variant"><CardContent className="p-6 text-center text-on-surface-variant">No organization selected</CardContent></Card>
   }
 
   const formatCurrency = (cents: number) => {

@@ -1,73 +1,20 @@
-/**
- * @fileoverview Data access layer for the expenses entity with org-scoped isolation.
- *
- * This repository is the ONLY way application code accesses expense data.
- * Every function enforces organization-level data isolation through a two-layer
- * defense strategy:
- *
- * ## Layer 1: Application-level org scoping (this file)
- * Every query includes `.eq('org_id', orgId)` to scope results to the current
- * user's active organization. The orgId is resolved via `getOrgId()`, which
- * checks the active org context first, then falls back to the user's first
- * org membership.
- *
- * ## Layer 2: Database-level RLS (Supabase Row Level Security)
- * The `expenses` table has RLS policies that check `auth.uid()` and the
- * user's `org_members` row. Even if the application-level `.eq('org_id', orgId)`
- * were removed, the RLS policy would still prevent cross-org data access.
- *
- * ## Why both layers?
- * - Application-level scoping prevents accidental cross-org queries (bugs)
- * - RLS prevents malicious cross-org access (security)
- * - Neither alone is sufficient; together they form defense-in-depth
- *
- * ## Org ID resolution strategy
- * The `getOrgId()` helper uses a two-step resolution:
- * 1. Check the active org context (set by the client-side OrgProvider from the
- *    `ledgerly_active_org` cookie)
- * 2. Fall back to the user's first org membership (sorted by created_at)
- *
- * This ensures the repository works even if the org cookie is missing (e.g.,
- * server-side rendering, background jobs, or first visit before client hydration).
- *
- * @see {@link src/shared/lib/supabase/middleware.ts} for route-level org validation
- * @see {@link src/shared/lib/org-context.ts} for the active org context provider
- */
 import { createClient } from '@/shared/lib/supabase/server'
 import { getActiveOrgId } from '@/shared/lib/org-context'
 import { expenseSchema, type Expense, type ExpenseInsert, type ExpenseUpdate } from './schema'
 import type { ExpenseListParams, ExpenseListResponse } from './types'
 
-/**
- * Resolves the current user's active organization ID.
- *
- * Uses a two-step resolution strategy with fallback:
- * 1. **Primary**: Reads the active org from the OrgContext (set by client-side
- *    OrgProvider based on the `ledgerly_active_org` cookie). This is the normal
- *    path for most requests.
- * 2. **Fallback**: Queries the `org_members` table for the user's first membership
- *    (ordered by created_at ascending). This handles edge cases where:
- *    - The org cookie hasn't been set yet (first visit, SSR)
- *    - The org cookie references a membership that was revoked
- *    - The cookie was cleared by the browser
- *
- * @throws {Error} If the user is not authenticated (no session found)
- * @throws {Error} If the user has no org memberships at all
- * @returns The UUID of the user's active organization
- *
- * @security
- * This function only returns org IDs that the user has a valid membership for.
- * The org_members table is itself protected by RLS — users can only see their
- * own memberships. A compromised request cannot specify an arbitrary org_id.
- */
-async function getOrgId(): Promise<string> {
-  // Step 1: Check the active org context (cookie-based, set by client)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function orgScopeFilter(query: any, orgId: string | null, userId: string) {
+  if (orgId) {
+    return query.eq('org_id', orgId)
+  }
+  return query.eq('user_id', userId).is('org_id', null)
+}
+
+async function getOrgId(): Promise<string | null> {
   const activeOrgId = await getActiveOrgId()
   if (activeOrgId) return activeOrgId
 
-  // Step 2: Fallback — query the database for the user's first org membership.
-  // This is a defense-in-depth measure: if the cookie is missing or stale,
-  // we still resolve to a valid org rather than failing.
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
@@ -80,7 +27,7 @@ async function getOrgId(): Promise<string> {
     .limit(1)
     .maybeSingle()
 
-  if (!membership) throw new Error('No organization membership found')
+  if (!membership) return null
   return membership.org_id
 }
 
@@ -115,17 +62,18 @@ async function getOrgId(): Promise<string> {
  */
 export async function findAllExpenses(params: ExpenseListParams = {}): Promise<ExpenseListResponse> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
   const orgId = await getOrgId()
   const { filters = {}, pagination = { page: 1, page_size: 20 }, sort = { field: 'date', direction: 'desc' } } = params
 
-  // Build the base query with org scoping and soft-delete filter.
-  // `count: 'exact'` tells PostgREST to return the total row count
-  // for pagination metadata (separate from the returned rows).
   let query = supabase
     .from('expenses')
     .select('*, categories(id, name, icon, color)', { count: 'exact' })
     .eq('is_deleted', false)
-    .eq('org_id', orgId)
+
+  query = orgScopeFilter(query, orgId, user.id)
 
   // Apply optional filters. Each filter is conditionally added — only when
   // the caller provides a value. This keeps the query clean for unfiltered calls.
@@ -196,21 +144,22 @@ export async function findAllExpenses(params: ExpenseListParams = {}): Promise<E
  */
 export async function findExpenseById(id: string): Promise<Expense | null> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
   const orgId = await getOrgId()
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('expenses')
     .select('*, categories(id, name, icon, color)')
     .eq('id', id)
-    // Org scoping: ensures this expense belongs to the current user's org
-    .eq('org_id', orgId)
     .eq('is_deleted', false)
-    .single()
+
+  query = orgScopeFilter(query, orgId, user.id)
+
+  const { data, error } = await query.single()
 
   if (error) {
-    // PGRST116 = "Row not found" (PostgREST single() with no results).
-    // We return null instead of throwing so callers can distinguish between
-    // "not found" and actual database errors.
     if (error.code === 'PGRST116') return null
     throw new Error(`Failed to fetch expense: ${error.message}`)
   }
@@ -244,8 +193,6 @@ export async function createExpense(expense: ExpenseInsert): Promise<Expense> {
 
   const orgId = await getOrgId()
 
-  // Spread the caller's data but override user_id and org_id.
-  // This is a security pattern: never trust caller-supplied identity fields.
   const { data, error } = await supabase
     .from('expenses')
     .insert({
@@ -257,8 +204,6 @@ export async function createExpense(expense: ExpenseInsert): Promise<Expense> {
     .single()
 
   if (error) throw new Error(`Failed to create expense: ${error.message}`)
-  // Validate the returned data against the Zod schema to ensure type safety
-  // and catch any unexpected data shapes from the database
   return expenseSchema.parse(data)
 }
 
@@ -282,22 +227,23 @@ export async function createExpense(expense: ExpenseInsert): Promise<Expense> {
  */
 export async function updateExpense(id: string, expense: ExpenseUpdate): Promise<Expense> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
   const orgId = await getOrgId()
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('expenses')
     .update({
       ...expense,
-      // Always override updated_at to ensure accurate audit trail
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
-    // Org scoping: prevents updating expenses in other orgs
-    .eq('org_id', orgId)
-    // Soft-delete guard: cannot update a deleted expense
     .eq('is_deleted', false)
-    .select()
-    .single()
+
+  query = orgScopeFilter(query, orgId, user.id)
+
+  const { data, error } = await query.select().single()
 
   if (error) throw new Error(`Failed to update expense: ${error.message}`)
   return expenseSchema.parse(data)
@@ -322,9 +268,12 @@ export async function updateExpense(id: string, expense: ExpenseUpdate): Promise
  */
 export async function softDeleteExpense(id: string): Promise<void> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
   const orgId = await getOrgId()
 
-  const { error } = await supabase
+  let query = supabase
     .from('expenses')
     .update({
       is_deleted: true,
@@ -332,8 +281,10 @@ export async function softDeleteExpense(id: string): Promise<void> {
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
-    // Org scoping: prevents deleting expenses in other orgs
-    .eq('org_id', orgId)
+
+  query = orgScopeFilter(query, orgId, user.id)
+
+  const { error } = await query
 
   if (error) throw new Error(`Failed to delete expense: ${error.message}`)
 }
@@ -355,9 +306,12 @@ export async function softDeleteExpense(id: string): Promise<void> {
  */
 export async function restoreExpense(id: string): Promise<Expense> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
   const orgId = await getOrgId()
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('expenses')
     .update({
       is_deleted: false,
@@ -365,10 +319,10 @@ export async function restoreExpense(id: string): Promise<Expense> {
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
-    // Org scoping: prevents restoring expenses in other orgs
-    .eq('org_id', orgId)
-    .select()
-    .single()
+
+  query = orgScopeFilter(query, orgId, user.id)
+
+  const { data, error } = await query.select().single()
 
   if (error) throw new Error(`Failed to restore expense: ${error.message}`)
   return expenseSchema.parse(data)

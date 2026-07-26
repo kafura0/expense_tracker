@@ -16,6 +16,9 @@ import {
   CreditCard,
   Sparkles,
   TrendingUp,
+  Users,
+  ShieldCheck,
+  Handshake,
 } from 'lucide-react'
 
 const FEATURES = [
@@ -384,6 +387,68 @@ export default function LandingPage() {
                   </div>
                 )
               })}
+            </div>
+          </div>
+        </section>
+
+        <section className="py-xl md:py-2xl px-md md:px-xl bg-card/30 border-y border-border">
+          <div className="max-w-container-max mx-auto">
+            <div className="text-center mb-2xl">
+              <p className="font-label-sm text-label-sm text-primary uppercase tracking-widest mb-md">
+                For Teams
+              </p>
+              <h2 className="font-headline text-headline-lg mb-sm text-foreground">
+                Built for Teams
+              </h2>
+              <p className="text-muted-foreground font-body-md text-body-md max-w-xl mx-auto">
+                Invite clients, manage permissions, and track team expenses in one place
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-lg">
+              <div className="p-lg md:p-xl rounded-2xl bg-card border border-border flex flex-col hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-lg">
+                  <Users className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="font-headline text-headline-md mb-sm text-foreground">
+                  Client Management
+                </h3>
+                <p className="text-muted-foreground font-body-md text-body-md">
+                  Create client accounts, assign roles, and manage access with ease
+                </p>
+              </div>
+              <div className="p-lg md:p-xl rounded-2xl bg-card border border-border flex flex-col hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+                <div className="w-12 h-12 bg-secondary/10 rounded-xl flex items-center justify-center mb-lg">
+                  <ShieldCheck className="w-6 h-6 text-secondary" />
+                </div>
+                <h3 className="font-headline text-headline-md mb-sm text-foreground">
+                  Role-Based Access
+                </h3>
+                <p className="text-muted-foreground font-body-md text-body-md">
+                  Managers get full control, clients see only their own data
+                </p>
+              </div>
+              <div className="p-lg md:p-xl rounded-2xl bg-card border border-border flex flex-col hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-lg">
+                  <Handshake className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="font-headline text-headline-md mb-sm text-foreground">
+                  Team Collaboration
+                </h3>
+                <p className="text-muted-foreground font-body-md text-body-md">
+                  Work together with shared categories, budgets, and real-time insights
+                </p>
+              </div>
+            </div>
+
+            <div className="text-center mt-2xl">
+              <Link
+                href="/org-signup"
+                className="bg-primary text-primary-foreground font-medium px-xl py-md rounded-xl text-body-lg hover:brightness-110 transition-all emerald-drop inline-flex items-center justify-center gap-sm"
+              >
+                Set Up Your Team
+                <ArrowRight className="w-5 h-5" />
+              </Link>
             </div>
           </div>
         </section>

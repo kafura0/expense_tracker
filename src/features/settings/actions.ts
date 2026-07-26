@@ -11,7 +11,7 @@ export interface UserSettings {
   display_name: string
 }
 
-async function getOrgId(): Promise<string> {
+async function getOrgId(): Promise<string | null> {
   const activeOrgId = await getActiveOrgId()
   if (activeOrgId) return activeOrgId
 
@@ -27,7 +27,7 @@ async function getOrgId(): Promise<string> {
     .limit(1)
     .maybeSingle()
 
-  if (!membership) throw new Error('No organization membership found')
+  if (!membership) return null
   return membership.org_id
 }
 
@@ -38,19 +38,28 @@ export async function getSettings(): Promise<UserSettings> {
 
   const orgId = await getOrgId()
 
-  const { data: profile } = await supabase
+  let profileQuery = supabase
     .from('profiles')
     .select('*')
     .eq('user_id', user.id)
-    .eq('org_id', orgId)
-    .single()
+  if (orgId) {
+    profileQuery = profileQuery.eq('org_id', orgId)
+  } else {
+    profileQuery = profileQuery.is('org_id', null)
+  }
 
-  const { data: settings } = await supabase
+  let settingsQuery = supabase
     .from('settings')
     .select('*')
     .eq('user_id', user.id)
-    .eq('org_id', orgId)
-    .single()
+  if (orgId) {
+    settingsQuery = settingsQuery.eq('org_id', orgId)
+  } else {
+    settingsQuery = settingsQuery.is('org_id', null)
+  }
+
+  const { data: profile } = await profileQuery.single()
+  const { data: settings } = await settingsQuery.single()
 
   return {
     theme: (settings?.theme as 'light' | 'dark' | 'system') || 'dark',
@@ -68,11 +77,16 @@ export async function updateSettings(settings: Partial<UserSettings>) {
   const orgId = await getOrgId()
 
   if (settings.display_name !== undefined) {
-    const { error } = await supabase
+    let profileQuery = supabase
       .from('profiles')
       .update({ display_name: settings.display_name })
       .eq('user_id', user.id)
-      .eq('org_id', orgId)
+    if (orgId) {
+      profileQuery = profileQuery.eq('org_id', orgId)
+    } else {
+      profileQuery = profileQuery.is('org_id', null)
+    }
+    const { error } = await profileQuery
     if (error) return { error: error.message }
   }
 
@@ -87,16 +101,42 @@ export async function updateSettings(settings: Partial<UserSettings>) {
   }
 
   if (Object.keys(settingsUpdate).length > 0) {
-    const { error } = await supabase
-      .from('settings')
-      .upsert({
-        user_id: user.id,
-        org_id: orgId,
-        ...settingsUpdate,
-      }, {
-        onConflict: 'user_id,org_id',
-      })
-    if (error) return { error: error.message }
+    if (orgId) {
+      const { error } = await supabase
+        .from('settings')
+        .upsert({
+          user_id: user.id,
+          org_id: orgId,
+          ...settingsUpdate,
+        }, {
+          onConflict: 'user_id,org_id',
+        })
+      if (error) return { error: error.message }
+    } else {
+      const existingQuery = supabase
+        .from('settings')
+        .select('id')
+        .eq('user_id', user.id)
+        .is('org_id', null)
+      const { data: existing } = await existingQuery.maybeSingle()
+
+      if (existing) {
+        const { error } = await supabase
+          .from('settings')
+          .update(settingsUpdate)
+          .eq('id', existing.id)
+        if (error) return { error: error.message }
+      } else {
+        const { error } = await supabase
+          .from('settings')
+          .insert({
+            user_id: user.id,
+            org_id: null,
+            ...settingsUpdate,
+          })
+        if (error) return { error: error.message }
+      }
+    }
   }
 
   revalidatePath('/settings')
@@ -131,11 +171,17 @@ export async function uploadAvatar(file: File) {
 
   const orgId = await getOrgId()
 
-  const { error: updateError } = await supabase
+  let profileUpdate = supabase
     .from('profiles')
     .update({ avatar_url: publicUrl })
     .eq('user_id', user.id)
-    .eq('org_id', orgId)
+  if (orgId) {
+    profileUpdate = profileUpdate.eq('org_id', orgId)
+  } else {
+    profileUpdate = profileUpdate.is('org_id', null)
+  }
+
+  const { error: updateError } = await profileUpdate
 
   if (updateError) return { error: updateError.message }
 

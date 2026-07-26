@@ -53,25 +53,36 @@ export function CategoryChart() {
   const orgId = useActiveOrgId()
 
   const fetchCategoryData = async () => {
-    if (!orgId) throw new Error('No active organization')
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
     const now = new Date()
     const start = startOfMonth(now)
     const end = endOfMonth(now)
 
-    const { data: expenses, error: expensesError } = await supabase
+    let expenseQuery = supabase
       .from('expenses')
       .select('amount_cents, category_id')
       .eq('is_deleted', false)
-      .eq('org_id', orgId)
       .gte('date', start.toISOString())
       .lte('date', end.toISOString())
+    if (orgId) {
+      expenseQuery = expenseQuery.eq('org_id', orgId)
+    } else {
+      expenseQuery = expenseQuery.eq('user_id', user.id).is('org_id', null)
+    }
+    const { data: expenses, error: expensesError } = await expenseQuery
 
     if (expensesError) throw expensesError
 
-    const { data: categories, error: categoriesError } = await supabase
+    let categoryQuery = supabase
       .from('categories')
       .select('id, name, icon')
-      .eq('org_id', orgId)
+    if (orgId) {
+      categoryQuery = categoryQuery.eq('org_id', orgId)
+    } else {
+      categoryQuery = categoryQuery.eq('user_id', user.id).is('org_id', null)
+    }
+    const { data: categories, error: categoriesError } = await categoryQuery
 
     if (categoriesError) throw categoriesError
 

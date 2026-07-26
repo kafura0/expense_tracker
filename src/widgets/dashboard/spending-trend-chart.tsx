@@ -35,18 +35,24 @@ export function SpendingTrendChart() {
   const orgId = useActiveOrgId()
 
   const fetchTrendData = async () => {
-    if (!orgId) throw new Error('No active organization')
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
 
     const sixMonthsAgo = startOfMonth(subMonths(new Date(), 5))
     const now = new Date()
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('expenses')
       .select('amount_cents, date')
       .eq('is_deleted', false)
-      .eq('org_id', orgId)
       .gte('date', sixMonthsAgo.toISOString())
       .lte('date', now.toISOString())
+    if (orgId) {
+      query = query.eq('org_id', orgId)
+    } else {
+      query = query.eq('user_id', user.id).is('org_id', null)
+    }
+    const { data, error } = await query
 
     if (error) throw error
 
