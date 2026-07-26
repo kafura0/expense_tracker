@@ -176,9 +176,9 @@ export default function LandingPage() {
   }, [])
 
   return (
-    <div className="bg-background text-foreground antialiased selection:bg-primary/30 selection:text-primary-foreground">
+    <div className="bg-background text-foreground antialiased selection:bg-primary/30 selection:text-primary-foreground text-center">
       {/* Header */}
-      <header className="flex justify-between items-center w-full px-sm md:px-xl h-14 md:h-16 sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="flex justify-between items-center w-full px-sm md:px-xl h-14 md:h-16 sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border text-left">
         <Link href="/" className="font-headline text-lg md:text-headline-md font-bold text-foreground tracking-tight">
           Ledgerly
         </Link>
@@ -233,7 +233,7 @@ export default function LandingPage() {
               Future
             </h1>
 
-            <p className="font-body-md text-body-lg md:text-xl leading-relaxed text-muted-foreground text-center mx-auto max-w-2xl mb-xl md:mb-2xl animate-slide-up delay-75">
+            <p className="font-body-md text-body-lg md:text-xl leading-relaxed text-muted-foreground mx-auto max-w-2xl mb-xl md:mb-2xl animate-slide-up delay-75">
               Transform chaotic financial data into precise strategic assets.
               Automated reconciliation, multi-currency mastery, and bank-grade
               security — all in one platform.
@@ -618,7 +618,7 @@ export default function LandingPage() {
       </footer>
 
       {/* Mobile Bottom Nav */}
-      <nav className="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-xs pb-safe pt-2 md:hidden bg-card/90 backdrop-blur-lg border-t border-border">
+      <nav className="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-xs pb-safe pt-2 md:hidden bg-card/90 backdrop-blur-lg border-t border-border text-left">
         <a href="#" className="flex flex-col items-center justify-center bg-primary/10 text-primary rounded-xl px-3 py-1.5 transition-all duration-150">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
             <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
