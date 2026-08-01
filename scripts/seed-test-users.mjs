@@ -7,7 +7,7 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false }
 })
 
-const users = [
+const USERS = [
   {
     email: 'admin@ledgerly.app',
     password: 'Admin@123456789!',
@@ -36,200 +36,414 @@ const users = [
     email: 'solo@ledgerly.app',
     password: 'Solo@123!',
     full_name: 'Alex Rivera',
-    role_description: 'Solo User — no organization, personal expense tracking only',
+    role_description: 'Solo User — no organization, personal expense tracking in KES',
   },
 ]
 
-async function seed() {
-  console.log('🌱 Seeding test users...\n')
+const log = (symbol, msg) => console.log(`  ${symbol} ${msg}`)
 
-  for (const u of users) {
-    // Check if user exists
-    const { data: existing } = await supabase.auth.admin.listUsers()
-    const found = existing?.users?.find(e => e.email === u.email)
-
-    if (found) {
-      console.log(`  ⏭  ${u.email} — already exists (id: ${found.id})`)
-      continue
-    }
-
-    const { data, error } = await supabase.auth.admin.createUser({
-      email: u.email,
-      password: u.password,
-      email_confirm: true,
-      user_metadata: { full_name: u.full_name },
-    })
-
-    if (error) {
-      console.error(`  ❌ ${u.email} — ${error.message}`)
-    } else {
-      console.log(`  ✅ ${u.email} — created (id: ${data.user.id})`)
-    }
+async function getOrCreateUser(u) {
+  const { data } = await supabase.auth.admin.listUsers()
+  const found = data?.users?.find((e) => e.email === u.email)
+  if (found) {
+    log('⏭', `${u.email} — already exists (id: ${found.id})`)
+    return found
   }
 
-  // Fetch all users for org setup
-  const { data: allUsers } = await supabase.auth.admin.listUsers()
-  const getUser = (email) => allUsers?.users?.find(u => u.email === email)
-
-  const adminUser = getUser('admin@ledgerly.app')
-  const orgAdminUser = getUser('orgadmin@ledgerly.app')
-  const managerUser = getUser('manager@ledgerly.app')
-  const clientUser = getUser('client@ledgerly.app')
-  const soloUser = getUser('solo@ledgerly.app')
-
-  // Create super admin profile
-  if (adminUser) {
-    const { error } = await supabase.from('profiles').upsert({
-      user_id: adminUser.id,
-      display_name: adminUser.user_metadata?.full_name || 'Sarah Mitchell',
-      org_id: null,
-    }, { onConflict: 'user_id' })
-    console.log(`  ${error ? '❌' : '✅'} Super admin profile ${error ? error.message : 'created'}`)
-  }
-
-  // Create org: Carter Enterprises
-  console.log('\n🏢 Creating organization: Carter Enterprises...')
-  const { data: orgData, error: orgError } = await supabase.rpc('create_org_for_user', {
-    p_org_name: 'Carter Enterprises',
-    p_org_slug: 'carter-enterprises',
-    p_user_id: orgAdminUser?.id,
-    p_plan_slug: 'free',
+  const { data: created, error } = await supabase.auth.admin.createUser({
+    email: u.email,
+    password: u.password,
+    email_confirm: true,
+    user_metadata: { full_name: u.full_name },
   })
 
-  if (orgError) {
-    console.error(`  ❌ Org creation: ${orgError.message}`)
-  } else {
-    console.log(`  ✅ Organization created (id: ${orgData})`)
+  if (error) {
+    log('❌', `${u.email} — ${error.message}`)
+    return null
+  }
+  log('✅', `${u.email} — created (id: ${created.user.id})`)
+  return created.user
+}
+
+async function ensureProfile(userId, displayName, orgId = null) {
+  const { error } = await supabase.from('profiles').upsert(
+    { user_id: userId, display_name: displayName, org_id: orgId },
+    { onConflict: 'user_id' }
+  )
+  return error
+}
+
+async function ensureOrgCategories(orgId, userId, templates) {
+  const { data: existing } = await supabase
+    .from('categories')
+    .select('id, name')
+    .eq('org_id', orgId)
+
+  const existingNames = new Set((existing || []).map((c) => c.name))
+  const toInsert = templates
+    .filter((t) => !existingNames.has(t.name))
+    .map((t) => ({ ...t, org_id: orgId, user_id: userId }))
+
+  if (toInsert.length > 0) {
+    const { error } = await supabase.from('categories').insert(toInsert)
+    if (error) log('❌', `Categories: ${error.message}`)
   }
 
-  // Get the org_id
-  const { data: org } = await supabase
+  const { data: all } = await supabase
+    .from('categories')
+    .select('id, name')
+    .eq('org_id', orgId)
+
+  return Object.fromEntries((all || []).map((c) => [c.name, c.id]))
+}
+
+async function ensureSoloCategories(userId, names) {
+  const { data: existing } = await supabase
+    .from('categories')
+    .select('id, name')
+    .eq('user_id', userId)
+    .is('org_id', null)
+
+  const byName = new Map((existing || []).map((c) => [c.name, c.id]))
+  const missing = names.filter((n) => !byName.has(n))
+
+  const iconBy = {
+    'Food & Dining': 'utensils',
+    Housing: 'home',
+    Shopping: 'shopping-bag',
+    Transport: 'car',
+    Utilities: 'zap',
+    Health: 'heart',
+    Subscriptions: 'coffee',
+    Internet: 'wifi',
+    Education: 'book',
+    Travel: 'plane',
+    Other: 'misc',
+  }
+  const colorBy = {
+    'Food & Dining': '#f59e0b',
+    Housing: '#38bdf8',
+    Shopping: '#a78bfa',
+    Transport: '#34d399',
+    Utilities: '#facc15',
+    Health: '#fb7185',
+    Subscriptions: '#f472b6',
+    Internet: '#2dd4bf',
+    Education: '#94a3b8',
+    Travel: '#ec4899',
+    Other: '#64748b',
+  }
+
+  if (missing.length > 0) {
+    const { error } = await supabase.from('categories').insert(
+      missing.map((name) => ({
+        name,
+        icon: iconBy[name] || 'misc',
+        color: colorBy[name] || '#64748b',
+        user_id: userId,
+        org_id: null,
+      }))
+    )
+    if (error) log('❌', `Solo categories: ${error.message}`)
+  }
+
+  const { data: all } = await supabase
+    .from('categories')
+    .select('id, name')
+    .eq('user_id', userId)
+    .is('org_id', null)
+
+  return Object.fromEntries((all || []).map((c) => [c.name, c.id]))
+}
+
+function monthOffsetDate(monthsAgo, day) {
+  const now = new Date()
+  const d = new Date(now.getFullYear(), now.getMonth() - monthsAgo, Math.min(day, 27))
+  d.setHours(10 + (day % 8), 0, 0, 0)
+  return d.toISOString()
+}
+
+function roundToInt(n) {
+  return Math.round(n)
+}
+
+async function seed() {
+  console.log('🌱 Seeding demo data...\n')
+
+  const users = {}
+  for (const u of USERS) users[u.email] = await getOrCreateUser(u)
+
+  const adminUser = users['admin@ledgerly.app']
+  const orgAdminUser = users['orgadmin@ledgerly.app']
+  const managerUser = users['manager@ledgerly.app']
+  const clientUser = users['client@ledgerly.app']
+  const soloUser = users['solo@ledgerly.app']
+
+  if (!adminUser || !orgAdminUser || !managerUser || !clientUser || !soloUser) {
+    console.error('\n❌ Could not resolve all users. Aborting.')
+    return
+  }
+
+  // -------------------------------------------------
+  // Profiles
+  // -------------------------------------------------
+  console.log('\n👤 Profiles')
+  for (const [email, u] of Object.entries(users)) {
+    const name = USERS.find((x) => x.email === email).full_name
+    const err = await ensureProfile(u.id, name, null)
+    log(err ? '❌' : '✅', `${name} profile ${err?.message || 'ok'}`)
+  }
+
+  // -------------------------------------------------
+  // Organization
+  // -------------------------------------------------
+  console.log('\n🏢 Organization: Carter Enterprises')
+  const { data: existingOrg } = await supabase
     .from('organizations')
     .select('id')
     .eq('slug', 'carter-enterprises')
-    .single()
+    .maybeSingle()
 
-  const orgId = org?.id
+  let orgId = existingOrg?.id || null
 
-  if (orgId && orgAdminUser) {
-    // Add manager to org
-    if (managerUser) {
-      const { error } = await supabase.from('org_members').upsert({
-        org_id: orgId,
-        user_id: managerUser.id,
-        role: 'manager',
-      }, { onConflict: 'org_id,user_id' })
-      console.log(`  ${error ? '❌' : '✅'} Manager (Emily) added to org ${error?.message || ''}`)
-
-      // Create profile for manager
-      await supabase.from('profiles').upsert({
-        user_id: managerUser.id,
-        display_name: 'Emily Chen',
-        org_id: orgId,
-      }, { onConflict: 'user_id' })
+  if (!orgId) {
+    const { data: createdOrgId, error: orgError } = await supabase.rpc('create_org_for_user', {
+      p_org_name: 'Carter Enterprises',
+      p_org_slug: 'carter-enterprises',
+      p_user_id: orgAdminUser.id,
+      p_plan_slug: 'free',
+    })
+    if (orgError) {
+      log('❌', `Org creation: ${orgError.message}`)
+    } else {
+      orgId = createdOrgId
+      log('✅', `Organization created (id: ${orgId})`)
     }
+  } else {
+    log('⏭', `Organization already exists (id: ${orgId})`)
+  }
 
-    // Add client to org
-    if (clientUser) {
-      const { error } = await supabase.from('org_members').upsert({
-        org_id: orgId,
-        user_id: clientUser.id,
-        role: 'client',
-      }, { onConflict: 'org_id,user_id' })
-      console.log(`  ${error ? '❌' : '✅'} Client (David) added to org ${error?.message || ''}`)
+  if (!orgId) {
+    console.error('\n❌ No org id. Aborting.')
+    return
+  }
 
-      // Create profile for client
-      await supabase.from('profiles').upsert({
-        user_id: clientUser.id,
-        display_name: 'David Park',
-        org_id: orgId,
-      }, { onConflict: 'user_id' })
-    }
+  // Memberships
+  const memberships = [
+    { user_id: managerUser.id, role: 'manager' },
+    { user_id: clientUser.id, role: 'client' },
+  ]
+  for (const m of memberships) {
+    const { error } = await supabase.from('org_members').upsert(
+      { org_id: orgId, ...m },
+      { onConflict: 'org_id,user_id' }
+    )
+    log(error ? '❌' : '✅', `Member ${m.role} ${error?.message || 'ok'}`)
+  }
 
-    // Create categories for the org
-    const categories = [
-      { name: 'Office Supplies', icon: 'briefcase', color: '#818cf8', org_id: orgId, user_id: orgAdminUser?.id },
-      { name: 'Travel', icon: 'plane', color: '#34d399', org_id: orgId, user_id: orgAdminUser?.id },
-      { name: 'Meals & Entertainment', icon: 'utensils', color: '#f59e0b', org_id: orgId, user_id: orgAdminUser?.id },
-      { name: 'Software & Subscriptions', icon: 'monitor', color: '#ec4899', org_id: orgId, user_id: orgAdminUser?.id },
-      { name: 'Marketing', icon: 'megaphone', color: '#06b6d4', org_id: orgId, user_id: orgAdminUser?.id },
-    ]
-
-    const { error: catError } = await supabase.from('categories').insert(categories)
-    console.log(`  ${catError ? '❌' : '✅'} Categories created ${catError?.message || `(count: ${categories.length})`}`)
-
-    // Fetch category IDs
-    const { data: cats } = await supabase
-      .from('categories')
-      .select('id, name')
+  // Refresh subscription so the org health card shows a live billing period
+  const { data: plans } = await supabase.from('plans').select('id').eq('slug', 'free').maybeSingle()
+  const periodStart = new Date()
+  const periodEnd = new Date()
+  periodEnd.setDate(periodEnd.getDate() + 30)
+  if (plans) {
+    const { data: existingSub } = await supabase
+      .from('subscriptions')
+      .select('id')
       .eq('org_id', orgId)
+      .maybeSingle()
+    const subPayload = {
+      org_id: orgId,
+      plan_id: plans.id,
+      status: 'active',
+      current_period_start: periodStart.toISOString(),
+      current_period_end: periodEnd.toISOString(),
+    }
+    const subQuery = existingSub
+      ? supabase.from('subscriptions').update(subPayload).eq('id', existingSub.id)
+      : supabase.from('subscriptions').insert(subPayload)
+    const { error: subError } = await subQuery
+    log(subError ? '❌' : '✅', `Subscription refreshed ${subError?.message || '(billing period +30d)'}`)
+  }
 
-    // Create sample expenses
-    if (cats && cats.length > 0) {
-      const catMap = Object.fromEntries(cats.map(c => [c.name, c.id]))
-      const now = new Date()
-      const expenses = [
-        { amount_cents: 4500, currency: 'USD', category_id: catMap['Office Supplies'], date: new Date(now.getFullYear(), now.getMonth(), 5).toISOString(), notes: 'Printer paper and toner', org_id: orgId, user_id: orgAdminUser?.id, tax_applicable: true },
-        { amount_cents: 12500, currency: 'USD', category_id: catMap['Travel'], date: new Date(now.getFullYear(), now.getMonth(), 8).toISOString(), notes: 'Flight to NYC for QBR', org_id: orgId, user_id: managerUser?.id, tax_applicable: false },
-        { amount_cents: 8900, currency: 'USD', category_id: catMap['Meals & Entertainment'], date: new Date(now.getFullYear(), now.getMonth(), 10).toISOString(), notes: 'Client dinner at steakhouse', org_id: orgId, user_id: orgAdminUser?.id, tax_applicable: true },
-        { amount_cents: 2999, currency: 'USD', category_id: catMap['Software & Subscriptions'], date: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(), notes: 'Figma team plan', org_id: orgId, user_id: managerUser?.id, tax_applicable: true },
-        { amount_cents: 50000, currency: 'USD', category_id: catMap['Marketing'], date: new Date(now.getFullYear(), now.getMonth(), 12).toISOString(), notes: 'Google Ads campaign', org_id: orgId, user_id: orgAdminUser?.id, tax_applicable: false },
-        { amount_cents: 1200, currency: 'USD', category_id: catMap['Office Supplies'], date: new Date(now.getFullYear(), now.getMonth(), 15).toISOString(), notes: 'Standing desk mat', org_id: orgId, user_id: clientUser?.id, tax_applicable: true },
-        { amount_cents: 3500, currency: 'USD', category_id: catMap['Travel'], date: new Date(now.getFullYear(), now.getMonth() - 1, 3).toISOString(), notes: 'Uber rides - November', org_id: orgId, user_id: managerUser?.id, tax_applicable: false },
-        { amount_cents: 15900, currency: 'USD', category_id: catMap['Marketing'], date: new Date(now.getFullYear(), now.getMonth() - 1, 10).toISOString(), notes: 'Sponsored blog post', org_id: orgId, user_id: orgAdminUser?.id, tax_applicable: true },
-        { amount_cents: 7500, currency: 'USD', category_id: catMap['Meals & Entertainment'], date: new Date(now.getFullYear(), now.getMonth() - 1, 18).toISOString(), notes: 'Team lunch', org_id: orgId, user_id: clientUser?.id, tax_applicable: true },
-        { amount_cents: 1999, currency: 'USD', category_id: catMap['Software & Subscriptions'], date: new Date(now.getFullYear(), now.getMonth() - 1, 20).toISOString(), notes: 'Notion annual plan', org_id: orgId, user_id: orgAdminUser?.id, tax_applicable: true },
-      ]
+  // -------------------------------------------------
+  // Categories
+  // -------------------------------------------------
+  console.log('\n🏷️  Categories')
+  const orgCatTemplates = [
+    { name: 'Office Supplies', icon: 'briefcase', color: '#818cf8' },
+    { name: 'Travel', icon: 'plane', color: '#34d399' },
+    { name: 'Meals & Entertainment', icon: 'utensils', color: '#f59e0b' },
+    { name: 'Software & Subscriptions', icon: 'monitor', color: '#ec4899' },
+    { name: 'Marketing', icon: 'megaphone', color: '#06b6d4' },
+  ]
+  const orgCats = await ensureOrgCategories(orgId, orgAdminUser.id, orgCatTemplates)
+  log('✅', `Org categories ready (${Object.keys(orgCats).length})`)
 
-      const { error: expError } = await supabase.from('expenses').insert(expenses)
-      console.log(`  ${expError ? '❌' : '✅'} Expenses created ${expError?.message || `(count: ${expenses.length})`}`)
+  const soloCatNames = [
+    'Housing', 'Food & Dining', 'Transport', 'Shopping', 'Utilities', 'Health', 'Subscriptions', 'Internet',
+  ]
+  const soloCats = await ensureSoloCategories(soloUser.id, soloCatNames)
+  log('✅', `Solo categories ready (${Object.keys(soloCats).length})`)
+
+  // -------------------------------------------------
+  // Clean previous demo expenses + budgets
+  // -------------------------------------------------
+  console.log('\n🧹 Cleaning previous demo rows')
+  const demoIds = [adminUser.id, orgAdminUser.id, managerUser.id, clientUser.id, soloUser.id]
+  const { error: delExp } = await supabase
+    .from('expenses')
+    .delete()
+    .in('user_id', demoIds)
+  log(delExp ? '❌' : '✅', `Cleared demo expenses ${delExp?.message || ''}`)
+  const { error: delBud } = await supabase
+    .from('budgets')
+    .delete()
+    .in('user_id', demoIds)
+  log(delBud ? '❌' : '✅', `Cleared demo budgets ${delBud?.message || ''}`)
+
+  // -------------------------------------------------
+  // Org expenses — 6 months, spread across James/Emily/David
+  // -------------------------------------------------
+  console.log('\n💳 Org expenses (6 months, USD)')
+  const monthFactor = [1.15, 0.9, 1.05, 0.95, 1.1, 1.0] // current month first
+
+  const orgExpenseTemplates = [
+    { cat: 'Office Supplies', base: 9500, user: orgAdminUser, notes: 'Office supplies restock', tax: true },
+    { cat: 'Office Supplies', base: 1800, user: clientUser, notes: 'Desk accessories', tax: true },
+    { cat: 'Travel', base: 125000, user: managerUser, notes: 'Business flight', tax: false },
+    { cat: 'Travel', base: 3500, user: managerUser, notes: 'Rideshare to client sites', tax: false },
+    { cat: 'Meals & Entertainment', base: 8900, user: orgAdminUser, notes: 'Client dinner', tax: true },
+    { cat: 'Meals & Entertainment', base: 6500, user: clientUser, notes: 'Team lunch', tax: true },
+    { cat: 'Software & Subscriptions', base: 49990, user: managerUser, notes: 'SaaS subscriptions', tax: true },
+    { cat: 'Software & Subscriptions', base: 19990, user: orgAdminUser, notes: 'Annual software renewals', tax: true },
+    { cat: 'Marketing', base: 500000, user: orgAdminUser, notes: 'Ads campaign', tax: false },
+    { cat: 'Marketing', base: 15900, user: managerUser, notes: 'Sponsored content', tax: true },
+  ]
+
+  const orgExpenseRows = []
+  for (let m = 0; m < 6; m++) {
+    const factor = monthFactor[m]
+    for (let i = 0; i < orgExpenseTemplates.length; i++) {
+      const t = orgExpenseTemplates[i]
+      const amount = roundToInt(t.base * factor)
+      orgExpenseRows.push({
+        amount_cents: amount,
+        currency: 'USD',
+        category_id: orgCats[t.cat],
+        date: monthOffsetDate(m, 3 + ((i * 3) % 24)),
+        notes: `${t.notes} — ${new Date().getMonth() - m < 0 ? 'last' : 'this'} month`,
+        org_id: orgId,
+        user_id: t.user.id,
+        tax_applicable: t.tax,
+        tax_amount_cents: t.tax ? roundToInt(amount * 0.16) : null,
+      })
     }
   }
 
-  // Solo user — profile only, no org
-  if (soloUser) {
-    await supabase.from('profiles').upsert({
-      user_id: soloUser.id,
-      display_name: 'Alex Rivera',
-      org_id: null,
-    }, { onConflict: 'user_id' })
+  const { error: orgExpError } = await supabase.from('expenses').insert(orgExpenseRows)
+  log(orgExpError ? '❌' : '✅', `Inserted ${orgExpenseRows.length} org expenses ${orgExpError?.message || ''}`)
 
-    // Create a solo category + expenses
-    const { data: soloCat } = await supabase.from('categories').insert({
-      name: 'Personal',
-      icon: 'user',
-      color: '#a78bfa',
-      org_id: null,
-      user_id: soloUser.id,
-    }).select('id').single()
+  // -------------------------------------------------
+  // Solo expenses — 6 months, KES
+  // -------------------------------------------------
+  console.log('\n🏠 Solo expenses (6 months, KES)')
+  const soloExpenseTemplates = [
+    { cat: 'Housing', base: 42000, notes: 'Monthly rent' },
+    { cat: 'Food & Dining', base: 13500, notes: 'Groceries' },
+    { cat: 'Transport', base: 6800, notes: 'Fares and fuel' },
+    { cat: 'Shopping', base: 5200, notes: 'Market shopping' },
+    { cat: 'Utilities', base: 3800, notes: 'Electricity and water' },
+    { cat: 'Health', base: 2000, notes: 'Pharmacy' },
+    { cat: 'Subscriptions', base: 1500, notes: 'Streaming + apps' },
+    { cat: 'Internet', base: 3000, notes: 'Home internet' },
+  ]
 
-    if (soloCat) {
-      const now = new Date()
-      await supabase.from('expenses').insert([
-        { amount_cents: 5499, currency: 'USD', category_id: soloCat.id, date: new Date(now.getFullYear(), now.getMonth(), 3).toISOString(), notes: 'Groceries', org_id: null, user_id: soloUser.id, tax_applicable: false },
-        { amount_cents: 1500, currency: 'USD', category_id: soloCat.id, date: new Date(now.getFullYear(), now.getMonth(), 7).toISOString(), notes: 'Gym membership', org_id: null, user_id: soloUser.id, tax_applicable: true },
-        { amount_cents: 999, currency: 'USD', category_id: soloCat.id, date: new Date(now.getFullYear(), now.getMonth(), 14).toISOString(), notes: 'Netflix', org_id: null, user_id: soloUser.id, tax_applicable: true },
-      ])
+  const soloExpenseRows = []
+  for (let m = 0; m < 6; m++) {
+    const factor = monthFactor[m]
+    for (let i = 0; i < soloExpenseTemplates.length; i++) {
+      const t = soloExpenseTemplates[i]
+      const amount = roundToInt(t.base * factor)
+      soloExpenseRows.push({
+        amount_cents: amount * 100, // KES amount -> cents
+        currency: 'KES',
+        category_id: soloCats[t.cat],
+        date: monthOffsetDate(m, 2 + ((i * 3) % 25)),
+        notes: `${t.notes} — month ${6 - m}`,
+        org_id: null,
+        user_id: soloUser.id,
+        tax_applicable: false,
+        tax_amount_cents: null,
+      })
     }
-    console.log(`  ✅ Solo user (Alex) profile + personal expenses created`)
   }
 
-  // Settings for all users
-  const allUserIds = [adminUser, orgAdminUser, managerUser, clientUser, soloUser]
-    .filter(Boolean)
-    .map(u => u.id)
+  const { error: soloExpError } = await supabase.from('expenses').insert(soloExpenseRows)
+  log(soloExpError ? '❌' : '✅', `Inserted ${soloExpenseRows.length} solo expenses ${soloExpError?.message || ''}`)
 
-  for (const uid of allUserIds) {
-    await supabase.from('settings').upsert({
-      user_id: uid,
-      org_id: null,
-      theme: 'dark',
-      base_currency: 'USD',
-      vat_rate: 16,
-    }, { onConflict: 'user_id,org_id' })
+  // -------------------------------------------------
+  // Budgets
+  // -------------------------------------------------
+  console.log('\n🎯 Budgets')
+  const orgBudgets = [
+    { cat: 'Office Supplies', amount: 60000 },
+    { cat: 'Travel', amount: 200000 },
+    { cat: 'Meals & Entertainment', amount: 150000 },
+    { cat: 'Software & Subscriptions', amount: 100000 },
+    { cat: 'Marketing', amount: 800000 },
+  ].map((b) => ({
+    scope: 'org',
+    org_id: orgId,
+    user_id: orgAdminUser.id,
+    category_id: orgCats[b.cat],
+    amount_cents: b.amount,
+  }))
+
+  const soloBudgets = [
+    { cat: 'Housing', amount: 4500000 },
+    { cat: 'Food & Dining', amount: 1500000 },
+    { cat: 'Transport', amount: 800000 },
+    { cat: 'Shopping', amount: 700000 },
+    { cat: 'Utilities', amount: 450000 },
+    { cat: 'Health', amount: 400000 },
+    { cat: 'Subscriptions', amount: 200000 },
+    { cat: 'Internet', amount: 300000 },
+  ].map((b) => ({
+    scope: 'user',
+    org_id: null,
+    user_id: soloUser.id,
+    category_id: soloCats[b.cat],
+    amount_cents: b.amount,
+  }))
+
+  try {
+    const { error: budgetError } = await supabase.from('budgets').insert([...orgBudgets, ...soloBudgets])
+    log(budgetError ? '❌' : '✅', `Inserted ${orgBudgets.length + soloBudgets.length} budgets ${budgetError?.message || ''}`)
+  } catch (e) {
+    log('⚠️', `Budgets table unavailable — run migration 006 first (${e.message})`)
   }
-  console.log(`  ✅ Settings created for all users`)
 
+  // -------------------------------------------------
+  // Settings
+  // -------------------------------------------------
+  console.log('\n⚙️  Settings')
+  const settingsRows = [
+    { user_id: adminUser.id, org_id: null, theme: 'dark', base_currency: 'USD', vat_rate: 16 },
+    { user_id: orgAdminUser.id, org_id: orgId, theme: 'dark', base_currency: 'USD', vat_rate: 16 },
+    { user_id: managerUser.id, org_id: orgId, theme: 'dark', base_currency: 'USD', vat_rate: 16 },
+    { user_id: clientUser.id, org_id: orgId, theme: 'dark', base_currency: 'USD', vat_rate: 16 },
+    { user_id: soloUser.id, org_id: null, theme: 'dark', base_currency: 'KES', vat_rate: 16 },
+  ]
+  for (const row of settingsRows) {
+    const { error } = await supabase.from('settings').upsert(row, { onConflict: 'user_id,org_id' })
+    if (error) log('❌', `Settings ${row.user_id}: ${error.message}`)
+  }
+  log('✅', `Settings for ${settingsRows.length} rows`)
+
+  // -------------------------------------------------
+  // Summary
+  // -------------------------------------------------
   console.log('\n🎉 Seeding complete!\n')
   console.log('─'.repeat(60))
   console.log('  TEST CREDENTIALS')
@@ -243,22 +457,22 @@ async function seed() {
   console.log('  ORG ADMIN (Carter Enterprises)')
   console.log('    Email:    orgadmin@ledgerly.app')
   console.log('    Password: OrgAdmin@123!')
-  console.log('    Access:   Org dashboard, manage members, full expenses')
+  console.log('    Access:   Command Center, manage members, org-wide expenses')
   console.log('')
   console.log('  MANAGER (Carter Enterprises)')
   console.log('    Email:    manager@ledgerly.app')
   console.log('    Password: Manager@123!')
-  console.log('    Access:   View/manage expenses in org')
+  console.log('    Access:   Team Pulse, org-wide expenses + budgets')
   console.log('')
   console.log('  CLIENT (Carter Enterprises)')
   console.log('    Email:    client@ledgerly.app')
   console.log('    Password: Client@123!')
-  console.log('    Access:   View-only in org')
+  console.log('    Access:   Own expenses + personal budget within org')
   console.log('')
   console.log('  SOLO USER (No Org)')
   console.log('    Email:    solo@ledgerly.app')
   console.log('    Password: Solo@123!')
-  console.log('    Access:   Personal expenses only, no org sidebar')
+  console.log('    Access:   Personal expenses in KES, personal budgets')
   console.log('')
   console.log('─'.repeat(60))
 }

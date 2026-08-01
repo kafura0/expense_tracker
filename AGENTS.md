@@ -23,7 +23,7 @@ Premium SaaS expense tracker built with Next.js 16, Supabase, Tailwind CSS v4. D
 ## Supabase
 - **Project ref:** `weitlewvoufvgfpkryvg`
 - **URL:** `https://weitlewvoufvgfpkryvg.supabase.co`
-- **Migrations:** `supabase/migrations/` (6 files, 001-005)
+- **Migrations:** `supabase/migrations/` (7 files, 001-006)
 - **RLS helpers:** `is_super_admin()`, `is_org_member()`, `can_write_in_org()`, `is_solo_user()`, `is_row_owner()`
 
 ## Seed Data
