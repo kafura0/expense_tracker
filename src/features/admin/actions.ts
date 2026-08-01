@@ -38,6 +38,45 @@ export async function getAdminClients() {
   return { clients: data }
 }
 
+export async function getAdminKpis() {
+  const { supabase, error } = await verifySuperAdmin()
+  if (error) return { error }
+
+  const monthStart = new Date()
+  monthStart.setDate(1)
+  monthStart.setHours(0, 0, 0, 0)
+
+  const [{ count: userCount }, { count: orgCount }, { count: expenseCount }, { data: monthExpenses }, { data: openTickets }] =
+    await Promise.all([
+      supabase.from('profiles').select('id', { count: 'exact', head: true }),
+      supabase.from('organizations').select('id', { count: 'exact', head: true }),
+      supabase.from('expenses').select('id', { count: 'exact', head: true }).eq('is_deleted', false),
+      supabase
+        .from('expenses')
+        .select('amount_cents')
+        .eq('is_deleted', false)
+        .gte('date', monthStart.toISOString()),
+      supabase
+        .from('messages')
+        .select('id')
+        .eq('type', 'support')
+        .eq('status', 'open'),
+    ])
+
+  const monthSpend =
+    (monthExpenses || []).reduce((sum: number, e: { amount_cents: number }) => sum + e.amount_cents, 0) || 0
+
+  return {
+    kpis: {
+      users: userCount || 0,
+      organizations: orgCount || 0,
+      expenses: expenseCount || 0,
+      month_spend: monthSpend,
+      open_tickets: (openTickets || []).length,
+    },
+  }
+}
+
 export async function getAdminAuditLogs(params?: {
   action?: string
   org_id?: string

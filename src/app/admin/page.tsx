@@ -11,6 +11,7 @@ import { Skeleton } from '@/shared/ui/skeleton'
 import { useToast } from '@/shared/ui/toast'
 import {
   getAdminClients,
+  getAdminKpis,
   getAdminMessages,
   replyToMessage,
   closeMessage,
@@ -19,7 +20,9 @@ import {
 import {
   Users, Building2, Megaphone, MessageSquare, Shield, RefreshCw,
   Mail, X, Send, ChevronDown, ChevronUp, AlertTriangle, Search, Filter,
+  ReceiptText, Wallet,
 } from 'lucide-react'
+import { formatMoneyCompact } from '@/shared/lib/currency'
 
 type Tab = 'users' | 'clients' | 'invites' | 'announcements' | 'messages'
 
@@ -30,6 +33,45 @@ const tabs: { id: Tab; label: string; icon: typeof Users }[] = [
   { id: 'announcements', label: 'Announcements', icon: Megaphone },
   { id: 'messages', label: 'Messages', icon: MessageSquare },
 ]
+
+function PlatformKpis() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin', 'kpis'],
+    queryFn: async () => {
+      const result = await getAdminKpis()
+      if ('error' in result && result.error) throw new Error(result.error)
+      return (result as { kpis?: Record<string, number> }).kpis || {}
+    },
+  })
+
+  const cards = [
+    { label: 'Total Users', value: data?.users ?? 0, icon: Users, tint: 'text-primary bg-primary/10' },
+    { label: 'Active Orgs', value: data?.organizations ?? 0, icon: Building2, tint: 'text-indigo-400 bg-indigo-500/10' },
+    { label: 'Expenses Tracked', value: data?.expenses ?? 0, icon: ReceiptText, tint: 'text-emerald-400 bg-emerald-500/10' },
+    { label: 'Spend This Month', value: formatMoneyCompact(data?.month_spend ?? 0), icon: Wallet, tint: 'text-amber-400 bg-amber-500/10' },
+    { label: 'Open Tickets', value: data?.open_tickets ?? 0, icon: MessageSquare, tint: 'text-rose-400 bg-rose-500/10' },
+  ]
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+      {isLoading
+        ? Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+        : cards.map((card) => (
+            <Card key={card.label} className="glass-card border-border">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{card.label}</p>
+                  <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${card.tint}`}>
+                    <card.icon className="h-4 w-4" />
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-foreground mt-2 tabular-nums">{card.value}</p>
+              </CardContent>
+            </Card>
+          ))}
+    </div>
+  )
+}
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>('users')
@@ -54,6 +96,8 @@ export default function AdminDashboard() {
           Refresh
         </Button>
       </div>
+
+      <PlatformKpis />
 
       <div className="bg-muted rounded-xl p-1.5 flex gap-1 overflow-x-auto">
         {tabs.map((tab) => (
