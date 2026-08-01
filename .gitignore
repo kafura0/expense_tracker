@@ -41,5 +41,6 @@ dev-*.log
 *.tsbuildinfo
 next-env.d.ts
 
-.vercel
-.env*
+# supabase
+supabase/.temp
+

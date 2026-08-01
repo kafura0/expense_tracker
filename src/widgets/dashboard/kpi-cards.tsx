@@ -2,22 +2,16 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/shared/lib/supabase/client'
-import { useActiveOrgId } from '@/shared/lib/org-helpers'
+import { applyExpenseScope, applyBudgetScope, type DashboardScope } from '@/features/dashboard/scope'
+import { formatMoney } from '@/shared/lib/currency'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Card, CardContent } from '@/shared/ui/card'
 import { ArrowUpRight, ArrowDownRight, Wallet, BarChart3, PiggyBank, Target } from 'lucide-react'
 
-const formatCurrency = (cents: number) => {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100)
-}
-
-export function KpiCards() {
+export function KpiCards({ scope }: { scope: DashboardScope }) {
   const supabase = createClient()
 
   const fetchKpis = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Not authenticated')
-
     const now = new Date()
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
     const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
@@ -25,15 +19,11 @@ export function KpiCards() {
 
     let currentQuery = supabase
       .from('expenses')
-      .select('amount_cents')
+      .select('amount_cents, category_id')
       .eq('is_deleted', false)
       .gte('date', startOfMonth.toISOString())
       .lte('date', now.toISOString())
-    if (orgId) {
-      currentQuery = currentQuery.eq('org_id', orgId)
-    } else {
-      currentQuery = currentQuery.eq('user_id', user.id).is('org_id', null)
-    }
+    currentQuery = applyExpenseScope(currentQuery, scope)
     const { data: currentMonth, error: currentError } = await currentQuery
 
     let lastQuery = supabase
@@ -42,14 +32,16 @@ export function KpiCards() {
       .eq('is_deleted', false)
       .gte('date', startOfLastMonth.toISOString())
       .lte('date', endOfLastMonth.toISOString())
-    if (orgId) {
-      lastQuery = lastQuery.eq('org_id', orgId)
-    } else {
-      lastQuery = lastQuery.eq('user_id', user.id).is('org_id', null)
-    }
+    lastQuery = applyExpenseScope(lastQuery, scope)
     const { data: lastMonth, error: lastError } = await lastQuery
 
-    if (currentError || lastError) throw new Error('Failed to fetch KPIs')
+    const budgetQuery = applyBudgetScope(
+      supabase.from('budgets').select('category_id, amount_cents'),
+      scope
+    )
+    const { data: budgets, error: budgetError } = await budgetQuery
+
+    if (currentError || lastError || budgetError) throw new Error('Failed to fetch KPIs')
 
     const currentTotal = currentMonth?.reduce((sum, e) => sum + e.amount_cents, 0) || 0
     const lastTotal = lastMonth?.reduce((sum, e) => sum + e.amount_cents, 0) || 0
@@ -57,34 +49,34 @@ export function KpiCards() {
     const avgTransaction = transactionCount > 0 ? currentTotal / transactionCount : 0
     const spendChange = lastTotal > 0 ? ((currentTotal - lastTotal) / lastTotal) * 100 : 0
 
-    return { totalSpend: currentTotal, transactionCount, avgTransaction, spendChange }
+    // Budget used = capped sum of category spend vs each budget, over total budget.
+    const spentByCategory = currentMonth?.reduce((acc, e) => {
+      const catId = e.category_id
+      if (!catId) return acc
+      acc[catId] = (acc[catId] || 0) + e.amount_cents
+      return acc
+    }, {} as Record<string, number>) || {}
+
+    const totalBudget = budgets?.reduce((sum, b) => sum + b.amount_cents, 0) || 0
+    const consumed = budgets?.reduce((sum, b) => {
+      const spent = spentByCategory[b.category_id] || 0
+      return sum + Math.min(spent, b.amount_cents)
+    }, 0) || 0
+
+    return {
+      totalSpend: currentTotal,
+      transactionCount,
+      avgTransaction,
+      spendChange,
+      budgetUsed: totalBudget > 0 ? Math.min(100, (consumed / totalBudget) * 100) : null,
+      budgetTotal: totalBudget,
+    }
   }
 
-  const orgId = useActiveOrgId()
   const { data: kpis, isLoading, error } = useQuery({
-    queryKey: ['kpis', orgId],
+    queryKey: ['kpis', scope],
     queryFn: fetchKpis,
-    enabled: orgId !== undefined,
   })
-
-  if (orgId === undefined || orgId === null) {
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[...Array(4)].map((_, i) => (
-          <Card key={i} className="glass-card border-border shadow-lg shadow-black/5">
-            <CardContent className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <Skeleton className="h-4 w-24 bg-muted rounded-md" />
-                <Skeleton className="h-10 w-10 rounded-xl bg-muted" />
-              </div>
-              <Skeleton className="h-9 w-32 mb-3 bg-muted rounded-md" />
-              <Skeleton className="h-4 w-28 bg-muted rounded-md" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    )
-  }
 
   if (isLoading) {
     return (
@@ -112,7 +104,7 @@ export function KpiCards() {
   const kpiItems = [
     {
       title: 'Total Spend',
-      value: formatCurrency(kpis?.totalSpend || 0),
+      value: formatMoney(kpis?.totalSpend || 0, scope.baseCurrency),
       change: kpis?.spendChange || 0,
       icon: Wallet,
       iconBg: 'bg-gradient-to-br from-emerald-500/20 to-emerald-600/10',
@@ -130,7 +122,7 @@ export function KpiCards() {
     },
     {
       title: 'Avg Expense',
-      value: formatCurrency(kpis?.avgTransaction || 0),
+      value: formatMoney(kpis?.avgTransaction || 0, scope.baseCurrency),
       change: null,
       icon: PiggyBank,
       iconBg: 'bg-gradient-to-br from-amber-500/20 to-amber-600/10',
@@ -139,8 +131,8 @@ export function KpiCards() {
     },
     {
       title: 'Budget Used',
-      value: formatCurrency(kpis?.totalSpend || 0),
-      change: kpis?.spendChange || 0,
+      value: kpis?.budgetUsed != null ? `${kpis.budgetUsed.toFixed(0)}%` : '—',
+      change: null,
       icon: Target,
       iconBg: 'bg-gradient-to-br from-sky-500/20 to-sky-600/10',
       iconColor: 'text-sky-500',

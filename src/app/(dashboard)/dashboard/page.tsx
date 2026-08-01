@@ -1,44 +1,43 @@
 'use client'
 
-import { KpiCards } from '@/widgets/dashboard/kpi-cards'
-import { SpendingTrendChart } from '@/widgets/dashboard/spending-trend-chart'
-import { CategoryChart } from '@/widgets/dashboard/category-chart'
-import { RecentActivity } from '@/widgets/dashboard/recent-activity'
-import { Insights } from '@/widgets/dashboard/insights'
-import { TaxSummary } from '@/widgets/dashboard/tax-summary'
-import { CurrencySummary } from '@/widgets/dashboard/currency-summary'
+import { useDashboardScope } from '@/features/dashboard/scope'
+import { SoloDashboard } from '@/widgets/dashboard/solo-dashboard'
+import { ClientDashboard } from '@/widgets/dashboard/client-dashboard'
+import { ManagerDashboard } from '@/widgets/dashboard/manager-dashboard'
+import { OrgAdminDashboard } from '@/widgets/dashboard/org-admin-dashboard'
+import { PlatformAdminDashboard } from '@/widgets/dashboard/platform-admin-dashboard'
+import { Skeleton } from '@/shared/ui/skeleton'
 
 export default function DashboardPage() {
-  return (
-    <div className="space-y-6">
-      {/* KPI Cards */}
-      <section aria-labelledby="kpi-heading">
-        <h2 id="kpi-heading" className="sr-only">Key Performance Indicators</h2>
-        <KpiCards />
-      </section>
+  const { scope, loading } = useDashboardScope()
 
-      {/* Charts Row */}
-      <section aria-labelledby="charts-heading" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <h2 id="charts-heading" className="sr-only">Spending Charts</h2>
-        <SpendingTrendChart />
-        <CategoryChart />
-      </section>
-
-      {/* Activity & Insights Row */}
-      <section aria-labelledby="activity-heading" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <h2 id="activity-heading" className="sr-only">Recent Activity and Insights</h2>
-        <div className="lg:col-span-2">
-          <RecentActivity />
+  if (loading || !scope) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <Skeleton className="h-9 w-72 bg-muted rounded-md" />
+          <Skeleton className="h-4 w-48 bg-muted rounded-md mt-2" />
         </div>
-        <Insights />
-      </section>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-28 rounded-xl bg-muted" />
+          ))}
+        </div>
+        <Skeleton className="h-[300px] w-full rounded-xl bg-muted" />
+      </div>
+    )
+  }
 
-      {/* Summary Row */}
-      <section aria-labelledby="summary-heading" className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <h2 id="summary-heading" className="sr-only">Financial Summaries</h2>
-        <TaxSummary />
-        <CurrencySummary />
-      </section>
-    </div>
-  )
+  switch (scope.persona) {
+    case 'solo':
+      return <SoloDashboard scope={scope} />
+    case 'client':
+      return <ClientDashboard scope={scope} />
+    case 'manager':
+      return <ManagerDashboard scope={scope} />
+    case 'org-admin':
+      return <OrgAdminDashboard scope={scope} />
+    case 'platform-admin':
+      return <PlatformAdminDashboard />
+  }
 }

@@ -2,19 +2,17 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/shared/lib/supabase/client'
-import { useActiveOrgId } from '@/shared/lib/org-helpers'
+import { applyExpenseScope, type DashboardScope } from '@/features/dashboard/scope'
+import { formatMoney } from '@/shared/lib/currency'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Globe } from 'lucide-react'
 import { startOfMonth, endOfMonth } from 'date-fns'
 
-export function CurrencySummary() {
+export function CurrencySummary({ scope }: { scope: DashboardScope }) {
   const supabase = createClient()
-  const orgId = useActiveOrgId()
 
   const fetchCurrencySummary = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Not authenticated')
     const now = new Date()
     const start = startOfMonth(now)
     const end = endOfMonth(now)
@@ -25,11 +23,7 @@ export function CurrencySummary() {
       .eq('is_deleted', false)
       .gte('date', start.toISOString())
       .lte('date', end.toISOString())
-    if (orgId) {
-      query = query.eq('org_id', orgId)
-    } else {
-      query = query.eq('user_id', user.id).is('org_id', null)
-    }
+    query = applyExpenseScope(query, scope)
     const { data: expenses, error } = await query
 
     if (error) throw error
@@ -47,25 +41,15 @@ export function CurrencySummary() {
         currency,
         count: data.count,
         total: data.total,
-        formatted: new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(data.total / 100),
+        formatted: formatMoney(data.total, currency),
       }))
       .sort((a, b) => b.total - a.total)
   }
 
   const { data: currencies, isLoading, error } = useQuery({
-    queryKey: ['currency-summary', orgId],
+    queryKey: ['currency-summary', scope],
     queryFn: fetchCurrencySummary,
-    enabled: orgId !== undefined,
   })
-
-  if (orgId === undefined) {
-    return (
-      <Card className="glass-card border-border">
-        <CardHeader><Skeleton className="h-6 w-40 bg-muted" /><Skeleton className="h-4 w-48 bg-muted" /></CardHeader>
-        <CardContent><div className="space-y-3">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-12 w-full bg-muted" />)}</div></CardContent>
-      </Card>
-    )
-  }
 
   if (isLoading) {
     return (

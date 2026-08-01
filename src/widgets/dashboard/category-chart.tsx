@@ -2,7 +2,8 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/shared/lib/supabase/client'
-import { useActiveOrgId } from '@/shared/lib/org-helpers'
+import { applyExpenseScope, applyCategoryScope, type DashboardScope } from '@/features/dashboard/scope'
+import { formatMoney } from '@/shared/lib/currency'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
@@ -21,13 +22,13 @@ interface TooltipPayload {
   }>
 }
 
-function CategoryTooltip({ active, payload }: TooltipPayload) {
+function CategoryTooltip({ active, payload, currency }: TooltipPayload & { currency: string }) {
   if (active && payload && payload.length) {
     const d = payload[0].payload
     return (
       <div className="bg-card border border-border rounded-xl p-4 shadow-xl backdrop-blur-sm">
         <p className="text-xs text-muted-foreground mb-1">{d.icon} {d.name}</p>
-        <p className="text-lg font-bold text-foreground">${d.value.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+        <p className="text-lg font-bold text-foreground">{formatMoney(Math.round(d.value * 100), currency)}</p>
       </div>
     )
   }
@@ -48,13 +49,10 @@ function CustomLegend({ payload }: { payload?: Array<{ value: string; color: str
   )
 }
 
-export function CategoryChart() {
+export function CategoryChart({ scope }: { scope: DashboardScope }) {
   const supabase = createClient()
-  const orgId = useActiveOrgId()
 
   const fetchCategoryData = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Not authenticated')
     const now = new Date()
     const start = startOfMonth(now)
     const end = endOfMonth(now)
@@ -65,29 +63,22 @@ export function CategoryChart() {
       .eq('is_deleted', false)
       .gte('date', start.toISOString())
       .lte('date', end.toISOString())
-    if (orgId) {
-      expenseQuery = expenseQuery.eq('org_id', orgId)
-    } else {
-      expenseQuery = expenseQuery.eq('user_id', user.id).is('org_id', null)
-    }
+    expenseQuery = applyExpenseScope(expenseQuery, scope)
     const { data: expenses, error: expensesError } = await expenseQuery
 
     if (expensesError) throw expensesError
 
-    let categoryQuery = supabase
-      .from('categories')
-      .select('id, name, icon')
-    if (orgId) {
-      categoryQuery = categoryQuery.eq('org_id', orgId)
-    } else {
-      categoryQuery = categoryQuery.eq('user_id', user.id).is('org_id', null)
-    }
+    const categoryQuery = applyCategoryScope(
+      supabase.from('categories').select('id, name, icon'),
+      scope
+    )
     const { data: categories, error: categoriesError } = await categoryQuery
 
     if (categoriesError) throw categoriesError
 
     const categoryTotals = expenses?.reduce((acc, expense) => {
       const catId = expense.category_id
+      if (!catId) return acc
       if (!acc[catId]) acc[catId] = 0
       acc[catId] += expense.amount_cents
       return acc
@@ -102,26 +93,9 @@ export function CategoryChart() {
   }
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['category-chart', orgId],
+    queryKey: ['category-chart', scope],
     queryFn: fetchCategoryData,
-    enabled: orgId !== undefined,
   })
-
-  if (orgId === undefined || orgId === null) {
-    return (
-      <Card className="glass-card border-border shadow-lg shadow-black/5 animate-fade-in">
-        <CardHeader className="pb-2">
-          <Skeleton className="h-6 w-40 bg-muted rounded-md" />
-          <Skeleton className="h-4 w-48 bg-muted rounded-md" />
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px] w-full rounded-xl overflow-hidden">
-            <Skeleton className="h-full w-full bg-muted" />
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
 
   if (isLoading) {
     return (
@@ -185,7 +159,7 @@ export function CategoryChart() {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }} />
                   ))}
                 </Pie>
-                <Tooltip content={<CategoryTooltip />} />
+                <Tooltip content={<CategoryTooltip currency={scope.baseCurrency} />} />
                 <Legend content={<CustomLegend />} />
               </PieChart>
             </ResponsiveContainer>
@@ -198,7 +172,7 @@ export function CategoryChart() {
                   <span className="text-sm text-foreground">{item.icon} {item.name}</span>
                 </div>
                 <div className="text-right">
-                  <span className="font-bold text-foreground text-sm">${item.value.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                  <span className="font-bold text-foreground text-sm">{formatMoney(Math.round(item.value * 100), scope.baseCurrency)}</span>
                   <span className="text-muted-foreground ml-2 text-xs">({((item.value / total) * 100).toFixed(1)}%)</span>
                 </div>
               </div>

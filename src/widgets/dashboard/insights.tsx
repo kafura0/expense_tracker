@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/shared/lib/supabase/client'
-import { useActiveOrgId } from '@/shared/lib/org-helpers'
+import { applyExpenseScope, applyCategoryScope, type DashboardScope } from '@/features/dashboard/scope'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { TrendingUp, TrendingDown, AlertCircle, Lightbulb, Sparkles } from 'lucide-react'
@@ -14,13 +14,12 @@ interface Insight {
   description: string
 }
 
-export function Insights() {
+export function Insights({ scope }: { scope: DashboardScope }) {
   const supabase = createClient()
-  const orgId = useActiveOrgId()
+  const teamView = scope.persona === 'manager' || scope.persona === 'org-admin'
+  const subject = teamView ? 'the team' : 'you'
 
   const fetchInsights = async (): Promise<Insight[]> => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Not authenticated')
     const now = new Date()
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
@@ -32,11 +31,7 @@ export function Insights() {
       .eq('is_deleted', false)
       .gte('date', currentMonthStart.toISOString())
       .lte('date', now.toISOString())
-    if (orgId) {
-      currentQuery = currentQuery.eq('org_id', orgId)
-    } else {
-      currentQuery = currentQuery.eq('user_id', user.id).is('org_id', null)
-    }
+    currentQuery = applyExpenseScope(currentQuery, scope)
     const { data: currentExpenses, error: currentError } = await currentQuery
 
     if (currentError) throw new Error(`Failed to fetch current month expenses: ${currentError.message}`)
@@ -47,23 +42,15 @@ export function Insights() {
       .eq('is_deleted', false)
       .gte('date', lastMonthStart.toISOString())
       .lte('date', lastMonthEnd.toISOString())
-    if (orgId) {
-      lastQuery = lastQuery.eq('org_id', orgId)
-    } else {
-      lastQuery = lastQuery.eq('user_id', user.id).is('org_id', null)
-    }
+    lastQuery = applyExpenseScope(lastQuery, scope)
     const { data: lastExpenses, error: lastError } = await lastQuery
 
     if (lastError) throw new Error(`Failed to fetch last month expenses: ${lastError.message}`)
 
-    let categoryQuery = supabase
-      .from('categories')
-      .select('id, name')
-    if (orgId) {
-      categoryQuery = categoryQuery.eq('org_id', orgId)
-    } else {
-      categoryQuery = categoryQuery.eq('user_id', user.id).is('org_id', null)
-    }
+    const categoryQuery = applyCategoryScope(
+      supabase.from('categories').select('id, name'),
+      scope
+    )
     const { data: categories, error: catError } = await categoryQuery
 
     if (catError) throw new Error(`Failed to fetch categories: ${catError.message}`)
@@ -75,14 +62,15 @@ export function Insights() {
     if (lastTotal > 0) {
       const change = ((currentTotal - lastTotal) / lastTotal) * 100
       if (change > 10) {
-        insights.push({ id: 'spending-increase', type: 'increase', title: 'Spending Up', description: `You've spent ${change.toFixed(0)}% more than last month` })
+        insights.push({ id: 'spending-increase', type: 'increase', title: 'Spending Up', description: `${subject === 'the team' ? 'The team has' : `You've`} spent ${change.toFixed(0)}% more than last month` })
       } else if (change < -10) {
-        insights.push({ id: 'spending-decrease', type: 'decrease', title: 'Spending Down', description: `Great! You've spent ${Math.abs(change).toFixed(0)}% less than last month` })
+        insights.push({ id: 'spending-decrease', type: 'decrease', title: 'Spending Down', description: `Great! ${subject === 'the team' ? 'the team has' : `You've`} spent ${Math.abs(change).toFixed(0)}% less than last month` })
       }
     }
 
     const currentByCategory = currentExpenses?.reduce((acc, e) => {
       const catId = e.category_id
+      if (!catId) return acc
       if (!acc[catId]) acc[catId] = 0
       acc[catId] += e.amount_cents
       return acc
@@ -90,6 +78,7 @@ export function Insights() {
 
     const lastByCategory = lastExpenses?.reduce((acc, e) => {
       const catId = e.category_id
+      if (!catId) return acc
       if (!acc[catId]) acc[catId] = 0
       acc[catId] += e.amount_cents
       return acc
@@ -117,40 +106,16 @@ export function Insights() {
     }
 
     if (insights.length === 0) {
-      insights.push({ id: 'no-insights', type: 'tip', title: 'All Good!', description: 'Your spending is consistent this month' })
+      insights.push({ id: 'no-insights', type: 'tip', title: 'All Good!', description: `${teamView ? 'Team spending' : 'Your spending'} is consistent this month` })
     }
 
     return insights.slice(0, 4)
   }
 
   const { data: insights, isLoading, error } = useQuery({
-    queryKey: ['insights', orgId],
+    queryKey: ['insights', scope],
     queryFn: fetchInsights,
-    enabled: orgId !== undefined,
   })
-
-  if (orgId === undefined || orgId === null) {
-    return (
-      <Card className="glass-card border-border shadow-lg shadow-black/5 animate-fade-in">
-        <CardHeader className="pb-2">
-          <Skeleton className="h-6 w-40 bg-muted rounded-md" />
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="flex items-start gap-3 p-4 rounded-xl bg-muted/30">
-                <Skeleton className="h-9 w-9 rounded-lg bg-muted shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-28 bg-muted rounded-md" />
-                  <Skeleton className="h-3 w-full bg-muted rounded-md" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
 
   if (isLoading) {
     return (

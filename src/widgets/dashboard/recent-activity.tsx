@@ -2,7 +2,8 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/shared/lib/supabase/client'
-import { useActiveOrgId } from '@/shared/lib/org-helpers'
+import { applyExpenseScope, type DashboardScope } from '@/features/dashboard/scope'
+import { formatMoney } from '@/shared/lib/currency'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Badge } from '@/shared/ui/badge'
@@ -10,25 +11,17 @@ import { format } from 'date-fns'
 import { ArrowRight, ReceiptText } from 'lucide-react'
 import Link from 'next/link'
 
-export function RecentActivity() {
+export function RecentActivity({ scope }: { scope: DashboardScope }) {
   const supabase = createClient()
-  const orgId = useActiveOrgId()
 
   const fetchRecentExpenses = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Not authenticated')
-
     let query = supabase
       .from('expenses')
       .select(`id, title, amount_cents, currency, date, category_id, categories (name, icon)`)
       .eq('is_deleted', false)
       .order('date', { ascending: false })
       .limit(10)
-    if (orgId) {
-      query = query.eq('org_id', orgId)
-    } else {
-      query = query.eq('user_id', user.id).is('org_id', null)
-    }
+    query = applyExpenseScope(query, scope)
     const { data, error } = await query
 
     if (error) throw error
@@ -40,39 +33,9 @@ export function RecentActivity() {
   }
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['recent-expenses', orgId],
+    queryKey: ['recent-expenses', scope],
     queryFn: fetchRecentExpenses,
-    enabled: orgId !== undefined,
   })
-
-  if (orgId === undefined || orgId === null) {
-    return (
-      <Card className="glass-card border-border shadow-lg shadow-black/5 animate-fade-in">
-        <CardHeader>
-          <Skeleton className="h-6 w-40 bg-muted rounded-md" />
-          <Skeleton className="h-4 w-32 bg-muted rounded-md" />
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex items-center gap-4">
-                <Skeleton className="h-11 w-11 rounded-xl bg-muted" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-32 bg-muted rounded-md" />
-                  <Skeleton className="h-3 w-20 bg-muted rounded-md" />
-                </div>
-                <Skeleton className="h-6 w-20 bg-muted rounded-full" />
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  const formatCurrency = (cents: number, currency: string) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(cents / 100)
-  }
 
   if (isLoading) {
     return (
@@ -156,7 +119,7 @@ export function RecentActivity() {
               </div>
               <div className="flex items-center gap-2.5 shrink-0">
                 <Badge variant="outline" className="border-border text-muted-foreground text-[10px]">{expense.category_name}</Badge>
-                <span className="font-mono text-foreground font-semibold text-sm tabular-nums">{formatCurrency(expense.amount_cents, expense.currency)}</span>
+                <span className="font-mono text-foreground font-semibold text-sm tabular-nums">{formatMoney(expense.amount_cents, expense.currency)}</span>
               </div>
             </div>
           ))}

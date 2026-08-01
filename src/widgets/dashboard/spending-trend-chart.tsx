@@ -2,7 +2,8 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/shared/lib/supabase/client'
-import { useActiveOrgId } from '@/shared/lib/org-helpers'
+import { applyExpenseScope, type DashboardScope } from '@/features/dashboard/scope'
+import { formatMoney } from '@/shared/lib/currency'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
@@ -18,26 +19,24 @@ interface TooltipPayload {
   }>
 }
 
-function TrendTooltip({ active, payload }: TooltipPayload) {
+function TrendTooltip({ active, payload, currency }: TooltipPayload & { currency: string }) {
   if (active && payload && payload.length) {
     return (
       <div className="bg-card border border-border rounded-xl p-4 shadow-xl backdrop-blur-sm">
         <p className="text-xs text-muted-foreground mb-1">{payload[0].payload.fullDate}</p>
-        <p className="text-lg font-bold text-foreground">${payload[0].value.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+        <p className="text-lg font-bold text-foreground">
+          {formatMoney(Math.round(payload[0].value * 100), currency)}
+        </p>
       </div>
     )
   }
   return null
 }
 
-export function SpendingTrendChart() {
+export function SpendingTrendChart({ scope }: { scope: DashboardScope }) {
   const supabase = createClient()
-  const orgId = useActiveOrgId()
 
   const fetchTrendData = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Not authenticated')
-
     const sixMonthsAgo = startOfMonth(subMonths(new Date(), 5))
     const now = new Date()
 
@@ -47,11 +46,7 @@ export function SpendingTrendChart() {
       .eq('is_deleted', false)
       .gte('date', sixMonthsAgo.toISOString())
       .lte('date', now.toISOString())
-    if (orgId) {
-      query = query.eq('org_id', orgId)
-    } else {
-      query = query.eq('user_id', user.id).is('org_id', null)
-    }
+    query = applyExpenseScope(query, scope)
     const { data, error } = await query
 
     if (error) throw error
@@ -81,24 +76,9 @@ export function SpendingTrendChart() {
   }
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['spending-trend', orgId],
+    queryKey: ['spending-trend', scope],
     queryFn: fetchTrendData,
-    enabled: orgId !== undefined,
   })
-
-  if (orgId === undefined || orgId === null) {
-    return (
-      <Card className="glass-card border-border shadow-lg shadow-black/5 animate-fade-in">
-        <CardHeader className="pb-2">
-          <Skeleton className="h-6 w-40 bg-muted rounded-md" />
-          <Skeleton className="h-4 w-56 bg-muted rounded-md" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-[300px] w-full bg-muted rounded-xl" />
-        </CardContent>
-      </Card>
-    )
-  }
 
   if (isLoading) {
     return (
@@ -161,9 +141,9 @@ export function SpendingTrendChart() {
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(value) => `$${value}`}
+                tickFormatter={(value) => formatMoney(value * 100, scope.baseCurrency)}
               />
-              <Tooltip content={<TrendTooltip />} cursor={{ stroke: '#4edea3', strokeWidth: 1, strokeDasharray: '4 4' }} />
+              <Tooltip content={<TrendTooltip currency={scope.baseCurrency} />} cursor={{ stroke: '#4edea3', strokeWidth: 1, strokeDasharray: '4 4' }} />
               <Area
                 type="monotone"
                 dataKey="amount"
