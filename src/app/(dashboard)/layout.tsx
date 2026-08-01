@@ -202,15 +202,15 @@ export default function DashboardLayout({
               type="submit"
               className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-accent-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-all duration-200 group"
             >
-              <LogOut className="h-4.5 w-4.5 shrink-0 transition-transform duration-200 group-hover:-translate-x-0.5" />
-              Log out
-            </button>
-          </form>
-        </div>
-      </aside>
+              <LogOut className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover:-translate-x-0.5" />
+                  Log out
+                </button>
+              </form>
+            </div>
+          </aside>
 
-      {/* Mobile Overlay */}
-      {mobileOpen && (
+          {/* Mobile Overlay */}
+          {mobileOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
@@ -277,7 +277,7 @@ export default function DashboardLayout({
                   type="submit"
                   className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-accent-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-all duration-200 group"
                 >
-                  <LogOut className="h-4.5 w-4.5 shrink-0 transition-transform duration-200 group-hover:-translate-x-0.5" />
+                  <LogOut className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover:-translate-x-0.5" />
                   Log out
                 </button>
               </form>

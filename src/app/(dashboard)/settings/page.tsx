@@ -196,7 +196,7 @@ export default function SettingsPage() {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-3xl font-bold text-foreground-variant">
+                  <span className="text-3xl font-bold text-muted-foreground">
                     {formState.displayName?.charAt(0)?.toUpperCase() || '?'}
                   </span>
                 )}
@@ -211,7 +211,7 @@ export default function SettingsPage() {
                 />
               </label>
               {avatarFile && (
-                <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-primary border-2 border-surface" />
+                <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-primary border-2 border-card" />
               )}
             </div>
             <div className="flex-1 space-y-4 w-full">
@@ -311,7 +311,7 @@ export default function SettingsPage() {
                 ))}
               </select>
             </div>
-            <p className="text-xs text-foreground-variant">
+            <p className="text-xs text-muted-foreground">
               Dashboard totals will be converted to this currency
             </p>
           </div>
@@ -354,14 +354,14 @@ export default function SettingsPage() {
                 error={!!validateVatRate(formState.vatRate)}
                 className="pr-10"
               />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium text-foreground-variant">
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">
                 %
               </div>
             </div>
             {validateVatRate(formState.vatRate) && (
               <p className="text-xs text-red-400">{validateVatRate(formState.vatRate)}</p>
             )}
-            <p className="text-xs text-foreground-variant">
+            <p className="text-xs text-muted-foreground">
               Applied to new expenses when tax is enabled
             </p>
           </div>
@@ -394,7 +394,7 @@ export default function SettingsPage() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-xl border border-red-500/20 bg-red-500/5 gap-3">
             <div className="space-y-1">
               <p className="text-sm font-medium text-foreground">Delete Account</p>
-              <p className="text-xs text-foreground-variant">
+              <p className="text-xs text-muted-foreground">
                 Permanently delete your account and all associated data. This action cannot be undone.
               </p>
             </div>

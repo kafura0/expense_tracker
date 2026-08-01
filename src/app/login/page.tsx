@@ -32,7 +32,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-sm md:px-4 py-8 md:py-12 relative overflow-hidden text-center">
+    <div className="min-h-screen flex items-center justify-center bg-background px-2 md:px-4 py-8 md:py-12 relative overflow-hidden text-center">
       <div className="absolute inset-0 hero-gradient pointer-events-none" />
 
       <div className="max-w-md w-full space-y-6 md:space-y-8 relative z-10 animate-fade-in">
@@ -93,24 +93,30 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <input
-                id="remember"
-                name="remember"
-                type="checkbox"
-                className="h-4 w-4 rounded border-border bg-muted text-primary focus:ring-primary/50"
-              />
-              <label htmlFor="remember" className="text-sm text-muted-foreground">
-                Remember me
-              </label>
-            </div>
+            <label className="flex items-center gap-2.5 cursor-pointer group">
+              <div className="relative flex items-center justify-center">
+                <input
+                  id="remember"
+                  name="remember"
+                  type="checkbox"
+                  className="peer sr-only"
+                />
+                <div className="h-4 w-4 rounded border border-border bg-muted/50 group-hover:border-muted-foreground/50 transition-colors duration-200 peer-checked:bg-primary peer-checked:border-primary peer-checked:[&>svg]:opacity-100 peer-focus-visible:ring-2 peer-focus-visible:ring-ring/50 peer-focus-visible:ring-offset-1 peer-focus-visible:ring-offset-background flex items-center justify-center">
+                  <svg className="h-3 w-3 text-primary-foreground opacity-0 transition-opacity duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              </div>
+              <span className="text-sm text-muted-foreground select-none">Remember me</span>
+            </label>
 
             <Button type="submit" disabled={loading} loading={loading} className="w-full h-11">
               Sign in

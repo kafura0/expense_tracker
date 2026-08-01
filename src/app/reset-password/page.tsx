@@ -35,7 +35,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-sm md:px-4 py-8 md:py-12 relative overflow-hidden text-center">
+    <div className="min-h-screen flex items-center justify-center bg-background px-2 md:px-4 py-8 md:py-12 relative overflow-hidden text-center">
       <div className="absolute inset-0 hero-gradient pointer-events-none" />
 
       <div className="max-w-md w-full space-y-6 md:space-y-8 relative z-10 animate-fade-in">
