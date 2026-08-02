@@ -9,11 +9,13 @@ import { RecentActivity } from '@/widgets/dashboard/recent-activity'
 import { Insights } from '@/widgets/dashboard/insights'
 import { TaxSummary } from '@/widgets/dashboard/tax-summary'
 import { CurrencySummary } from '@/widgets/dashboard/currency-summary'
+import { AnnouncementBanner } from '@/widgets/dashboard/announcement-banner'
 import type { DashboardScope } from '@/features/dashboard/scope'
 
 export function SoloDashboard({ scope }: { scope: DashboardScope }) {
   return (
     <div className="space-y-6">
+      <AnnouncementBanner scope={scope} />
       <DashboardHeader subtitle="Your personal money at a glance" />
       <KpiCards scope={scope} />
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">

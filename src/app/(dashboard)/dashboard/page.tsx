@@ -38,6 +38,6 @@ export default function DashboardPage() {
     case 'org-admin':
       return <OrgAdminDashboard scope={scope} />
     case 'platform-admin':
-      return <PlatformAdminDashboard />
+      return <PlatformAdminDashboard scope={scope} />
   }
 }

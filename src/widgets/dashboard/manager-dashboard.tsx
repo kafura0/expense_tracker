@@ -8,11 +8,13 @@ import { BudgetSummary } from '@/widgets/dashboard/budget-summary'
 import { RecentActivity } from '@/widgets/dashboard/recent-activity'
 import { Insights } from '@/widgets/dashboard/insights'
 import { TeamSpendLeaderboard } from '@/widgets/dashboard/team-spend-leaderboard'
+import { AnnouncementBanner } from '@/widgets/dashboard/announcement-banner'
 import type { DashboardScope } from '@/features/dashboard/scope'
 
 export function ManagerDashboard({ scope }: { scope: DashboardScope }) {
   return (
     <div className="space-y-6">
+      <AnnouncementBanner scope={scope} />
       <DashboardHeader subtitle="Team spending overview across the organization" />
       <KpiCards scope={scope} />
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">

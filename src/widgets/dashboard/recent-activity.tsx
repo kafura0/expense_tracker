@@ -5,6 +5,7 @@ import { createClient } from '@/shared/lib/supabase/client'
 import { applyExpenseScope, type DashboardScope } from '@/features/dashboard/scope'
 import { formatMoney } from '@/shared/lib/currency'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card'
+import { CategoryIconTile } from '@/shared/ui/category-icon'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Badge } from '@/shared/ui/badge'
 import { format } from 'date-fns'
@@ -17,7 +18,7 @@ export function RecentActivity({ scope }: { scope: DashboardScope }) {
   const fetchRecentExpenses = async () => {
     let query = supabase
       .from('expenses')
-      .select(`id, title, amount_cents, currency, date, category_id, categories (name, icon)`)
+      .select(`id, title, amount_cents, currency, date, category_id, categories (name, icon, color)`)
       .eq('is_deleted', false)
       .eq('entry_type', 'expense')
       .order('date', { ascending: false })
@@ -29,7 +30,8 @@ export function RecentActivity({ scope }: { scope: DashboardScope }) {
     return data?.map(expense => ({
       ...expense,
       category_name: (expense.categories as { name?: string } | null)?.name || 'Unknown',
-      category_icon: (expense.categories as { icon?: string } | null)?.icon || '📦',
+      category_icon: (expense.categories as { icon?: string | null } | null)?.icon || null,
+      category_color: (expense.categories as { color?: string | null } | null)?.color || null,
     }))
   }
 
@@ -111,9 +113,11 @@ export function RecentActivity({ scope }: { scope: DashboardScope }) {
                 index === 0 ? '' : index === 1 ? 'delay-75' : index === 2 ? 'delay-150' : index <= 4 ? 'delay-200' : 'delay-300'
               }`}
             >
-              <div className="h-11 w-11 rounded-xl bg-muted/50 flex items-center justify-center text-lg shrink-0">
-                {expense.category_icon}
-              </div>
+              <CategoryIconTile
+                icon={expense.category_icon}
+                color={expense.category_color}
+                className="h-11 w-11"
+              />
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-foreground truncate">{expense.title}</p>
                 <p className="text-xs text-muted-foreground">{format(new Date(expense.date), 'MMM d, yyyy')}</p>

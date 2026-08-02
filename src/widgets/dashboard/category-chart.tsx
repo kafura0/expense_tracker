@@ -5,6 +5,7 @@ import { createClient } from '@/shared/lib/supabase/client'
 import { applyExpenseScope, applyCategoryScope, type DashboardScope } from '@/features/dashboard/scope'
 import { formatMoney } from '@/shared/lib/currency'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card'
+import { CategoryIconTile } from '@/shared/ui/category-icon'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
 import { startOfMonth, endOfMonth } from 'date-fns'
@@ -17,7 +18,8 @@ interface TooltipPayload {
     payload: {
       name: string
       value: number
-      icon: string
+      icon: string | null
+      color: string | null
     }
   }>
 }
@@ -27,7 +29,10 @@ function CategoryTooltip({ active, payload, currency }: TooltipPayload & { curre
     const d = payload[0].payload
     return (
       <div className="bg-card border border-border rounded-xl p-4 shadow-xl backdrop-blur-sm">
-        <p className="text-xs text-muted-foreground mb-1">{d.icon} {d.name}</p>
+        <div className="flex items-center gap-2 mb-1">
+          <CategoryIconTile icon={d.icon} color={d.color} className="h-7 w-7 rounded-lg" iconClassName="h-3.5 w-3.5" />
+          <p className="text-xs text-muted-foreground">{d.name}</p>
+        </div>
         <p className="text-lg font-bold text-foreground">{formatMoney(Math.round(d.value * 100), currency)}</p>
       </div>
     )
@@ -70,7 +75,7 @@ export function CategoryChart({ scope }: { scope: DashboardScope }) {
     if (expensesError) throw expensesError
 
     const categoryQuery = applyCategoryScope(
-      supabase.from('categories').select('id, name, icon'),
+      supabase.from('categories').select('id, name, icon, color'),
       scope
     )
     const { data: categories, error: categoriesError } = await categoryQuery
@@ -88,7 +93,12 @@ export function CategoryChart({ scope }: { scope: DashboardScope }) {
     return Object.entries(categoryTotals)
       .map(([catId, total]) => {
         const category = categories?.find(c => c.id === catId)
-        return { name: category?.name || 'Unknown', value: total / 100, icon: category?.icon || '📦' }
+        return {
+          name: category?.name || 'Unknown',
+          value: total / 100,
+          icon: category?.icon || null,
+          color: category?.color || null,
+        }
       })
       .sort((a, b) => b.value - a.value)
   }
@@ -156,8 +166,12 @@ export function CategoryChart({ scope }: { scope: DashboardScope }) {
                   stroke="hsl(var(--background))"
                   strokeWidth={2}
                 >
-                  {data.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }} />
+                  {data.map((item, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={item.color || COLORS[index % COLORS.length]}
+                      style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}
+                    />
                   ))}
                 </Pie>
                 <Tooltip content={<CategoryTooltip currency={scope.baseCurrency} />} />
@@ -166,13 +180,13 @@ export function CategoryChart({ scope }: { scope: DashboardScope }) {
             </ResponsiveContainer>
           </div>
           <div className="w-full lg:w-1/2 space-y-3">
-            {data.map((item, index) => (
+            {data.map((item) => (
               <div key={item.name} className="flex items-center justify-between p-2.5 rounded-lg hover:bg-muted/50 transition-colors duration-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
-                  <span className="text-sm text-foreground">{item.icon} {item.name}</span>
+                <div className="flex items-center gap-3 min-w-0">
+                  <CategoryIconTile icon={item.icon} color={item.color} className="h-8 w-8 rounded-lg" iconClassName="h-4 w-4" />
+                  <span className="text-sm text-foreground truncate">{item.name}</span>
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0">
                   <span className="font-bold text-foreground text-sm">{formatMoney(Math.round(item.value * 100), scope.baseCurrency)}</span>
                   <span className="text-muted-foreground ml-2 text-xs">({((item.value / total) * 100).toFixed(1)}%)</span>
                 </div>

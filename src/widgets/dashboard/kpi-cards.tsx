@@ -162,16 +162,18 @@ export function KpiCards({ scope }: { scope: DashboardScope }) {
               <h3 className="text-2xl font-bold tracking-tight text-foreground">{kpi.value}</h3>
               {kpi.change !== null && (
                 <div className="flex items-center gap-1.5">
-                  {kpi.change >= 0 ? (
+                  {kpi.change > 0.05 ? (
                     <div className="flex items-center gap-0.5 text-red-500">
                       <ArrowUpRight className="h-3.5 w-3.5" />
                       <span className="text-xs font-semibold">{Math.abs(kpi.change).toFixed(1)}%</span>
                     </div>
-                  ) : (
+                  ) : kpi.change < -0.05 ? (
                     <div className="flex items-center gap-0.5 text-emerald-500">
                       <ArrowDownRight className="h-3.5 w-3.5" />
                       <span className="text-xs font-semibold">{Math.abs(kpi.change).toFixed(1)}%</span>
                     </div>
+                  ) : (
+                    <span className="text-xs font-semibold text-muted-foreground">0.0%</span>
                   )}
                   <span className="text-xs text-muted-foreground">vs last month</span>
                 </div>

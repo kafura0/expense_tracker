@@ -26,7 +26,7 @@ export function TeamSpendLeaderboard({ scope }: { scope: DashboardScope }) {
 
     let expenseQuery = supabase
       .from('expenses')
-      .select('amount_cents, user_id, profiles(display_name)')
+      .select('amount_cents, user_id')
       .eq('is_deleted', false)
       .eq('entry_type', 'expense')
       .gte('date', start.toISOString())
@@ -37,13 +37,24 @@ export function TeamSpendLeaderboard({ scope }: { scope: DashboardScope }) {
 
     const byUser = expenses?.reduce((acc, e) => {
       if (!acc[e.user_id]) {
-        const profile = e.profiles as unknown as { display_name?: string } | null
-        acc[e.user_id] = { userId: e.user_id, name: profile?.display_name || 'Team member', total: 0, count: 0 }
+        acc[e.user_id] = { userId: e.user_id, name: 'Team member', total: 0, count: 0 }
       }
       acc[e.user_id].total += e.amount_cents
       acc[e.user_id].count += 1
       return acc
     }, {} as Record<string, MemberSpend>) || {}
+
+    const userIds = Object.keys(byUser)
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, display_name')
+        .in('user_id', userIds)
+      const nameByUserId = new Map((profiles || []).map((p) => [p.user_id, p.display_name]))
+      for (const [userId, spend] of Object.entries(byUser)) {
+        spend.name = nameByUserId.get(userId) || spend.name
+      }
+    }
 
     return Object.values(byUser).sort((a, b) => b.total - a.total)
   }

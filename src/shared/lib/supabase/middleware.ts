@@ -143,6 +143,7 @@ export async function updateSession(request: NextRequest) {
     '/onboarding',
     '/org-signup',
     '/invite',
+    '/suspended',
   ]
   const isPublicPath = publicPaths.some(
     (path) => pathname === path || pathname.startsWith(path + '/')
@@ -184,10 +185,33 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse
   }
 
+  // Suspended accounts are confined to /suspended (where they can sign out
+  // or contact support). This applies to every route — even public auth pages.
+  // `is_suspended` lives on `profiles`; RLS still lets a user read their own
+  // suspension flag (solo users via their own-profile policy, org members via
+  // their org-scoped profile row).
+  if (pathname !== '/suspended') {
+    try {
+      const { data: suspension } = await supabase
+        .from('profiles')
+        .select('is_suspended')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (suspension?.is_suspended) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/suspended'
+        return NextResponse.redirect(url)
+      }
+    } catch {
+      // If the is_suspended column is unavailable, fall through and serve normally
+    }
+  }
+
   // Authenticated users who land on auth pages (login, reset-password, etc.)
   // are redirected to the dashboard. The /auth/callback exception is necessary
   // because the OAuth callback flow needs to complete before redirecting.
-  if (isPublicPath && pathname !== '/auth/callback' && pathname !== '/onboarding' && pathname !== '/') {
+  if (isPublicPath && pathname !== '/auth/callback' && pathname !== '/onboarding' && pathname !== '/' && pathname !== '/suspended') {
     // Check onboarding status before redirecting
     try {
       const { data: profile } = await supabase

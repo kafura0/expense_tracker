@@ -62,6 +62,26 @@ export const expenseInsertSchema = expenseSchema.omit({
 
 export const expenseUpdateSchema = expenseInsertSchema.partial()
 
+/**
+ * Form-level schema for the client-side expense form.
+ *
+ * `expenseInsertSchema.date` requires an ISO 8601 offset string or a Date,
+ * but the form submits a `<input type="datetime-local">` value
+ * (`YYYY-MM-DDTHH:mm`) which fails that check. This schema additionally
+ * accepts local datetime-local strings and converts them to ISO on submit.
+ */
+export const expenseFormSchema = expenseInsertSchema.extend({
+  date: z
+    .string()
+    .datetime({ offset: true })
+    .or(z.date())
+    .or(
+      z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/, 'Enter a valid date and time')
+    ),
+})
+
 export type Expense = z.infer<typeof expenseSchema>
 export type ExpenseInsert = z.infer<typeof expenseInsertSchema>
 export type ExpenseUpdate = z.infer<typeof expenseUpdateSchema>

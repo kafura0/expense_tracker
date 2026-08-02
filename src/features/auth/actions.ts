@@ -367,7 +367,7 @@ export async function getAdminDashboardData() {
       .order('created_at', { ascending: false }),
     supabase
       .from('org_members')
-      .select('id, user_id, org_id, role, profiles(display_name, avatar_url)')
+      .select('id, user_id, org_id, role')
       .eq('role', 'manager'),
     supabase
       .from('plans')
@@ -377,18 +377,28 @@ export async function getAdminDashboardData() {
   if (requestsResult.error) return { error: requestsResult.error.message }
   if (orgsResult.error) return { error: orgsResult.error.message }
 
+  const managerUserIds = (managersResult.data || []).map((m) => m.user_id)
+  const profileByUserId = new Map()
+  if (managerUserIds.length > 0) {
+    const { data: managerProfiles } = await supabase
+      .from('profiles')
+      .select('user_id, display_name, avatar_url')
+      .in('user_id', managerUserIds)
+    for (const p of managerProfiles || []) profileByUserId.set(p.user_id, p)
+  }
+
   return {
     requests: requestsResult.data || [],
     orgs: (orgsResult.data || []).map((o: Record<string, unknown> & { org_members?: unknown[] }) => ({
       ...o,
       org_members: o.org_members || [],
     })),
-    managers: (managersResult.data || []).map((m: Record<string, unknown> & { id?: string; user_id: string; org_id?: string; role?: string; profiles?: unknown }) => ({
+    managers: (managersResult.data || []).map((m: Record<string, unknown> & { id?: string; user_id: string; org_id?: string; role?: string }) => ({
       id: m.id || '',
       user_id: m.user_id,
       org_id: m.org_id || '',
       role: m.role || 'manager',
-      profiles: m.profiles,
+      profiles: profileByUserId.get(m.user_id) || null,
     })),
     plans: plansResult.data || [],
   }

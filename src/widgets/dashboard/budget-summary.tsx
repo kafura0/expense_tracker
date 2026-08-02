@@ -5,6 +5,7 @@ import { createClient } from '@/shared/lib/supabase/client'
 import { applyBudgetScope, applyExpenseScope, type DashboardScope } from '@/features/dashboard/scope'
 import { formatMoney } from '@/shared/lib/currency'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card'
+import { CategoryIconTile } from '@/shared/ui/category-icon'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { startOfMonth, endOfMonth } from 'date-fns'
 import { Target } from 'lucide-react'
@@ -12,7 +13,8 @@ import { Target } from 'lucide-react'
 interface BudgetRow {
   categoryId: string
   categoryName: string
-  icon: string
+  icon: string | null
+  color: string | null
   budgeted: number
   spent: number
   percent: number
@@ -29,7 +31,7 @@ export function BudgetSummary({ scope }: { scope: DashboardScope }) {
     const budgetQuery = applyBudgetScope(
       supabase
         .from('budgets')
-        .select('id, category_id, amount_cents, categories(id, name, icon)'),
+        .select('id, category_id, amount_cents, categories(id, name, icon, color)'),
       scope
     )
     const { data: budgets, error: budgetError } = await budgetQuery
@@ -55,13 +57,14 @@ export function BudgetSummary({ scope }: { scope: DashboardScope }) {
 
     const rows: BudgetRow[] = (budgets || [])
       .map((b) => {
-        const category = (b.categories as unknown as { id: string; name: string; icon: string } | null) || null
+        const category = (b.categories as unknown as { id: string; name: string; icon: string | null; color: string | null } | null) || null
         const budgeted = b.amount_cents
         const spent = spentByCategory[b.category_id] || 0
         return {
           categoryId: b.category_id,
           categoryName: category?.name || 'Unknown',
-          icon: category?.icon || '📦',
+          icon: category?.icon || null,
+          color: category?.color || null,
           budgeted,
           spent,
           percent: budgeted > 0 ? Math.min(100, (spent / budgeted) * 100) : 0,
@@ -141,9 +144,12 @@ export function BudgetSummary({ scope }: { scope: DashboardScope }) {
     <Card className="glass-card border-border shadow-lg shadow-black/5 animate-fade-in">
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <CardTitle>Budget vs Actual</CardTitle>
-            <CardDescription>This month against your budget targets</CardDescription>
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10"><Target className="h-5 w-5 text-primary" /></div>
+            <div>
+              <CardTitle>Budget vs Actual</CardTitle>
+              <CardDescription>This month against your budget targets</CardDescription>
+            </div>
           </div>
           <div className="text-right">
             <p className="text-2xl font-bold text-foreground tabular-nums">
@@ -160,9 +166,12 @@ export function BudgetSummary({ scope }: { scope: DashboardScope }) {
         <div className="space-y-4">
           {data.rows.slice(0, 6).map((row) => (
             <div key={row.categoryId} className="space-y-1.5">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-foreground">{row.icon} {row.categoryName}</span>
-                <span className="text-muted-foreground tabular-nums">
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="flex items-center gap-2.5 font-medium text-foreground min-w-0">
+                  <CategoryIconTile icon={row.icon} color={row.color} className="h-8 w-8 rounded-lg" iconClassName="h-4 w-4" />
+                  <span className="truncate">{row.categoryName}</span>
+                </span>
+                <span className="text-muted-foreground tabular-nums whitespace-nowrap">
                   {formatMoney(row.spent, scope.baseCurrency)}
                   <span className="text-muted-foreground/60"> / {formatMoney(row.budgeted, scope.baseCurrency)}</span>
                 </span>

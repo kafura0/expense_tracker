@@ -4,14 +4,16 @@ import { useState, useEffect, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQueryClient } from '@tanstack/react-query'
-import { expenseInsertSchema, type ExpenseInsert } from '@/entities/expense/schema'
+import { expenseFormSchema, type ExpenseInsert } from '@/entities/expense/schema'
 import type { ExpenseWithCategory } from '@/entities/expense/types'
 import { createExpense, updateExpense } from './actions'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { useToast } from '@/shared/ui/toast'
 import { createClient } from '@/shared/lib/supabase/client'
-import { useActiveOrgId } from '@/shared/lib/org-helpers'
+import { useDashboardScope, applyCategoryScope } from '@/features/dashboard/scope'
+import { toLocalDateTimeLocal } from '@/shared/lib/datetime'
+import { currencySymbol } from '@/shared/lib/currency'
 import { convertAmount } from '@/entities/exchange-rate/utils'
 import { calculateVAT, DEFAULT_VAT_RATE } from '@/shared/lib/vat'
 import {
@@ -51,7 +53,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const supabase = createClient()
-  const orgId = useActiveOrgId()
+  const { scope } = useDashboardScope()
 
   const isEditing = !!expense
 
@@ -63,20 +65,20 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
     formState: { errors, isSubmitting },
     reset,
   } = useForm<ExpenseInsert>({
-    resolver: zodResolver(expenseInsertSchema),
+    resolver: zodResolver(expenseFormSchema),
     defaultValues: expense ? {
       amount_cents: expense.amount_cents ?? 0,
       entry_type: expense.entry_type ?? 'expense',
       currency: expense.currency ?? 'USD',
       category_id: expense.category_id ?? null,
-      date: expense.date ? String(expense.date).slice(0, 16) : new Date().toISOString().slice(0, 16),
+      date: expense.date ? toLocalDateTimeLocal(expense.date) : toLocalDateTimeLocal(new Date()),
       notes: expense.notes ?? '',
       tax_applicable: expense.tax_applicable ?? false,
       is_taxable: expense.is_taxable ?? false,
     } : {
       entry_type: 'expense',
       currency: 'USD',
-      date: new Date().toISOString().slice(0, 16),
+      date: toLocalDateTimeLocal(new Date()),
       tax_applicable: false,
       is_taxable: false,
     },
@@ -90,13 +92,12 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
   /* eslint-enable react-hooks/incompatible-library */
 
   const fetchCategories = useCallback(async () => {
-    if (!orgId) return
+    if (!scope) return
 
-    const { data, error } = await supabase
-      .from('categories')
-      .select('*')
-      .eq('org_id', orgId)
-      .order('name')
+    let query = supabase.from('categories').select('*')
+    query = applyCategoryScope(query, scope)
+
+    const { data, error } = await query.order('name')
 
     if (error) {
       console.error('Failed to fetch categories:', error.message)
@@ -106,7 +107,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
     if (data) {
       setCategories(data)
     }
-  }, [orgId, supabase])
+  }, [scope, supabase])
 
   const fetchRates = useCallback(async () => {
     try {
@@ -204,7 +205,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
           </label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground pointer-events-none">
-              $
+              {currencySymbol(watchedCurrency)}
             </span>
             <Input
               id="amount_cents"
@@ -251,7 +252,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
           <div className="flex-1">
             <p className="text-sm text-foreground">
               Converted: <span className="font-bold text-primary">
-                ${(convertedAmount / 100).toFixed(2)} {BASE_CURRENCY}
+                {currencySymbol(BASE_CURRENCY)}{(convertedAmount / 100).toFixed(2)} {BASE_CURRENCY}
               </span>
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -342,13 +343,13 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
             <p className="text-sm text-foreground">
               Tax ({DEFAULT_VAT_RATE}%):{' '}
               <span className="font-bold text-amber-600">
-                ${(vatResult.tax / 100).toFixed(2)}
+                {currencySymbol(watchedCurrency)}{(vatResult.tax / 100).toFixed(2)}
               </span>
             </p>
             <p className="text-sm text-foreground">
               Total with tax:{' '}
               <span className="font-bold text-foreground">
-                ${(vatResult.total / 100).toFixed(2)}
+                {currencySymbol(watchedCurrency)}{(vatResult.total / 100).toFixed(2)}
               </span>
             </p>
           </div>

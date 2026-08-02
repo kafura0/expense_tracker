@@ -9,11 +9,13 @@ import { BudgetSummary } from '@/widgets/dashboard/budget-summary'
 import { RecentActivity } from '@/widgets/dashboard/recent-activity'
 import { Insights } from '@/widgets/dashboard/insights'
 import { TeamSpendLeaderboard } from '@/widgets/dashboard/team-spend-leaderboard'
+import { AnnouncementBanner } from '@/widgets/dashboard/announcement-banner'
 import type { DashboardScope } from '@/features/dashboard/scope'
 
 export function OrgAdminDashboard({ scope, orgName }: { scope: DashboardScope; orgName?: string }) {
   return (
     <div className="space-y-6">
+      <AnnouncementBanner scope={scope} />
       <DashboardHeader subtitle="Command center for your organization" />
       <OrgHealthCard scope={scope} orgName={orgName} />
       <KpiCards scope={scope} />

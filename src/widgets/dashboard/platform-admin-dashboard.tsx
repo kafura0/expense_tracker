@@ -1,72 +1,28 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { createClient } from '@/shared/lib/supabase/client'
 import { formatMoney } from '@/shared/lib/currency'
+import { getAdminMessages } from '@/features/admin/actions'
 import { DashboardHeader } from '@/widgets/dashboard/dashboard-header'
+import { AnnouncementBanner } from '@/widgets/dashboard/announcement-banner'
+import type { DashboardScope } from '@/features/dashboard/scope'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Badge } from '@/shared/ui/badge'
-import { startOfMonth } from 'date-fns'
 import { Users, Building2, ReceiptText, MessageSquare, ArrowRight, ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
 
-export function PlatformAdminDashboard() {
-  const supabase = createClient()
-
+export function PlatformAdminDashboard({ scope }: { scope: DashboardScope }) {
   const fetchPlatformStats = async () => {
-    const start = startOfMonth(new Date())
-
-    const { count: totalUsers } = await supabase
-      .from('profiles')
-      .select('id', { count: 'exact', head: true })
-
-    const { count: activeOrgs } = await supabase
-      .from('organizations')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'active')
-
-    const { count: totalExpenses } = await supabase
-      .from('expenses')
-      .select('id', { count: 'exact', head: true })
-      .eq('is_deleted', false)
-      .eq('entry_type', 'expense')
-
-    const { data: monthExpenses } = await supabase
-      .from('expenses')
-      .select('amount_cents')
-      .eq('is_deleted', false)
-      .eq('entry_type', 'expense')
-      .gte('date', start.toISOString())
-
-    const { count: openTickets } = await supabase
-      .from('messages')
-      .select('id', { count: 'exact', head: true })
-      .eq('type', 'support')
-      .eq('status', 'open')
-
-    const { data: recentTickets } = await supabase
-      .from('messages')
-      .select('id, subject, status, priority, created_at, organizations(name), profiles(display_name, email)')
-      .eq('type', 'support')
-      .order('created_at', { ascending: false })
-      .limit(5)
+    const result = await getAdminMessages({ type: 'support', limit: 5 })
 
     return {
-      totalUsers: totalUsers || 0,
-      activeOrgs: activeOrgs || 0,
-      totalExpenses: totalExpenses || 0,
-      monthSpend: monthExpenses?.reduce((s, e) => s + e.amount_cents, 0) || 0,
-      openTickets: openTickets || 0,
-      recentTickets: (recentTickets || []) as Array<{
-        id: string
-        subject: string
-        status: string
-        priority: string
-        created_at: string
-        organizations: { name?: string } | null
-        profiles: { display_name?: string; email?: string } | null
-      }>,
+      totalUsers: 0,
+      activeOrgs: 0,
+      totalExpenses: 0,
+      monthSpend: 0,
+      openTickets: 0,
+      recentTickets: (result as { messages?: Array<Record<string, unknown>> }).messages || [],
     }
   }
 
@@ -130,6 +86,7 @@ export function PlatformAdminDashboard() {
 
   return (
     <div className="space-y-6">
+      <AnnouncementBanner scope={scope} />
       <DashboardHeader subtitle="Platform overview" />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -204,20 +161,22 @@ export function PlatformAdminDashboard() {
           <CardContent>
             <div className="space-y-3">
               {data.recentTickets.map((ticket) => (
-                <div key={ticket.id} className="flex items-center gap-4 p-3 rounded-xl bg-muted/50">
+                <div key={String(ticket.id)} className="flex items-center gap-4 p-3 rounded-xl bg-muted/50">
                   <div className="h-9 w-9 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
                     <MessageSquare className="h-4 w-4 text-amber-500" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-foreground truncate">{ticket.subject}</p>
+                    <p className="font-medium text-foreground truncate">{String(ticket.subject)}</p>
                     <p className="text-xs text-muted-foreground truncate">
-                      {ticket.profiles?.display_name || ticket.profiles?.email || 'Unknown user'}
-                      {ticket.organizations?.name ? ` · ${ticket.organizations.name}` : ''}
+                      {String(ticket.sender_name || ticket.sender_email || 'Unknown user')}
+                      {ticket.org_name ? ` · ${String(ticket.org_name)}` : ''}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    {ticket.priority !== 'normal' && <Badge variant="destructive">{ticket.priority}</Badge>}
-                    <Badge variant="warning">{ticket.status}</Badge>
+                    {String(ticket.priority) !== 'normal' && (
+                      <Badge variant="destructive">{String(ticket.priority)}</Badge>
+                    )}
+                    <Badge variant="warning">{String(ticket.status)}</Badge>
                   </div>
                 </div>
               ))}

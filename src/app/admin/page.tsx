@@ -13,14 +13,19 @@ import {
   getAdminClients,
   getAdminKpis,
   getAdminMessages,
+  getAdminUsers,
+  getAdminOrganizations,
   replyToMessage,
   closeMessage,
   toggleOrgStatus,
+  setUserStatus,
+  createAnnouncementAction,
+  deleteAnnouncement,
 } from '@/features/admin/actions'
 import {
   Users, Building2, Megaphone, MessageSquare, Shield, RefreshCw,
   Mail, X, Send, ChevronDown, ChevronUp, AlertTriangle, Search, Filter,
-  ReceiptText, Wallet,
+  ReceiptText, Wallet, UserRound, Gift, Wrench, Trash2,
 } from 'lucide-react'
 import { formatMoneyCompact } from '@/shared/lib/currency'
 
@@ -33,6 +38,51 @@ const tabs: { id: Tab; label: string; icon: typeof Users }[] = [
   { id: 'announcements', label: 'Announcements', icon: Megaphone },
   { id: 'messages', label: 'Messages', icon: MessageSquare },
 ]
+
+const CATEGORY_META: Record<string, { label: string; icon: typeof Megaphone; badge: 'info' | 'warning' | 'outline' }> = {
+  announcement: { label: 'Announcement', icon: Megaphone, badge: 'info' },
+  offer: { label: 'Offer', icon: Gift, badge: 'warning' },
+  maintenance: { label: 'Maintenance', icon: Wrench, badge: 'outline' },
+}
+
+const AUDIENCE_LABELS: Record<string, string> = {
+  everyone: 'Everyone',
+  orgs: 'All organizations',
+  solo: 'Solo users',
+  org: 'Specific organization',
+}
+
+type UserKind = 'solo' | 'org' | 'super_admin'
+
+interface AdminUser {
+  userId: string
+  email: string
+  displayName: string
+  createdAt: string | null
+  isSuspended: boolean
+  kind: UserKind
+  primaryRole: string
+  orgs: Array<{ orgId: string; name: string; slug: string; status: string; role: string }>
+}
+
+interface AdminOrg {
+  id: string
+  name: string
+  slug: string
+  status: string
+  created_at: string
+  members: Array<{ user_id: string; role: string; display_name: string; email: string }>
+  plan: string | null
+  plan_price: number | null
+}
+
+interface AdminSolo {
+  user_id: string
+  display_name: string
+  email: string
+  is_suspended: boolean
+  created_at: string
+}
 
 function PlatformKpis() {
   const { data, isLoading } = useQuery({
@@ -128,94 +178,165 @@ export default function AdminDashboard() {
   )
 }
 
+const KIND_META: Record<UserKind, { label: string; badge: 'secondary' | 'info' | 'warning' }> = {
+  solo: { label: 'Solo', badge: 'secondary' },
+  org: { label: 'Org', badge: 'info' },
+  super_admin: { label: 'Super Admin', badge: 'warning' },
+}
+
+function UserRow({ user, onToggle }: { user: AdminUser; onToggle: (userId: string, suspended: boolean) => void }) {
+  const [busy, setBusy] = useState(false)
+  const meta = KIND_META[user.kind]
+  return (
+    <tr className="border-b border-border/10 hover:bg-muted/50 transition-colors">
+      <td className="py-3 px-3">
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+            <span className="text-sm font-bold text-primary">{user.displayName.charAt(0).toUpperCase()}</span>
+          </div>
+          <div>
+            <p className="font-medium text-foreground flex items-center gap-2">
+              {user.displayName}
+              {user.isSuspended && (
+                <span className="text-[10px] uppercase tracking-wider text-red-400 border border-red-800 rounded-full px-1.5 py-0.5">
+                  Suspended
+                </span>
+              )}
+            </p>
+            <p className="text-xs text-muted-foreground">{user.email}</p>
+          </div>
+        </div>
+      </td>
+      <td className="py-3 px-3">
+        <Badge variant={meta.badge}>{meta.label}</Badge>
+      </td>
+      <td className="py-3 px-3">
+        {user.orgs.length > 0 ? (
+          <div className="space-y-1">
+            {user.orgs.map((org) => (
+              <div key={org.orgId} className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">{org.name}</span>
+                <Badge variant={org.status === 'active' ? 'success' : 'destructive'} className="text-[10px]">
+                  {org.status}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <span className="text-xs text-muted-foreground">No organization</span>
+        )}
+      </td>
+      <td className="py-3 px-3">
+        <Badge variant="secondary">{user.primaryRole}</Badge>
+      </td>
+      <td className="py-3 px-3 text-right">
+        {user.kind === 'super_admin' ? (
+          <span className="text-xs text-muted-foreground">Protected</span>
+        ) : user.isSuspended ? (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true)
+              try {
+                onToggle(user.userId, false)
+              } finally {
+                setBusy(false)
+              }
+            }}
+            className="text-green-400 border-green-800 hover:bg-green-900/20"
+          >
+            Activate
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true)
+              try {
+                onToggle(user.userId, true)
+              } finally {
+                setBusy(false)
+              }
+            }}
+            className="text-red-400 border-red-800 hover:bg-red-900/20"
+          >
+            Suspend
+          </Button>
+        )}
+      </td>
+    </tr>
+  )
+}
+
 function UsersTab() {
   const [searchQuery, setSearchQuery] = useState('')
+  const [kindFilter, setKindFilter] = useState<UserKind | ''>('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'suspended' | 'active'>('all')
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
   const { data, isLoading } = useQuery({
-    queryKey: ['admin', 'clients'],
+    queryKey: ['admin', 'users'],
     queryFn: async () => {
-      const result = await getAdminClients()
+      const result = await getAdminUsers()
       if ('error' in result && result.error) throw new Error(result.error)
       return result
     },
   })
 
-  const toggleMutation = useMutation({
-    mutationFn: async ({ orgId, status }: { orgId: string; status: 'active' | 'suspended' }) => {
-      const result = await toggleOrgStatus(orgId, status)
+  const suspendMutation = useMutation({
+    mutationFn: async ({ userId, suspended }: { userId: string; suspended: boolean }) => {
+      const result = await setUserStatus(userId, suspended)
       if ('error' in result && result.error) throw new Error(result.error)
     },
     onSuccess: () => {
-      toast('Organization updated', 'success')
-      queryClient.invalidateQueries({ queryKey: ['admin', 'clients'] })
+      toast('Account updated', 'success')
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'kpis'] })
     },
     onError: (e: Error) => toast(e.message, 'error'),
   })
 
-  const clients = useMemo(() => (data as { clients?: Array<Record<string, unknown>> })?.clients || [], [data])
+  const users = useMemo(() => (data as { users?: AdminUser[] })?.users || [], [data])
+  const activeOrgs = (data as { activeOrgs?: number })?.activeOrgs || 0
+  const suspendedCount = (data as { suspendedUsers?: number })?.suspendedUsers || 0
 
-  const allUsers = useMemo(() => {
-    const users: Array<{
-      userId: string
-      name: string
-      email: string
-      orgName: string
-      orgSlug: string
-      role: string
-      orgStatus: string
-      orgId: string
-    }> = []
-    clients.forEach((org) => {
-      const members = (org.org_members as Array<{
-        user_id: string
-        profiles?: { display_name?: string; email?: string }
-      }>) || []
-      members.forEach((m) => {
-        users.push({
-          userId: m.user_id,
-          name: m.profiles?.display_name || 'Unknown',
-          email: m.profiles?.email || '',
-          orgName: org.name as string,
-          orgSlug: org.slug as string,
-          role: 'Member',
-          orgStatus: org.status as string,
-          orgId: org.id as string,
-        })
-      })
+  const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    return users.filter((u) => {
+      if (kindFilter && u.kind !== kindFilter) return false
+      if (statusFilter === 'suspended' && !u.isSuspended) return false
+      if (statusFilter === 'active' && u.isSuspended) return false
+      if (
+        q &&
+        !u.displayName.toLowerCase().includes(q) &&
+        !u.email.toLowerCase().includes(q) &&
+        !u.orgs.some((o) => o.name.toLowerCase().includes(q))
+      ) {
+        return false
+      }
+      return true
     })
-    return users.filter((u) =>
-      u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.orgName.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  }, [clients, searchQuery])
+  }, [users, searchQuery, kindFilter, statusFilter])
 
-  const totalUsers = allUsers.length
-  const activeOrgs = clients.filter(c => c.status === 'active').length
-
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Skeleton className="h-24 rounded-xl" />
-          <Skeleton className="h-24 rounded-xl" />
-          <Skeleton className="h-24 rounded-xl" />
-        </div>
-        <Skeleton className="h-12 w-full rounded-xl" />
-        <Skeleton className="h-64 w-full rounded-xl" />
-      </div>
-    )
-  }
+  const kindChips: { id: UserKind | ''; label: string }[] = [
+    { id: '', label: 'All' },
+    { id: 'solo', label: 'Solo' },
+    { id: 'org', label: 'Org' },
+    { id: 'super_admin', label: 'Super Admin' },
+  ]
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="glass-card border-border">
           <CardContent className="p-4">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Users</p>
-            <p className="text-2xl font-bold text-foreground mt-1">{totalUsers}</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Accounts</p>
+            <p className="text-2xl font-bold text-foreground mt-1">{users.length}</p>
           </CardContent>
         </Card>
         <Card className="glass-card border-border">
@@ -226,36 +347,67 @@ function UsersTab() {
         </Card>
         <Card className="glass-card border-border">
           <CardContent className="p-4">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Suspended Orgs</p>
-            <p className="text-2xl font-bold text-red-400 mt-1">{clients.length - activeOrgs}</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Suspended Accounts</p>
+            <p className="text-2xl font-bold text-red-400 mt-1">{suspendedCount}</p>
           </CardContent>
         </Card>
       </div>
 
       <Card className="glass-card border-border">
-        <CardContent className="p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search users by name, email, or organization..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+        <CardContent className="p-4 space-y-3">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, email, or organization..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {kindChips.map((chip) => (
+                <button
+                  key={chip.id}
+                  onClick={() => setKindFilter(chip.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    kindFilter === chip.id
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {chip.label}
+                </button>
+              ))}
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+                className="h-8 rounded-lg border border-border bg-muted px-2 text-xs text-foreground"
+              >
+                <option value="all">All statuses</option>
+                <option value="active">Active</option>
+                <option value="suspended">Suspended</option>
+              </select>
+            </div>
           </div>
         </CardContent>
       </Card>
 
       <Card className="glass-card border-border">
         <CardHeader>
-          <CardTitle className="font-headline">All Users</CardTitle>
+          <CardTitle className="font-headline">All Accounts</CardTitle>
         </CardHeader>
         <CardContent>
-          {allUsers.length === 0 ? (
+          {isLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-12 w-full rounded-xl" />
+              <Skeleton className="h-64 w-full rounded-xl" />
+            </div>
+          ) : filtered.length === 0 ? (
             <EmptyState
               icon={<Users className="h-8 w-8" />}
-              title="No users found"
-              description={searchQuery ? 'No users match your search criteria' : 'No users have been onboarded yet'}
+              title="No accounts found"
+              description={searchQuery || kindFilter || statusFilter !== 'all' ? 'No accounts match the current filters' : 'No accounts have been created yet'}
             />
           ) : (
             <>
@@ -263,111 +415,71 @@ function UsersTab() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border/20">
-                      <th className="text-left py-3 px-3 text-muted-foreground font-medium">User</th>
+                      <th className="text-left py-3 px-3 text-muted-foreground font-medium">Account</th>
+                      <th className="text-left py-3 px-3 text-muted-foreground font-medium">Type</th>
                       <th className="text-left py-3 px-3 text-muted-foreground font-medium">Organization</th>
                       <th className="text-left py-3 px-3 text-muted-foreground font-medium">Role</th>
-                      <th className="text-left py-3 px-3 text-muted-foreground font-medium">Status</th>
                       <th className="text-right py-3 px-3 text-muted-foreground font-medium">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {allUsers.map((user) => (
-                      <tr key={`${user.userId}-${user.orgId}`} className="border-b border-border/10 hover:bg-muted/50 transition-colors">
-                        <td className="py-3 px-3">
-                          <div className="flex items-center gap-3">
-                            <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                              <span className="text-sm font-bold text-primary">
-                                {user.name.charAt(0).toUpperCase()}
-                              </span>
-                            </div>
-                            <div>
-                              <p className="font-medium text-foreground">{user.name}</p>
-                              <p className="text-xs text-muted-foreground">{user.email}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-3 px-3">
-                          <p className="text-muted-foreground">{user.orgName}</p>
-                          <p className="text-xs text-muted-foreground">{user.orgSlug}</p>
-                        </td>
-                        <td className="py-3 px-3">
-                          <Badge variant="secondary">{user.role}</Badge>
-                        </td>
-                        <td className="py-3 px-3">
-                          <Badge variant={user.orgStatus === 'active' ? 'success' : user.orgStatus === 'suspended' ? 'destructive' : 'outline'}>
-                            {user.orgStatus}
-                          </Badge>
-                        </td>
-                        <td className="py-3 px-3 text-right">
-                          {user.orgStatus === 'active' ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => toggleMutation.mutate({ orgId: user.orgId, status: 'suspended' })}
-                              className="text-red-400 border-red-800 hover:bg-red-900/20"
-                            >
-                              Suspend Org
-                            </Button>
-                          ) : user.orgStatus === 'suspended' ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => toggleMutation.mutate({ orgId: user.orgId, status: 'active' })}
-                              className="text-green-400 border-green-800 hover:bg-green-900/20"
-                            >
-                              Activate Org
-                            </Button>
-                          ) : null}
-                        </td>
-                      </tr>
+                    {filtered.map((user) => (
+                      <UserRow
+                        key={user.userId}
+                        user={user}
+                        onToggle={(userId, suspended) => suspendMutation.mutate({ userId, suspended })}
+                      />
                     ))}
                   </tbody>
                 </table>
               </div>
               <div className="md:hidden space-y-3">
-                {allUsers.map((user) => (
-                  <div key={`${user.userId}-${user.orgId}`} className="p-4 bg-muted rounded-xl">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                        <span className="text-sm font-bold text-primary">
-                          {user.name.charAt(0).toUpperCase()}
-                        </span>
+                {filtered.map((user) => {
+                  const meta = KIND_META[user.kind]
+                  return (
+                    <div key={user.userId} className="p-4 bg-muted rounded-xl">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                          <span className="text-sm font-bold text-primary">{user.displayName.charAt(0).toUpperCase()}</span>
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-foreground">{user.displayName}</p>
+                          <p className="text-xs text-muted-foreground">{user.email}</p>
+                        </div>
+                        <Badge variant={meta.badge}>{meta.label}</Badge>
                       </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-foreground">{user.name}</p>
-                        <p className="text-xs text-muted-foreground">{user.email}</p>
+                      <div className="text-xs text-muted-foreground mb-2">
+                        {user.orgs.length > 0 ? user.orgs.map((o) => o.name).join(', ') : 'No organization'}
                       </div>
-                      <Badge variant={user.orgStatus === 'active' ? 'success' : 'destructive'}>
-                        {user.orgStatus}
-                      </Badge>
+                      <div className="flex items-center justify-between">
+                        <Badge variant="secondary">{user.primaryRole}</Badge>
+                        {user.kind === 'super_admin' ? (
+                          <span className="text-xs text-muted-foreground">Protected</span>
+                        ) : user.isSuspended ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => suspendMutation.mutate({ userId: user.userId, suspended: false })}
+                            disabled={suspendMutation.isPending}
+                            className="text-green-400 border-green-800 hover:bg-green-900/20 h-7 text-xs"
+                          >
+                            Activate
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => suspendMutation.mutate({ userId: user.userId, suspended: true })}
+                            disabled={suspendMutation.isPending}
+                            className="text-red-400 border-red-800 hover:bg-red-900/20 h-7 text-xs"
+                          >
+                            Suspend
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">{user.orgName}</span>
-                        <Badge variant="secondary" className="text-xs">{user.role}</Badge>
-                      </div>
-                      {user.orgStatus === 'active' ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => toggleMutation.mutate({ orgId: user.orgId, status: 'suspended' })}
-                          className="text-red-400 border-red-800 hover:bg-red-900/20 h-7 text-xs"
-                        >
-                          Suspend
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => toggleMutation.mutate({ orgId: user.orgId, status: 'active' })}
-                          className="text-green-400 border-green-800 hover:bg-green-900/20 h-7 text-xs"
-                        >
-                          Activate
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </>
           )}
@@ -377,8 +489,45 @@ function UsersTab() {
   )
 }
 
+function SoloRow({ solo, onToggle }: { solo: AdminSolo; onToggle: (userId: string, suspended: boolean) => void }) {
+  return (
+    <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/50">
+      <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+        <UserRound className="h-4 w-4 text-primary" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-foreground truncate">{solo.display_name}</p>
+        <p className="text-xs text-muted-foreground truncate">{solo.email}</p>
+      </div>
+      <Badge variant={solo.is_suspended ? 'destructive' : 'success'}>
+        {solo.is_suspended ? 'Suspended' : 'Active'}
+      </Badge>
+      {solo.is_suspended ? (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => onToggle(solo.user_id, false)}
+          className="text-green-400 border-green-800 hover:bg-green-900/20"
+        >
+          Activate
+        </Button>
+      ) : (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => onToggle(solo.user_id, true)}
+          className="text-red-400 border-red-800 hover:bg-red-900/20"
+        >
+          Suspend
+        </Button>
+      )}
+    </div>
+  )
+}
+
 function ClientsTab() {
   const [expandedOrg, setExpandedOrg] = useState<string | null>(null)
+  const [view, setView] = useState<'orgs' | 'solo'>('orgs')
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
@@ -391,7 +540,7 @@ function ClientsTab() {
     },
   })
 
-  const toggleMutation = useMutation({
+  const orgMutation = useMutation({
     mutationFn: async ({ orgId, status }: { orgId: string; status: 'active' | 'suspended' }) => {
       const result = await toggleOrgStatus(orgId, status)
       if ('error' in result && result.error) throw new Error(result.error)
@@ -399,17 +548,32 @@ function ClientsTab() {
     onSuccess: () => {
       toast('Organization updated', 'success')
       queryClient.invalidateQueries({ queryKey: ['admin', 'clients'] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
     },
     onError: (e: Error) => toast(e.message, 'error'),
   })
 
-  const clients = (data as { clients?: Array<Record<string, unknown>> })?.clients || []
+  const soloMutation = useMutation({
+    mutationFn: async ({ userId, suspended }: { userId: string; suspended: boolean }) => {
+      const result = await setUserStatus(userId, suspended)
+      if ('error' in result && result.error) throw new Error(result.error)
+    },
+    onSuccess: () => {
+      toast('Solo account updated', 'success')
+      queryClient.invalidateQueries({ queryKey: ['admin', 'clients'] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
+    },
+    onError: (e: Error) => toast(e.message, 'error'),
+  })
+
+  const clients = useMemo(() => (data as { clients?: AdminOrg[] })?.clients || [], [data])
+  const soloAccounts = useMemo(() => (data as { soloAccounts?: AdminSolo[] })?.soloAccounts || [], [data])
+  const activeOrgs = clients.filter((c) => c.status === 'active').length
 
   if (isLoading) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-24 rounded-xl" />
-        <Skeleton className="h-32 rounded-xl" />
         <Skeleton className="h-32 rounded-xl" />
         <Skeleton className="h-32 rounded-xl" />
       </div>
@@ -418,208 +582,270 @@ function ClientsTab() {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="glass-card border-border">
-          <CardContent className="p-4">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Clients</p>
-            <p className="text-2xl font-bold text-foreground mt-1">{clients.length}</p>
-          </CardContent>
-        </Card>
-        <Card className="glass-card border-border">
-          <CardContent className="p-4">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Active</p>
-            <p className="text-2xl font-bold text-green-400 mt-1">
-              {clients.filter(c => c.status === 'active').length}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="glass-card border-border">
-          <CardContent className="p-4">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Members</p>
-            <p className="text-2xl font-bold text-primary mt-1">
-              {clients.reduce((acc, c) => {
-                const members = (c.org_members as Array<unknown>) || []
-                return acc + members.length
-              }, 0)}
-            </p>
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-between gap-3">
+        <div className="bg-muted rounded-xl p-1 flex gap-1">
+          <button
+            onClick={() => setView('orgs')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              view === 'orgs' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Organizations
+          </button>
+          <button
+            onClick={() => setView('solo')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              view === 'solo' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Solo Users
+          </button>
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {view === 'orgs' ? `${clients.length} orgs · ${activeOrgs} active` : `${soloAccounts.length} solo accounts`}
+        </span>
       </div>
 
-      <Card className="glass-card border-border">
-        <CardHeader>
-          <CardTitle className="font-headline">Client Organizations</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {clients.length === 0 ? (
-            <EmptyState
-              icon={<Building2 className="h-8 w-8" />}
-              title="No clients yet"
-              description="Organizations will appear here once they have been onboarded"
-            />
-          ) : (
-            <div className="space-y-3">
-              {clients.map((org) => {
-                const subs = (org.subscriptions as Array<{ plan?: { name?: string; price_monthly?: number } }>) || []
-                const members = (org.org_members as Array<{ user_id: string; profiles?: { display_name?: string; email?: string } }>) || []
-                const planName = subs[0]?.plan?.name || 'No plan'
-                const planPrice = subs[0]?.plan?.price_monthly
-                const status = org.status as string
-                const isExpanded = expandedOrg === (org.id as string)
-
-                return (
-                  <div key={org.id as string} className="rounded-xl border border-border/20 overflow-hidden">
-                    <div
-                      className="p-4 bg-muted/50 cursor-pointer hover:bg-muted transition-colors"
-                      onClick={() => setExpandedOrg(isExpanded ? null : (org.id as string))}
-                    >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                            <Building2 className="h-5 w-5 text-primary" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-foreground">{org.name as string}</p>
-                            <p className="text-xs text-muted-foreground">{org.slug as string}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <Badge variant={status === 'active' ? 'success' : status === 'suspended' ? 'destructive' : 'outline'}>
-                            {status}
-                          </Badge>
-                          {isExpanded ? (
-                            <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    {isExpanded && (
-                      <div className="p-4 border-t border-border/20 space-y-4 bg-card/50">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          <div className="space-y-1">
-                            <p className="text-xs text-muted-foreground">Plan</p>
-                            <p className="text-sm font-medium text-foreground">{planName}</p>
-                            {planPrice != null && (
-                              <p className="text-xs text-muted-foreground">${Number(planPrice).toFixed(2)}/mo</p>
-                            )}
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-xs text-muted-foreground">Members</p>
-                            <p className="text-sm font-medium text-foreground">{members.length}</p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-xs text-muted-foreground">Created</p>
-                            <p className="text-sm font-medium text-foreground">
-                              {new Date(org.created_at as string).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-xs text-muted-foreground">Status</p>
-                            <Badge variant={status === 'active' ? 'success' : 'destructive'}>
-                              {status}
-                            </Badge>
-                          </div>
-                        </div>
-                        {members.length > 0 && (
-                          <div className="space-y-2">
-                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Members</p>
-                            <div className="space-y-2">
-                              {members.map((member) => (
-                                <div key={member.user_id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
-                                  <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                                    <span className="text-xs font-bold text-primary">
-                                      {member.profiles?.display_name?.charAt(0)?.toUpperCase() || '?'}
-                                    </span>
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm text-foreground truncate">
-                                      {member.profiles?.display_name || 'Unknown'}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground truncate">
-                                      {member.profiles?.email || ''}
-                                    </p>
-                                  </div>
-                                </div>
-                              ))}
+      {view === 'orgs' ? (
+        <Card className="glass-card border-border">
+          <CardHeader>
+            <CardTitle className="font-headline">Client Organizations</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {clients.length === 0 ? (
+              <EmptyState
+                icon={<Building2 className="h-8 w-8" />}
+                title="No clients yet"
+                description="Organizations will appear here once they have been onboarded"
+              />
+            ) : (
+              <div className="space-y-3">
+                {clients.map((org) => {
+                  const isExpanded = expandedOrg === org.id
+                  return (
+                    <div key={org.id} className="rounded-xl border border-border/20 overflow-hidden">
+                      <div
+                        className="p-4 bg-muted/50 cursor-pointer hover:bg-muted transition-colors"
+                        onClick={() => setExpandedOrg(isExpanded ? null : org.id)}
+                      >
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                              <Building2 className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-foreground">{org.name}</p>
+                              <p className="text-xs text-muted-foreground">{org.slug}</p>
                             </div>
                           </div>
-                        )}
-                        <div className="flex justify-end gap-2 pt-2 border-t border-border/20">
-                          {status === 'active' ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                toggleMutation.mutate({ orgId: org.id as string, status: 'suspended' })
-                              }}
-                              disabled={toggleMutation.isPending}
-                              className="text-red-400 border-red-800 hover:bg-red-900/20"
-                            >
-                              Suspend Organization
-                            </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                toggleMutation.mutate({ orgId: org.id as string, status: 'active' })
-                              }}
-                              disabled={toggleMutation.isPending}
-                              className="text-green-400 border-green-800 hover:bg-green-900/20"
-                            >
-                              Activate Organization
-                            </Button>
-                          )}
+                          <div className="flex items-center gap-3">
+                            <Badge variant={org.status === 'active' ? 'success' : org.status === 'suspended' ? 'destructive' : 'outline'}>
+                              {org.status}
+                            </Badge>
+                            {isExpanded ? (
+                              <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </div>
                         </div>
                       </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                      {isExpanded && (
+                        <div className="p-4 border-t border-border/20 space-y-4 bg-card/50">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground">Plan</p>
+                              <p className="text-sm font-medium text-foreground">{org.plan || 'No plan'}</p>
+                              {org.plan_price != null && (
+                                <p className="text-xs text-muted-foreground">${Number(org.plan_price).toFixed(2)}/mo</p>
+                              )}
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground">Members</p>
+                              <p className="text-sm font-medium text-foreground">{org.members.length}</p>
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground">Created</p>
+                              <p className="text-sm font-medium text-foreground">
+                                {new Date(org.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground">Status</p>
+                              <Badge variant={org.status === 'active' ? 'success' : 'destructive'}>
+                                {org.status}
+                              </Badge>
+                            </div>
+                          </div>
+                          {org.members.length > 0 && (
+                            <div className="space-y-2">
+                              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Members</p>
+                              <div className="space-y-2">
+                                {org.members.map((member) => (
+                                  <div key={member.user_id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
+                                    <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                      <span className="text-xs font-bold text-primary">
+                                        {member.display_name.charAt(0)?.toUpperCase() || '?'}
+                                      </span>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm text-foreground truncate">{member.display_name}</p>
+                                      <p className="text-xs text-muted-foreground truncate">{member.email}</p>
+                                    </div>
+                                    <Badge variant="secondary" className="text-[10px]">{member.role}</Badge>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          <div className="flex justify-end gap-2 pt-2 border-t border-border/20">
+                            {org.status === 'active' ? (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  orgMutation.mutate({ orgId: org.id, status: 'suspended' })
+                                }}
+                                disabled={orgMutation.isPending}
+                                className="text-red-400 border-red-800 hover:bg-red-900/20"
+                              >
+                                Suspend Organization
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  orgMutation.mutate({ orgId: org.id, status: 'active' })
+                                }}
+                                disabled={orgMutation.isPending}
+                                className="text-green-400 border-green-800 hover:bg-green-900/20"
+                              >
+                                Activate Organization
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="glass-card border-border">
+          <CardHeader>
+            <CardTitle className="font-headline">Solo Users</CardTitle>
+            <CardDescription>Independent accounts with no organization</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {soloAccounts.length === 0 ? (
+              <EmptyState
+                icon={<UserRound className="h-8 w-8" />}
+                title="No solo accounts"
+                description="Solo users who sign up independently will appear here"
+              />
+            ) : (
+              <div className="space-y-2">
+                {soloAccounts.map((solo) => (
+                  <SoloRow
+                    key={solo.user_id}
+                    solo={solo}
+                    onToggle={(userId, suspended) => soloMutation.mutate({ userId, suspended })}
+                  />
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
 
 function AnnouncementsTab() {
-  const [announcementTitle, setAnnouncementTitle] = useState('')
-  const [announcementBody, setAnnouncementBody] = useState('')
+  const [title, setTitle] = useState('')
+  const [body, setBody] = useState('')
+  const [category, setCategory] = useState<'announcement' | 'offer' | 'maintenance'>('announcement')
+  const [audience, setAudience] = useState<'everyone' | 'orgs' | 'solo' | 'org'>('everyone')
+  const [targetOrgId, setTargetOrgId] = useState('')
   const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   const { data, isLoading } = useQuery({
-    queryKey: ['admin', 'messages'],
+    queryKey: ['admin', 'messages', 'announcement'],
     queryFn: async () => {
-      const result = await getAdminMessages({ type: 'announcement' })
+      const result = await getAdminMessages({ type: 'announcement', limit: 50 })
       if ('error' in result && result.error) throw new Error(result.error)
       return result
     },
   })
 
-  const messages = (data as { messages?: Array<Record<string, unknown>> })?.messages || []
+  const orgsQuery = useQuery({
+    queryKey: ['admin', 'orgs'],
+    queryFn: async () => {
+      const result = await getAdminOrganizations()
+      if ('error' in result && result.error) throw new Error(result.error)
+      return (result as { orgs?: Array<{ id: string; name: string; slug: string; status: string }> }).orgs || []
+    },
+  })
 
-  const handleCreateAnnouncement = () => {
-    if (!announcementTitle.trim() || !announcementBody.trim()) {
-      toast('Please fill in both title and body', 'error')
-      return
-    }
-    toast('Announcement created successfully', 'success')
-    setAnnouncementTitle('')
-    setAnnouncementBody('')
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const result = await createAnnouncementAction({
+        title,
+        body,
+        category,
+        audience,
+        targetOrgId: audience === 'org' ? targetOrgId : null,
+      })
+      if ('error' in result && result.error) throw new Error(result.error)
+    },
+    onSuccess: () => {
+      toast('Announcement sent', 'success')
+      setTitle('')
+      setBody('')
+      setCategory('announcement')
+      setAudience('everyone')
+      setTargetOrgId('')
+      queryClient.invalidateQueries({ queryKey: ['admin', 'messages', 'announcement'] })
+    },
+    onError: (e: Error) => toast(e.message, 'error'),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: async (messageId: string) => {
+      const result = await deleteAnnouncement(messageId)
+      if ('error' in result && result.error) throw new Error(result.error)
+    },
+    onSuccess: () => {
+      toast('Announcement deleted', 'success')
+      queryClient.invalidateQueries({ queryKey: ['admin', 'messages', 'announcement'] })
+    },
+    onError: (e: Error) => toast(e.message, 'error'),
+  })
+
+  const messages = (data as { messages?: Array<Record<string, unknown>> })?.messages || []
+  const orgs = orgsQuery.data || []
+
+  const audienceLabel = (msg: Record<string, unknown>) => {
+    const a = (msg.audience as string) || 'everyone'
+    if (a === 'org') return String(msg.org_name || 'Specific organization')
+    return AUDIENCE_LABELS[a] || a
   }
+
+  const canSubmit =
+    title.trim().length > 0 && body.trim().length > 0 && (audience !== 'org' || targetOrgId.length > 0)
 
   if (isLoading) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-64 rounded-xl" />
         <Skeleton className="h-48 rounded-xl" />
-        <Skeleton className="h-32 rounded-xl" />
       </div>
     )
   }
@@ -634,37 +860,87 @@ function AnnouncementsTab() {
             </div>
             <div>
               <CardTitle className="font-headline">Create Announcement</CardTitle>
-              <CardDescription>Send an announcement to all users</CardDescription>
+              <CardDescription>Broadcast a message to a targeted audience</CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Title</label>
-            <Input
-              placeholder="Announcement title"
-              value={announcementTitle}
-              onChange={(e) => setAnnouncementTitle(e.target.value)}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Title</label>
+              <Input
+                placeholder="Announcement title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                maxLength={100}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Type</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value as typeof category)}
+                className="flex w-full h-10 rounded-lg border border-input bg-muted/50 px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+              >
+                <option value="announcement">Announcement</option>
+                <option value="offer">Offer</option>
+                <option value="maintenance">Maintenance</option>
+              </select>
+            </div>
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Audience</label>
+              <select
+                value={audience}
+                onChange={(e) => setAudience(e.target.value as typeof audience)}
+                className="flex w-full h-10 rounded-lg border border-input bg-muted/50 px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+              >
+                <option value="everyone">Everyone</option>
+                <option value="orgs">All organizations</option>
+                <option value="solo">Solo users</option>
+                <option value="org">One organization</option>
+              </select>
+            </div>
+            {audience === 'org' && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Organization</label>
+                <select
+                  value={targetOrgId}
+                  onChange={(e) => setTargetOrgId(e.target.value)}
+                  className="flex w-full h-10 rounded-lg border border-input bg-muted/50 px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                >
+                  <option value="">Select an organization...</option>
+                  {orgs.map((org) => (
+                    <option key={org.id} value={org.id}>
+                      {org.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Message</label>
             <textarea
               placeholder="Write your announcement here..."
-              value={announcementBody}
-              onChange={(e) => setAnnouncementBody(e.target.value)}
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
               rows={4}
+              maxLength={4000}
               className="flex w-full rounded-lg border border-input bg-muted/50 px-3 py-2 text-sm text-foreground transition-all duration-200 hover:border-muted-foreground/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:border-ring placeholder:text-muted-foreground resize-none"
             />
           </div>
           <div className="flex justify-end">
             <Button
-              onClick={handleCreateAnnouncement}
-              disabled={!announcementTitle.trim() || !announcementBody.trim()}
+              onClick={() => createMutation.mutate()}
+              disabled={!canSubmit || createMutation.isPending}
               className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               <Send className="h-4 w-4 mr-2" />
-              Send Announcement
+              {createMutation.isPending ? 'Sending...' : 'Send Announcement'}
             </Button>
           </div>
         </CardContent>
@@ -684,19 +960,36 @@ function AnnouncementsTab() {
           ) : (
             <div className="space-y-3">
               {messages.map((msg) => {
+                const cat = (msg.category as string) || 'announcement'
+                const meta = CATEGORY_META[cat] || CATEGORY_META.announcement
+                const CatIcon = meta.icon
                 const status = msg.status as string
                 return (
                   <div key={msg.id as string} className="p-4 bg-muted rounded-xl">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="info">announcement</Badge>
-                        <Badge variant={status === 'open' ? 'warning' : status === 'replied' ? 'success' : 'outline'}>
-                          {status}
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant={meta.badge} className="capitalize flex items-center gap-1">
+                          <CatIcon className="h-3 w-3" />
+                          {meta.label}
                         </Badge>
+                        <Badge variant="outline">{audienceLabel(msg)}</Badge>
+                        <Badge variant={status === 'open' ? 'warning' : 'outline'}>{status}</Badge>
                       </div>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {new Date(msg.created_at as string).toLocaleDateString()}
-                      </span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          {new Date(msg.created_at as string).toLocaleDateString()}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => deleteMutation.mutate(msg.id as string)}
+                          disabled={deleteMutation.isPending}
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-red-400"
+                          title="Delete announcement"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                     <h4 className="font-medium text-foreground">{msg.subject as string}</h4>
                     <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{msg.body as string}</p>
@@ -765,7 +1058,6 @@ function MessagesTab() {
         <Skeleton className="h-12 w-full rounded-xl" />
         <Skeleton className="h-32 rounded-xl" />
         <Skeleton className="h-32 rounded-xl" />
-        <Skeleton className="h-32 rounded-xl" />
       </div>
     )
   }
@@ -815,8 +1107,6 @@ function MessagesTab() {
       ) : (
         <div className="space-y-3">
           {messages.map((msg: Record<string, unknown>) => {
-            const profile = msg.profiles as { display_name?: string; email?: string } | undefined
-            const org = msg.organizations as { name?: string } | undefined
             const status = msg.status as string
             const priority = msg.priority as string
 
@@ -842,8 +1132,8 @@ function MessagesTab() {
                       <div>
                         <h4 className="font-medium text-foreground">{msg.subject as string}</h4>
                         <p className="text-sm text-muted-foreground">
-                          {profile?.display_name || profile?.email || 'Unknown user'}
-                          {org?.name ? ` \u2014 ${org.name}` : ''}
+                          {String(msg.sender_name || msg.sender_email || 'Unknown user')}
+                          {msg.org_name ? ` \u2014 ${String(msg.org_name)}` : ''}
                         </p>
                       </div>
                     </div>

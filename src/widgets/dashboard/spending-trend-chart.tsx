@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/sha
 import { Skeleton } from '@/shared/ui/skeleton'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { format, subMonths, startOfMonth } from 'date-fns'
+import { TrendingUp } from 'lucide-react'
 
 interface TooltipPayload {
   active?: boolean
@@ -116,8 +117,15 @@ export function SpendingTrendChart({ scope }: { scope: DashboardScope }) {
   return (
     <Card className="glass-card border-border shadow-lg shadow-black/5 animate-fade-in delay-100">
       <CardHeader className="pb-2">
-        <CardTitle>Spending Trend</CardTitle>
-        <CardDescription>Monthly expenditures over the last 6 months</CardDescription>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <CardTitle>Spending Trend</CardTitle>
+            <CardDescription>Monthly expenditures over the last 6 months</CardDescription>
+          </div>
+          <div className="p-2 rounded-lg bg-primary/10">
+            <TrendingUp className="h-5 w-5 text-primary" />
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="h-[300px] w-full">

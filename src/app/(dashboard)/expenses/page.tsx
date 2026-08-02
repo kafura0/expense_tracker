@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/shared/lib/supabase/client'
-import { useActiveOrgId } from '@/shared/lib/org-helpers'
+import { useDashboardScope, applyExpenseScope } from '@/features/dashboard/scope'
 import { ExpenseTable, TableSkeleton } from '@/features/expenses/expense-table'
 import { ExpenseFilters } from '@/features/expenses/expense-filters'
 import { Button } from '@/shared/ui/button'
@@ -28,16 +28,17 @@ export default function ExpensesPage() {
   const queryClient = useQueryClient()
   const { toast } = useToast()
   const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const orgId = useActiveOrgId()
+  const { scope, loading: scopeLoading } = useDashboardScope()
 
   const fetchExpenses = async (params: ExpenseListParams) => {
-    if (!orgId) throw new Error('No active organization')
+    if (!scope) throw new Error('No active scope')
 
     let query = supabase
       .from('expenses')
       .select('*, categories(id, name, icon, color)', { count: 'exact' })
       .eq('is_deleted', false)
-      .eq('org_id', orgId)
+
+    query = applyExpenseScope(query, scope)
 
     if (params.filters?.search) {
       query = query.or(`notes.ilike.%${params.filters.search}%,title.ilike.%${params.filters.search}%`)
@@ -94,13 +95,13 @@ export default function ExpensesPage() {
   }
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['expenses', filters, page, pageSize, sortField, sortDirection, orgId],
+    queryKey: ['expenses', filters, page, pageSize, sortField, sortDirection, scope?.orgId ?? scope?.userId ?? 'personal'],
     queryFn: () => fetchExpenses({
       filters,
       pagination: { page, page_size: pageSize },
       sort: { field: sortField, direction: sortDirection },
     }),
-    enabled: orgId !== undefined && orgId !== null,
+    enabled: scope !== null,
   })
 
   const stats = useMemo(() => {
@@ -114,7 +115,7 @@ export default function ExpensesPage() {
     }
   }, [data])
 
-  const formatCurrency = (cents: number, currency = 'USD') => {
+  const formatCurrency = (cents: number, currency = scope?.baseCurrency || 'USD') => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency,
@@ -197,7 +198,7 @@ export default function ExpensesPage() {
         </Button>
       </div>
 
-      {isLoading ? (
+      {scopeLoading || isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {Array.from({ length: 3 }).map((_, i) => (
             <Card key={i}>
@@ -282,17 +283,17 @@ export default function ExpensesPage() {
         onFilterChange={handleFilterChange}
       />
 
-      {orgId === undefined ? (
+      {scopeLoading ? (
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
-      ) : orgId === null ? (
+      ) : !scope ? (
         <div className="text-center py-16">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/50 text-muted-foreground mx-auto">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-destructive/10 text-destructive mx-auto">
             <ArrowDownRight className="h-8 w-8" />
           </div>
-          <p className="text-base font-semibold text-foreground mb-1">No organization selected</p>
-          <p className="text-sm text-muted-foreground">Please switch to an organization to view expenses.</p>
+          <p className="text-base font-semibold text-foreground mb-1">Failed to load expenses</p>
+          <p className="text-sm text-muted-foreground">Please try again later.</p>
         </div>
       ) : isLoading ? (
         <TableSkeleton />
