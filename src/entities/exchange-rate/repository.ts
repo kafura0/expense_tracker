@@ -1,8 +1,8 @@
-import { createClient } from '@/shared/lib/supabase/client'
+import { createClient } from '@/shared/lib/supabase/server'
 import { type ExchangeRate, type ExchangeRateResponse } from './types'
 
 export async function findLatestRates(baseCurrency: string): Promise<ExchangeRate[]> {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   const { data, error } = await supabase
     .from('exchange_rates')
@@ -32,7 +32,7 @@ export async function isRatesStale(baseCurrency: string): Promise<boolean> {
 }
 
 export async function upsertRates(rates: ExchangeRateResponse): Promise<void> {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   const now = new Date().toISOString()
   

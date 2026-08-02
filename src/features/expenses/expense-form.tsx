@@ -12,7 +12,7 @@ import { Input } from '@/shared/ui/input'
 import { useToast } from '@/shared/ui/toast'
 import { createClient } from '@/shared/lib/supabase/client'
 import { useActiveOrgId } from '@/shared/lib/org-helpers'
-import { convertAmount } from '@/entities/exchange-rate/service'
+import { convertAmount } from '@/entities/exchange-rate/utils'
 import { calculateVAT, DEFAULT_VAT_RATE } from '@/shared/lib/vat'
 import {
   DollarSign,
@@ -59,12 +59,14 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
     reset,
   } = useForm<ExpenseInsert>({
     resolver: zodResolver(expenseInsertSchema),
     defaultValues: expense ? {
       amount_cents: expense.amount_cents ?? 0,
+      entry_type: expense.entry_type ?? 'expense',
       currency: expense.currency ?? 'USD',
       category_id: expense.category_id ?? null,
       date: expense.date ? String(expense.date).slice(0, 16) : new Date().toISOString().slice(0, 16),
@@ -72,6 +74,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
       tax_applicable: expense.tax_applicable ?? false,
       is_taxable: expense.is_taxable ?? false,
     } : {
+      entry_type: 'expense',
       currency: 'USD',
       date: new Date().toISOString().slice(0, 16),
       tax_applicable: false,
@@ -83,6 +86,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
   const watchedAmount = watch('amount_cents')
   const watchedCurrency = watch('currency')
   const watchedIsTaxable = watch('is_taxable')
+  const watchedType = watch('entry_type') || 'expense'
   /* eslint-enable react-hooks/incompatible-library */
 
   const fetchCategories = useCallback(async () => {
@@ -141,6 +145,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
     try {
       const submissionData = {
         ...data,
+        date: new Date(data.date).toISOString(),
         converted_amount_cents: convertedAmount ?? undefined,
         converted_currency: BASE_CURRENCY,
         exchange_rate_used: rates[data.currency] || 1,
@@ -174,6 +179,23 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      <div className="grid grid-cols-2 gap-1 p-1 bg-muted/50 rounded-xl border border-border">
+        {(['expense', 'income'] as const).map((type) => (
+          <button
+            key={type}
+            type="button"
+            onClick={() => setValue('entry_type', type, { shouldDirty: true })}
+            className={`rounded-lg py-2 text-sm font-medium capitalize transition-all ${
+              watchedType === type
+                ? 'bg-card text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {type}
+          </button>
+        ))}
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <label htmlFor="amount_cents" className="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -296,18 +318,20 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
         />
       </div>
 
-      <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl border border-border">
-        <input
-          type="checkbox"
-          id="is_taxable"
-          {...register('is_taxable')}
-          className="h-4 w-4 rounded border-border text-primary focus:ring-primary/50 cursor-pointer"
-        />
-        <label htmlFor="is_taxable" className="text-sm font-medium text-foreground cursor-pointer flex items-center gap-2">
-          <Percent className="h-3.5 w-3.5 text-muted-foreground" />
-          Tax applicable (VAT {DEFAULT_VAT_RATE}%)
-        </label>
-      </div>
+      {watchedType === 'expense' && (
+        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl border border-border">
+          <input
+            type="checkbox"
+            id="is_taxable"
+            {...register('is_taxable')}
+            className="h-4 w-4 rounded border-border text-primary focus:ring-primary/50 cursor-pointer"
+          />
+          <label htmlFor="is_taxable" className="text-sm font-medium text-foreground cursor-pointer flex items-center gap-2">
+            <Percent className="h-3.5 w-3.5 text-muted-foreground" />
+            Tax applicable (VAT {DEFAULT_VAT_RATE}%)
+          </label>
+        </div>
+      )}
 
       {vatResult && (
         <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl border border-border">
@@ -338,7 +362,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
         </Button>
         <Button type="submit" disabled={isSubmitting} loading={isSubmitting}>
           <Save className="h-4 w-4" />
-          {isEditing ? 'Update Expense' : 'Create Expense'}
+          {isEditing ? `Update ${watchedType}` : `Create ${watchedType}`}
         </Button>
       </div>
     </form>

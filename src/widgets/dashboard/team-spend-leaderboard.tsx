@@ -28,6 +28,7 @@ export function TeamSpendLeaderboard({ scope }: { scope: DashboardScope }) {
       .from('expenses')
       .select('amount_cents, user_id, profiles(display_name)')
       .eq('is_deleted', false)
+      .eq('entry_type', 'expense')
       .gte('date', start.toISOString())
       .lte('date', end.toISOString())
     expenseQuery = applyExpenseScope(expenseQuery, scope)

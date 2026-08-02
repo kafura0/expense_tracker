@@ -61,6 +61,7 @@ export function CategoryChart({ scope }: { scope: DashboardScope }) {
       .from('expenses')
       .select('amount_cents, category_id')
       .eq('is_deleted', false)
+      .eq('entry_type', 'expense')
       .gte('date', start.toISOString())
       .lte('date', end.toISOString())
     expenseQuery = applyExpenseScope(expenseQuery, scope)

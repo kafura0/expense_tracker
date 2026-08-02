@@ -82,6 +82,9 @@ export async function findAllExpenses(params: ExpenseListParams = {}): Promise<E
     // The `%` wildcards enable substring matching (PostgreSQL ILIKE syntax).
     query = query.or(`notes.ilike.%${filters.search}%,title.ilike.%${filters.search}%`)
   }
+  if (filters.entry_type) {
+    query = query.eq('entry_type', filters.entry_type)
+  }
   if (filters.category_id) {
     query = query.eq('category_id', filters.category_id)
   }

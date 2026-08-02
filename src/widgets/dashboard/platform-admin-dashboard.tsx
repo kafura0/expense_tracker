@@ -30,11 +30,13 @@ export function PlatformAdminDashboard() {
       .from('expenses')
       .select('id', { count: 'exact', head: true })
       .eq('is_deleted', false)
+      .eq('entry_type', 'expense')
 
     const { data: monthExpenses } = await supabase
       .from('expenses')
       .select('amount_cents')
       .eq('is_deleted', false)
+      .eq('entry_type', 'expense')
       .gte('date', start.toISOString())
 
     const { count: openTickets } = await supabase

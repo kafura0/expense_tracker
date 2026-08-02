@@ -44,6 +44,7 @@ export function SpendingTrendChart({ scope }: { scope: DashboardScope }) {
       .from('expenses')
       .select('amount_cents, date')
       .eq('is_deleted', false)
+      .eq('entry_type', 'expense')
       .gte('date', sixMonthsAgo.toISOString())
       .lte('date', now.toISOString())
     query = applyExpenseScope(query, scope)

@@ -5,6 +5,7 @@ describe('CSV Export', () => {
   const mockExpenses = [
     {
       date: '2024-01-15T10:30:00Z',
+      entry_type: 'expense' as const,
       amount_cents: 4500,
       currency: 'USD',
       category_name: 'Meals & Entertainment',
@@ -14,6 +15,7 @@ describe('CSV Export', () => {
     },
     {
       date: '2024-01-16T14:45:00Z',
+      entry_type: 'income' as const,
       amount_cents: 2500,
       currency: 'KES',
       category_name: 'Transport',
@@ -28,12 +30,20 @@ describe('CSV Export', () => {
       const csv = generateCSV([])
       const headers = csv.split('\n')[0]
       expect(headers).toContain('Date')
+      expect(headers).toContain('Type')
       expect(headers).toContain('Amount')
       expect(headers).toContain('Currency')
       expect(headers).toContain('Category')
       expect(headers).toContain('Notes')
       expect(headers).toContain('Tax Applicable')
       expect(headers).toContain('Tax Amount')
+    })
+
+    it('should include entry type in each row', () => {
+      const csv = generateCSV(mockExpenses)
+      const lines = csv.split('\n')
+      expect(lines[1]).toContain('expense')
+      expect(lines[2]).toContain('income')
     })
 
     it('should generate CSV with correct data rows', () => {
@@ -135,8 +145,22 @@ describe('CSV Export', () => {
         },
       ]
       const csv = generateCSV(expenses)
-      // Values should be quoted
-      expect(csv).toContain('"Note with "quotes" and, comma"')
+      // Values should be quoted with embedded quotes doubled
+      expect(csv).toContain('"Note with ""quotes"" and, comma"')
+    })
+
+    it('should neutralize formula injection in cells', () => {
+      const expenses = [
+        {
+          date: '2024-01-15T10:30:00Z',
+          amount_cents: 1000,
+          currency: 'USD',
+          notes: '=SUM(A1:A9)',
+        },
+      ]
+      const csv = generateCSV(expenses)
+      // Leading = is prefixed with ' to prevent Excel formula execution
+      expect(csv).toContain('"\'=SUM(A1:A9)"')
     })
   })
 

@@ -2,11 +2,15 @@
 
 import { revalidatePath } from 'next/cache'
 import { createExpense as createExpenseRepo, updateExpense as updateExpenseRepo, softDeleteExpense as softDeleteExpenseRepo, restoreExpense as restoreExpenseRepo } from '@/entities/expense/repository'
-import type { ExpenseInsert, ExpenseUpdate } from '@/entities/expense/schema'
+import { expenseInsertSchema, expenseUpdateSchema, type ExpenseInsert, type ExpenseUpdate } from '@/entities/expense/schema'
 
 export async function createExpense(expense: ExpenseInsert) {
+  const parsed = expenseInsertSchema.safeParse(expense)
+  if (!parsed.success) {
+    return { data: null, error: 'Invalid expense data' }
+  }
   try {
-    const data = await createExpenseRepo(expense)
+    const data = await createExpenseRepo(parsed.data)
     revalidatePath('/expenses')
     revalidatePath('/')
     return { data, error: null }
@@ -16,8 +20,12 @@ export async function createExpense(expense: ExpenseInsert) {
 }
 
 export async function updateExpense(id: string, expense: ExpenseUpdate) {
+  const parsed = expenseUpdateSchema.safeParse(expense)
+  if (!parsed.success) {
+    return { data: null, error: 'Invalid expense data' }
+  }
   try {
-    const data = await updateExpenseRepo(id, expense)
+    const data = await updateExpenseRepo(id, parsed.data)
     revalidatePath('/expenses')
     revalidatePath('/')
     return { data, error: null }

@@ -9,10 +9,11 @@ import { ExpenseFilters } from '@/features/expenses/expense-filters'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { Plus, TrendingUp, Receipt, Calculator, ArrowDownRight } from 'lucide-react'
+import { Plus, TrendingUp, TrendingDown, Wallet, ArrowDownRight } from 'lucide-react'
 import { ExpenseDialog } from '@/features/expenses/expense-dialog'
 import { deleteExpense, duplicateExpense } from '@/features/expenses/actions'
 import { useToast } from '@/shared/ui/toast'
+import { cn } from '@/shared/lib/utils'
 import type { ExpenseListParams, ExpenseFilters as FilterType, ExpenseWithCategory } from '@/entities/expense/types'
 
 export default function ExpensesPage() {
@@ -39,7 +40,10 @@ export default function ExpensesPage() {
       .eq('org_id', orgId)
 
     if (params.filters?.search) {
-      query = query.or(`notes.ilike.%${params.filters.search}%`)
+      query = query.or(`notes.ilike.%${params.filters.search}%,title.ilike.%${params.filters.search}%`)
+    }
+    if (params.filters?.entry_type) {
+      query = query.eq('entry_type', params.filters.entry_type)
     }
     if (params.filters?.category_id) {
       query = query.eq('category_id', params.filters.category_id)
@@ -57,17 +61,27 @@ export default function ExpensesPage() {
       query = query.lte('date', params.filters.date_to)
     }
 
-    query = query.order(params.sort?.field || 'date', {
-      ascending: params.sort?.direction === 'asc'
-    })
-
     const from = ((params.pagination?.page || 1) - 1) * (params.pagination?.page_size || 20)
     const to = from + (params.pagination?.page_size || 20) - 1
-    query = query.range(from, to)
 
-    const { data, error, count } = await query
+    const pageQuery = query.order(params.sort?.field || 'date', {
+      ascending: params.sort?.direction === 'asc'
+    }).range(from, to)
+    const totalsQuery = query.select('amount_cents, entry_type')
+
+    const [pageResult, totalsResult] = await Promise.all([pageQuery, totalsQuery])
+    const { data, error, count } = pageResult
+    const { data: totals, error: totalsError } = totalsResult
 
     if (error) throw error
+    if (totalsError) throw totalsError
+
+    const expenseTotal = (totals || [])
+      .filter(t => t.entry_type === 'expense')
+      .reduce((sum, t) => sum + t.amount_cents, 0)
+    const incomeTotal = (totals || [])
+      .filter(t => t.entry_type === 'income')
+      .reduce((sum, t) => sum + t.amount_cents, 0)
 
     return {
       data: data || [],
@@ -75,6 +89,7 @@ export default function ExpensesPage() {
       page: params.pagination?.page || 1,
       page_size: params.pagination?.page_size || 20,
       total_pages: Math.ceil((count || 0) / (params.pagination?.page_size || 20)),
+      totals: { expenseTotal, incomeTotal },
     }
   }
 
@@ -89,14 +104,13 @@ export default function ExpensesPage() {
   })
 
   const stats = useMemo(() => {
-    const items = data?.data || []
-    if (items.length === 0) return null
-    const total = items.reduce((sum, e) => sum + e.amount_cents, 0)
-    const avg = items.length > 0 ? Math.round(total / items.length) : 0
+    const expenseTotal = data?.totals?.expenseTotal || 0
+    const incomeTotal = data?.totals?.incomeTotal || 0
     return {
-      totalAmount: total,
+      expenseTotal,
+      incomeTotal,
+      net: incomeTotal - expenseTotal,
       totalCount: data?.total || 0,
-      averageAmount: avg,
     }
   }, [data])
 
@@ -199,20 +213,23 @@ export default function ExpensesPage() {
             </Card>
           ))}
         </div>
-      ) : stats && (
+      ) : stats && (stats.expenseTotal > 0 || stats.incomeTotal > 0) && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card className="hover:shadow-md transition-shadow duration-200">
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Total Amount
+                    Total Expenses
                   </p>
                   <p className="text-2xl font-bold text-foreground mt-1 tabular-nums">
-                    {formatCurrency(stats.totalAmount)}
+                    {formatCurrency(stats.expenseTotal)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {stats.totalCount.toLocaleString()} records
                   </p>
                 </div>
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-500/10 text-rose-500">
                   <TrendingUp className="h-5 w-5" />
                 </div>
               </div>
@@ -224,14 +241,14 @@ export default function ExpensesPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Total Records
+                    Total Income
                   </p>
-                  <p className="text-2xl font-bold text-foreground mt-1 tabular-nums">
-                    {stats.totalCount.toLocaleString()}
+                  <p className="text-2xl font-bold text-emerald-500 mt-1 tabular-nums">
+                    {formatCurrency(stats.incomeTotal)}
                   </p>
                 </div>
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600">
-                  <Receipt className="h-5 w-5" />
+                  <TrendingDown className="h-5 w-5" />
                 </div>
               </div>
             </CardContent>
@@ -242,14 +259,17 @@ export default function ExpensesPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Average
+                    Net Balance
                   </p>
-                  <p className="text-2xl font-bold text-foreground mt-1 tabular-nums">
-                    {formatCurrency(stats.averageAmount)}
+                  <p className={cn(
+                    "text-2xl font-bold mt-1 tabular-nums",
+                    stats.net >= 0 ? "text-emerald-500" : "text-rose-500"
+                  )}>
+                    {formatCurrency(stats.net)}
                   </p>
                 </div>
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600">
-                  <Calculator className="h-5 w-5" />
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Wallet className="h-5 w-5" />
                 </div>
               </div>
             </CardContent>

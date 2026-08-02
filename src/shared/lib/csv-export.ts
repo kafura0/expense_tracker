@@ -4,17 +4,27 @@ interface ExportExpense {
   date: string
   amount_cents: number
   currency: string
+  entry_type?: 'expense' | 'income'
   category_name?: string
   notes?: string
   tax_applicable?: boolean
   tax_amount_cents?: number
 }
 
+function escapeCell(value: string | number | boolean): string {
+  let str = String(value)
+  // Neutralize CSV formula injection: cells starting with =, +, -, @ can
+  // execute formulas when opened in Excel/Sheets.
+  if (/^[=+\-@]/.test(str)) str = `'${str}`
+  return `"${str.replace(/"/g, '""')}"`
+}
+
 export function generateCSV(expenses: ExportExpense[]): string {
-  const headers = ['Date', 'Amount', 'Currency', 'Category', 'Notes', 'Tax Applicable', 'Tax Amount']
-  
+  const headers = ['Date', 'Type', 'Amount', 'Currency', 'Category', 'Notes', 'Tax Applicable', 'Tax Amount']
+
   const rows = expenses.map(expense => [
     format(new Date(expense.date), 'yyyy-MM-dd'),
+    expense.entry_type || 'expense',
     (expense.amount_cents / 100).toFixed(2),
     expense.currency,
     expense.category_name || '',
@@ -25,7 +35,7 @@ export function generateCSV(expenses: ExportExpense[]): string {
 
   const csvContent = [
     headers.join(','),
-    ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ...rows.map(row => row.map(cell => escapeCell(cell)).join(','))
   ].join('\n')
 
   return csvContent

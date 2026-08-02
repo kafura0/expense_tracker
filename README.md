@@ -279,7 +279,7 @@ cp .env.example .env.local   # then fill in your values
 
 ### Database Setup
 
-Apply the migrations in order via the **Supabase SQL Editor** (or `supabase db push`):
+Apply the migrations in order **via the Supabase Management API** (never the SQL Editor or `supabase db push`):
 
 ```bash
 supabase/migrations/001_initial_schema.sql
@@ -289,7 +289,11 @@ supabase/migrations/003_onboarding.sql
 supabase/migrations/004_messages_table.sql
 supabase/migrations/005_invites_and_solo_support.sql
 supabase/migrations/006_budgets.sql
+supabase/migrations/007_income_and_public_plans.sql
 ```
+
+Each file is applied with `POST https://api.supabase.com/v1/projects/{project_ref}/database/query`
+(Authorization: `Bearer $SUPABASE_ACCESS_TOKEN`), body `{ "query": "<file contents>" }`.
 
 ### Seed Demo Data
 

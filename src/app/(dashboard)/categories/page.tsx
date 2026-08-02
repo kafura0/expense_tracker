@@ -76,6 +76,7 @@ export default function CategoriesPage() {
         .from('expenses')
         .select('category_id, amount_cents')
         .eq('is_deleted', false)
+        .eq('entry_type', 'expense')
         .gte('date', monthStart)
       expQuery = applyExpenseScope(expQuery, scope)
       const { data: expenses, error: expError } = await expQuery

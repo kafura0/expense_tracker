@@ -144,6 +144,9 @@ export function ExpenseTable({
         <Table>
           <TableHeader>
             <TableRow className="border-border bg-muted/30 hover:bg-muted/30">
+              <TableHead className="w-[100px] py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Type
+              </TableHead>
               <TableHead className="w-[160px] py-3">
                 <SortButton field="date" currentField={sortField} currentDirection={_sortDirection} onSort={onSort}>
                   Date
@@ -169,7 +172,7 @@ export function ExpenseTable({
           <TableBody>
             {data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-48">
+                <TableCell colSpan={7} className="h-48">
                   <div className="flex flex-col items-center justify-center text-center">
                     <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/50 text-muted-foreground">
                       <ReceiptText className="h-8 w-8" />
@@ -192,6 +195,14 @@ export function ExpenseTable({
                   )}
                 >
                   <TableCell className="py-3.5">
+                    <Badge
+                      variant={expense.entry_type === 'income' ? 'success' : 'secondary'}
+                      className="font-medium"
+                    >
+                      {expense.entry_type === 'income' ? 'Income' : 'Expense'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="py-3.5">
                     <span className="text-sm font-medium text-foreground">
                       {format(new Date(expense.date), 'MMM d, yyyy')}
                     </span>
@@ -202,9 +213,9 @@ export function ExpenseTable({
                   <TableCell className="py-3.5 text-right">
                     <span className={cn(
                       "text-sm font-bold tabular-nums",
-                      expense.amount_cents < 0 ? "text-emerald-500" : "text-foreground"
+                      expense.entry_type === 'income' ? "text-emerald-500" : "text-foreground"
                     )}>
-                      {formatAmount(expense.amount_cents, expense.currency)}
+                      {expense.entry_type === 'income' ? '+' : ''}{formatAmount(expense.amount_cents, expense.currency)}
                     </span>
                   </TableCell>
                   <TableCell className="py-3.5">

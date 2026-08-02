@@ -1,8 +1,11 @@
 import { type ExchangeRateResponse, SUPPORTED_CURRENCIES } from './types'
 import { findLatestRates, isRatesStale, upsertRates } from './repository'
+import { fillMissingRates } from './utils'
 
 const FRANKFURTER_API_BASE = 'https://api.frankfurter.app'
 const API_TIMEOUT_MS = 5000
+
+export { fillMissingRates, convertAmount } from './utils'
 
 export async function fetchRatesFromAPI(baseCurrency: string): Promise<ExchangeRateResponse> {
   const targets = SUPPORTED_CURRENCIES.filter(c => c !== baseCurrency).join(',')
@@ -21,7 +24,10 @@ export async function fetchRatesFromAPI(baseCurrency: string): Promise<ExchangeR
     }
 
     const data = await response.json()
-    return data as ExchangeRateResponse
+    return {
+      ...data as ExchangeRateResponse,
+      rates: fillMissingRates(baseCurrency, (data as ExchangeRateResponse).rates),
+    }
   } catch (error) {
     console.error('Error fetching rates from Frankfurter:', error)
     throw error
@@ -38,7 +44,7 @@ export async function getExchangeRates(baseCurrency: string): Promise<ExchangeRa
     // Return cached rates
     const cachedRates = await findLatestRates(baseCurrency)
     const rates: Record<string, number> = {}
-    
+
     cachedRates.forEach(rate => {
       rates[rate.target_currency] = rate.rate
     })
@@ -46,14 +52,20 @@ export async function getExchangeRates(baseCurrency: string): Promise<ExchangeRa
     return {
       base: baseCurrency,
       date: new Date(cachedRates[0].fetched_at).toISOString().split('T')[0],
-      rates,
+      rates: fillMissingRates(baseCurrency, rates),
     }
   }
 
   // Fetch fresh rates from API
   try {
     const freshRates = await fetchRatesFromAPI(baseCurrency)
-    await upsertRates(freshRates)
+    // Caching is best-effort: RLS only allows managers/super admins to write
+    // exchange_rates, and a failed upsert must not discard valid fresh rates.
+    try {
+      await upsertRates(freshRates)
+    } catch (error) {
+      console.warn('Failed to cache exchange rates:', error)
+    }
     return freshRates
   } catch {
     // Fallback to stale cache
@@ -65,6 +77,7 @@ export async function getExchangeRates(baseCurrency: string): Promise<ExchangeRa
     }
 
     const rates: Record<string, number> = {}
+
     cachedRates.forEach(rate => {
       rates[rate.target_currency] = rate.rate
     })
@@ -72,20 +85,7 @@ export async function getExchangeRates(baseCurrency: string): Promise<ExchangeRa
     return {
       base: baseCurrency,
       date: new Date(cachedRates[0].fetched_at).toISOString().split('T')[0],
-      rates,
+      rates: fillMissingRates(baseCurrency, rates),
     }
   }
-}
-
-export function convertAmount(
-  amount: number,
-  fromCurrency: string,
-  toCurrency: string,
-  rates: Record<string, number>
-): number {
-  if (fromCurrency === toCurrency) return amount
-
-  // Convert to base first, then to target
-  const inBase = amount / (rates[fromCurrency] || 1)
-  return inBase * (rates[toCurrency] || 1)
 }

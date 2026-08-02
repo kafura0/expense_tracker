@@ -31,6 +31,7 @@ export const expenseSchema = z.object({
     .int()
     .min(1, 'Amount must be greater than 0')
     .max(100000000, 'Amount exceeds maximum allowed value'), // $1,000,000.00 max
+  entry_type: z.enum(['expense', 'income']).default('expense'),
   currency: z.enum(['KES', 'USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY']).default('USD'),
   converted_amount_cents: z.number().int().optional(),
   converted_currency: z.string().optional(),

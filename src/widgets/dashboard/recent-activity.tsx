@@ -19,6 +19,7 @@ export function RecentActivity({ scope }: { scope: DashboardScope }) {
       .from('expenses')
       .select(`id, title, amount_cents, currency, date, category_id, categories (name, icon)`)
       .eq('is_deleted', false)
+      .eq('entry_type', 'expense')
       .order('date', { ascending: false })
       .limit(10)
     query = applyExpenseScope(query, scope)

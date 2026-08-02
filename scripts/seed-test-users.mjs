@@ -383,6 +383,71 @@ async function seed() {
   log(soloExpError ? '❌' : '✅', `Inserted ${soloExpenseRows.length} solo expenses ${soloExpError?.message || ''}`)
 
   // -------------------------------------------------
+  // Income entries (org USD + solo KES)
+  // -------------------------------------------------
+  console.log('\n💰 Income entries (org USD + solo KES)')
+  const orgIncomeTemplates = [
+    { base: 1200000, notes: 'Client invoice — retainer' },
+    { base: 850000, notes: 'Client invoice — project milestone' },
+    { base: 420000, notes: 'Consulting fee' },
+    { base: 190000, notes: 'Refund — vendor credit' },
+  ]
+
+  const orgIncomeRows = []
+  for (let m = 0; m < 6; m++) {
+    const factor = monthFactor[m]
+    for (let i = 0; i < orgIncomeTemplates.length; i++) {
+      const t = orgIncomeTemplates[i]
+      const amount = roundToInt(t.base * factor)
+      orgIncomeRows.push({
+        amount_cents: amount,
+        entry_type: 'income',
+        currency: 'USD',
+        category_id: null,
+        date: monthOffsetDate(m, 1 + ((i * 2) % 20)),
+        notes: `${t.notes} — ${new Date().getMonth() - m < 0 ? 'last' : 'this'} month`,
+        org_id: orgId,
+        user_id: orgAdminUser.id,
+        tax_applicable: false,
+        tax_amount_cents: null,
+      })
+    }
+  }
+
+  const { error: orgIncError } = await supabase.from('expenses').insert(orgIncomeRows)
+  log(orgIncError ? '❌' : '✅', `Inserted ${orgIncomeRows.length} org income entries ${orgIncError?.message || ''}`)
+
+  const soloIncomeTemplates = [
+    { base: 150000, notes: 'Monthly salary' },
+    { base: 45000, notes: 'Freelance design gig' },
+    { base: 12000, notes: 'Sold items — market' },
+  ]
+
+  const soloIncomeRows = []
+  for (let m = 0; m < 6; m++) {
+    const factor = monthFactor[m]
+    for (let i = 0; i < soloIncomeTemplates.length; i++) {
+      const t = soloIncomeTemplates[i]
+      const amount = roundToInt(t.base * factor)
+      soloIncomeRows.push({
+        amount_cents: amount * 100, // KES amount -> cents
+        entry_type: 'income',
+        currency: 'KES',
+        category_id: null,
+        date: monthOffsetDate(m, 5 + ((i * 4) % 21)),
+        notes: `${t.notes} — month ${6 - m}`,
+        org_id: null,
+        user_id: soloUser.id,
+        tax_applicable: false,
+        tax_amount_cents: null,
+      })
+    }
+  }
+
+  const { error: soloIncError } = await supabase.from('expenses').insert(soloIncomeRows)
+  log(soloIncError ? '❌' : '✅', `Inserted ${soloIncomeRows.length} solo income entries ${soloIncError?.message || ''}`)
+
+  // -------------------------------------------------
   // Budgets
   // -------------------------------------------------
   console.log('\n🎯 Budgets')

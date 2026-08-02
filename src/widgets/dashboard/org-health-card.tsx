@@ -43,6 +43,7 @@ export function OrgHealthCard({ scope, orgName }: { scope: DashboardScope; orgNa
       .select('id', { count: 'exact', head: true })
       .eq('org_id', orgId)
       .eq('is_deleted', false)
+      .eq('entry_type', 'expense')
       .gte('date', start.toISOString())
 
     return {

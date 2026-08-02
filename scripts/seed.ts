@@ -453,6 +453,28 @@ async function seedDemoClientAndOrg(managerId: string) {
   }
 
   console.log(`Created demo client with ${expenses.length} expenses`)
+
+  const incomeEntries = Array.from({ length: 10 }, (_, i) => {
+    const currency = weightedRandom(CURRENCIES, CURRENCY_WEIGHTS)
+    const titles = ['Client payment', 'Invoice settlement', 'Consulting fee', 'Project milestone', 'Retainer']
+    return {
+      user_id: clientUser.user.id,
+      org_id: org.id,
+      title: `${titles[i % titles.length]} #${i + 1}`,
+      amount_cents: randomInt(50000, 400000),
+      currency,
+      category_id: null,
+      date: randomDate(90),
+      notes: 'Demo income',
+      tax_applicable: false,
+      is_taxable: false,
+      entry_type: 'income',
+      is_deleted: false,
+    }
+  })
+
+  await supabase.from('expenses').insert(incomeEntries)
+  console.log(`Created ${incomeEntries.length} income entries`)
 }
 
 async function main() {

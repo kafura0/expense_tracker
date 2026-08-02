@@ -107,6 +107,31 @@ export function ExpenseFilters({ filters, onFilterChange }: ExpenseFiltersProps)
 
       {expanded && (
         <div className="px-4 pb-4 space-y-4 border-t border-border pt-4 animate-in slide-in-from-top-2 duration-200">
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              Type
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {(['expense', 'income'] as const).map((type) => (
+                <Button
+                  key={type}
+                  variant={filters.entry_type === type ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => onFilterChange({
+                    ...filters,
+                    entry_type: filters.entry_type === type ? undefined : type,
+                  })}
+                  className={cn(
+                    "h-8 text-xs font-medium capitalize transition-all duration-150",
+                    filters.entry_type === type ? "shadow-sm" : "hover:bg-accent"
+                  )}
+                >
+                  {type}
+                </Button>
+              ))}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">

@@ -22,6 +22,7 @@ export function TaxSummary({ scope }: { scope: DashboardScope }) {
       .select('amount_cents, tax_amount_cents')
       .eq('is_deleted', false)
       .eq('is_taxable', true)
+      .eq('entry_type', 'expense')
       .gte('date', start.toISOString())
       .lte('date', end.toISOString())
     query = applyExpenseScope(query, scope)

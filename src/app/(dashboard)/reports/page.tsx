@@ -84,6 +84,7 @@ export default function ReportsPage() {
       .from('expenses')
       .select('id, date, amount_cents, currency, category_id, notes, tax_applicable, tax_amount_cents, categories(name, icon, color)')
       .eq('is_deleted', false)
+      .eq('entry_type', 'expense')
       .gte('date', from)
       .lte('date', to)
     query = applyExpenseScope(query, scope)

@@ -4,6 +4,7 @@ export type { Expense, ExpenseInsert, ExpenseUpdate }
 
 export interface ExpenseFilters {
   search?: string
+  entry_type?: 'expense' | 'income'
   category_id?: string
   currency?: string
   tax_applicable?: boolean
