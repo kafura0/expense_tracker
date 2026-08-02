@@ -2,9 +2,7 @@
 
 import { useDashboardScope } from '@/features/dashboard/scope'
 import { SoloDashboard } from '@/widgets/dashboard/solo-dashboard'
-import { ClientDashboard } from '@/widgets/dashboard/client-dashboard'
-import { ManagerDashboard } from '@/widgets/dashboard/manager-dashboard'
-import { OrgAdminDashboard } from '@/widgets/dashboard/org-admin-dashboard'
+import { OrgDashboard } from '@/widgets/dashboard/org-dashboard'
 import { PlatformAdminDashboard } from '@/widgets/dashboard/platform-admin-dashboard'
 import { Skeleton } from '@/shared/ui/skeleton'
 
@@ -31,12 +29,8 @@ export default function DashboardPage() {
   switch (scope.persona) {
     case 'solo':
       return <SoloDashboard scope={scope} />
-    case 'client':
-      return <ClientDashboard scope={scope} />
-    case 'manager':
-      return <ManagerDashboard scope={scope} />
-    case 'org-admin':
-      return <OrgAdminDashboard scope={scope} />
+    case 'org':
+      return <OrgDashboard scope={scope} />
     case 'platform-admin':
       return <PlatformAdminDashboard scope={scope} />
   }

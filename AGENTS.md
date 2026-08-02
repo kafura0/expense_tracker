@@ -9,21 +9,23 @@ Premium SaaS expense tracker built with Next.js 16, Supabase, Tailwind CSS v4. D
 - **Database:** Supabase (PostgreSQL + RLS)
 - **Auth:** Supabase Auth (email/password + OTP)
 - **UI:** Custom design system, Tailwind CSS v4, Lucide icons, Recharts
-- **Testing:** Vitest (59 tests across 6 files)
+- **Testing:** Vitest (68 tests across 7 files)
 - **Lint:** ESLint (zero errors)
 - **Deploy:** Vercel (auto-deploy on push to main)
 
-## Three-User Model
+## User Model
 | Role | Description |
 |------|-------------|
-| **Super Admin** | Full system access, user management, announcements |
-| **Solo Client** | Independent user, no org required, personal expense tracking |
-| **Org (Admin/Manager/Client)** | Multi-tenant organization with role-based access |
+| **Super Admin** | Full system access, client roster, announcements. Home is `/admin` (middleware redirects them away from `/dashboard`). |
+| **Org Member** | Any organization member (manager/client roles no longer differentiated — one org-wide view). |
+| **Solo** | Independent user, no org required, personal expense tracking |
+
+> Org personas are `solo | org | platform-admin` in `src/features/dashboard/scope.ts`. The DB still stores `manager`/`client` roles, but `can_write_in_org()` (migration 010) now grants every org member write access.
 
 ## Supabase
 - **Project ref:** `weitlewvoufvgfpkryvg`
 - **URL:** `https://weitlewvoufvgfpkryvg.supabase.co`
-- **Migrations:** `supabase/migrations/` (7 files, 001-007)
+- **Migrations:** `supabase/migrations/` (10 files, 001-010)
 - **Schema changes:** All future Supabase schema changes MUST be applied via the **Management API** (not direct SQL/psql, not the Supabase CLI `db push`). Author the migration file under `supabase/migrations/` for versioning, then apply it through the Management API endpoint (e.g. `POST /v1/projects/{ref}/database/query`).
 - **RLS helpers:** `is_super_admin()`, `is_org_member()`, `can_write_in_org()`, `is_solo_user()`, `is_row_owner()`
 

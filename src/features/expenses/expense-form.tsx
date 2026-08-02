@@ -6,12 +6,13 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useQueryClient } from '@tanstack/react-query'
 import { expenseFormSchema, type ExpenseInsert } from '@/entities/expense/schema'
 import type { ExpenseWithCategory } from '@/entities/expense/types'
+import { categoryCatalogByKind, findCatalogCategory, findCatalogCategoryByName, type CategoryOption } from '@/entities/category/catalog'
 import { createExpense, updateExpense } from './actions'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { useToast } from '@/shared/ui/toast'
 import { createClient } from '@/shared/lib/supabase/client'
-import { useDashboardScope, applyCategoryScope } from '@/features/dashboard/scope'
+import { useDashboardScope } from '@/features/dashboard/scope'
 import { toLocalDateTimeLocal } from '@/shared/lib/datetime'
 import { currencySymbol } from '@/shared/lib/currency'
 import { convertAmount } from '@/entities/exchange-rate/utils'
@@ -29,13 +30,6 @@ import {
 } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 
-interface Category {
-  id: string
-  name: string
-  icon?: string | null
-  color?: string | null
-}
-
 interface ExpenseFormProps {
   expense?: ExpenseWithCategory | null
   onSuccess: () => void
@@ -44,9 +38,16 @@ interface ExpenseFormProps {
 
 const CURRENCIES = ['KES', 'USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY']
 const BASE_CURRENCY = 'USD'
+const EXISTING_CATEGORY_VALUE = '__existing'
 
 export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) {
-  const [categories, setCategories] = useState<Category[]>([])
+  const [categoryKey, setCategoryKey] = useState<string>(() => {
+    if (expense?.categories?.name) {
+      return findCatalogCategoryByName(expense.categories.name)?.key ?? EXISTING_CATEGORY_VALUE
+    }
+    return ''
+  })
+  const [categoryId, setCategoryId] = useState<string | null>(expense?.category_id ?? null)
   const [rates, setRates] = useState<Record<string, number>>({})
   const [convertedAmount, setConvertedAmount] = useState<number | null>(null)
   const [vatResult, setVatResult] = useState<{ tax: number; total: number } | null>(null)
@@ -91,22 +92,59 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
   const watchedType = watch('entry_type') || 'expense'
   /* eslint-enable react-hooks/incompatible-library */
 
-  const fetchCategories = useCallback(async () => {
-    if (!scope) return
+  const categoryOptions = categoryCatalogByKind(watchedType)
+  const selectedCategory: CategoryOption | undefined = categoryKey
+    ? categoryKey === EXISTING_CATEGORY_VALUE
+      ? undefined
+      : findCatalogCategory(categoryKey)
+    : undefined
 
-    let query = supabase.from('categories').select('*')
-    query = applyCategoryScope(query, scope)
-
-    const { data, error } = await query.order('name')
-
-    if (error) {
-      console.error('Failed to fetch categories:', error.message)
-      return
+  const handleTypeChange = (type: 'expense' | 'income') => {
+    setValue('entry_type', type, { shouldDirty: true })
+    // Switching income/expense invalidates a category from the other set
+    if (categoryKey && categoryKey !== EXISTING_CATEGORY_VALUE) {
+      const current = findCatalogCategory(categoryKey)
+      if (current && current.kind !== type) {
+        setCategoryKey('')
+        setCategoryId(null)
+      }
     }
+  }
 
-    if (data) {
-      setCategories(data)
+  const handleCategoryChange = (key: string) => {
+    setCategoryKey(key)
+    setCategoryId(key === EXISTING_CATEGORY_VALUE ? expense?.category_id ?? null : null)
+  }
+
+  const resolveCategoryId = useCallback(async (key: string): Promise<string | null> => {
+    const option = findCatalogCategory(key)
+    if (!option || !scope) return null
+
+    let query = supabase.from('categories').select('id').eq('name', option.name)
+    query = scope.persona === 'solo'
+      ? query.eq('user_id', scope.userId).is('org_id', null)
+      : query.eq('org_id', scope.orgId)
+
+    const { data: existing } = await query.limit(1).maybeSingle()
+    if (existing?.id) return existing.id
+
+    const { data: inserted, error } = await supabase
+      .from('categories')
+      .insert({
+        name: option.name,
+        icon: option.icon,
+        color: option.color,
+        user_id: scope.userId,
+        org_id: scope.persona === 'solo' ? null : scope.orgId,
+      })
+      .select('id')
+      .single()
+
+    if (error || !inserted?.id) {
+      const { data: retry } = await query.limit(1).maybeSingle()
+      return retry?.id ?? null
     }
+    return inserted.id
   }, [scope, supabase])
 
   const fetchRates = useCallback(async () => {
@@ -122,9 +160,8 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
   }, [])
 
   useEffect(() => {
-    fetchCategories()
     fetchRates()
-  }, [fetchCategories, fetchRates])
+  }, [fetchRates])
 
   useEffect(() => {
     if (watchedAmount && watchedCurrency && rates) {
@@ -144,8 +181,16 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
 
   const onSubmit = async (data: ExpenseInsert) => {
     try {
+      let resolvedCategoryId: string | null = null
+      if (categoryKey === EXISTING_CATEGORY_VALUE) {
+        resolvedCategoryId = categoryId
+      } else if (categoryKey) {
+        resolvedCategoryId = await resolveCategoryId(categoryKey)
+      }
+
       const submissionData = {
         ...data,
+        category_id: resolvedCategoryId,
         date: new Date(data.date).toISOString(),
         converted_amount_cents: convertedAmount ?? undefined,
         converted_currency: BASE_CURRENCY,
@@ -185,7 +230,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
           <button
             key={type}
             type="button"
-            onClick={() => setValue('entry_type', type, { shouldDirty: true })}
+            onClick={() => handleTypeChange(type)}
             className={`rounded-lg py-2 text-sm font-medium capitalize transition-all ${
               watchedType === type
                 ? 'bg-card text-foreground shadow-sm'
@@ -271,17 +316,28 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
           <div className="relative">
             <select
               id="category_id"
-              {...register('category_id')}
+              value={categoryKey}
+              onChange={(e) => handleCategoryChange(e.target.value)}
               className="flex h-10 w-full rounded-lg border border-input bg-muted/50 px-3 py-2 text-sm text-foreground transition-all duration-200 hover:border-muted-foreground/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:border-ring appearance-none"
             >
               <option value="">Select category</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
+              {categoryOptions.map((category) => (
+                <option key={category.key} value={category.key}>
                   {category.name}
                 </option>
               ))}
+              {isEditing && categoryKey === EXISTING_CATEGORY_VALUE && (
+                <option value={EXISTING_CATEGORY_VALUE}>
+                  {expense?.categories?.name || 'Existing category'}
+                </option>
+              )}
             </select>
           </div>
+          {selectedCategory && (
+            <p className="text-xs text-muted-foreground leading-relaxed pt-0.5">
+              {selectedCategory.description}
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">

@@ -21,8 +21,8 @@ export async function createInviteAction(email: string, role: 'manager' | 'clien
       .eq('org_id', orgId)
       .single()
 
-    if (!membership || membership.role === 'client') {
-      return { error: 'Only managers and admins can invite members' }
+    if (!membership) {
+      return { error: 'Only organization members can invite others' }
     }
 
     const invite = await createInvite({ org_id: orgId, email, role })

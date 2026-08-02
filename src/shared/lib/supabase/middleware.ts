@@ -212,6 +212,24 @@ export async function updateSession(request: NextRequest) {
   // are redirected to the dashboard. The /auth/callback exception is necessary
   // because the OAuth callback flow needs to complete before redirecting.
   if (isPublicPath && pathname !== '/auth/callback' && pathname !== '/onboarding' && pathname !== '/' && pathname !== '/suspended') {
+    // Super admins are redirected to the admin console, not the dashboard.
+    try {
+      const { data: superAdmin } = await supabase
+        .from('org_members')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('role', 'super_admin')
+        .maybeSingle()
+
+      if (superAdmin) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/admin'
+        return NextResponse.redirect(url)
+      }
+    } catch {
+      // If the org_members query fails, fall through to the default redirect
+    }
+
     // Check onboarding status before redirecting
     try {
       const { data: profile } = await supabase
@@ -293,8 +311,18 @@ export async function updateSession(request: NextRequest) {
       // Admin route guard: require super_admin role in at least one org.
       // This is checked at the middleware level because admin pages should
       // never render at all for non-admin users (defense-in-depth).
+      const isSuperAdmin = memberships.some(m => m.role === 'super_admin')
+
+      // Super admins live on the admin console. Route them away from the
+      // org dashboards (/dashboard, /expenses, /settings) so their home is
+      // always /admin where they manage clients and announcements.
+      if (isSuperAdmin && isProtectedPath) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/admin'
+        return NextResponse.redirect(url)
+      }
+
       if (isAdminPath) {
-        const isSuperAdmin = memberships.some(m => m.role === 'super_admin')
         if (!isSuperAdmin) {
           // Silently redirect to home — do not reveal that /admin exists
           // or that the user lacks permissions (security through obscurity

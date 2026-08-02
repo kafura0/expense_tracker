@@ -1214,7 +1214,6 @@ function MessagesTab() {
 
 function InvitesTab() {
   const [email, setEmail] = useState('')
-  const [role, setRole] = useState<'client' | 'manager'>('client')
   const [sending, setSending] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
@@ -1232,7 +1231,7 @@ function InvitesTab() {
     setMessage(null)
     try {
       const { createInviteAction } = await import('@/features/invites/actions')
-      const result = await createInviteAction(email, role)
+      const result = await createInviteAction(email)
       if (result.error) {
         setMessage({ type: 'error', text: result.error })
       } else {
@@ -1264,7 +1263,7 @@ function InvitesTab() {
       <Card className="glass-card border-border">
         <CardHeader>
           <CardTitle className="font-headline">Send Invite</CardTitle>
-          <CardDescription>Invite a client or manager to your organization</CardDescription>
+          <CardDescription>Invite a new member to the organization</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-3">
@@ -1275,14 +1274,6 @@ function InvitesTab() {
               onChange={(e) => setEmail(e.target.value)}
               className="flex-1"
             />
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value as 'client' | 'manager')}
-              className="h-10 rounded-lg border border-border bg-muted px-3 text-sm text-foreground"
-            >
-              <option value="client">Client</option>
-              <option value="manager">Manager</option>
-            </select>
             <Button onClick={handleSendInvite} disabled={sending || !email}>
               {sending ? 'Sending...' : 'Send Invite'}
             </Button>

@@ -2,8 +2,9 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/shared/lib/supabase/client'
+import { useOrg } from '@/shared/lib/org-provider'
 import { format } from 'date-fns'
-import { Sparkles, CalendarDays } from 'lucide-react'
+import { Sparkles, CalendarDays, User, Users, ShieldCheck } from 'lucide-react'
 
 interface DashboardHeaderProps {
   subtitle: string
@@ -11,6 +12,7 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ subtitle }: DashboardHeaderProps) {
   const supabase = createClient()
+  const { activeOrg, isSolo } = useOrg()
 
   const fetchName = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -22,6 +24,18 @@ export function DashboardHeader({ subtitle }: DashboardHeaderProps) {
     queryFn: fetchName,
   })
 
+  const roleLabel = activeOrg?.role === 'super_admin'
+    ? 'Super Admin'
+    : isSolo
+      ? 'Solo'
+      : 'Org Member'
+
+  const RoleIcon = activeOrg?.role === 'super_admin'
+    ? ShieldCheck
+    : isSolo
+      ? User
+      : Users
+
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
 
@@ -32,8 +46,12 @@ export function DashboardHeader({ subtitle }: DashboardHeaderProps) {
           <Sparkles className="h-6 w-6 text-primary" />
         </div>
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground font-headline tracking-tight">
+          <h1 className="flex flex-wrap items-center gap-x-2 gap-y-1 text-2xl md:text-3xl font-bold text-foreground font-headline tracking-tight">
             {greeting}, <span className="text-primary">{name}</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary ring-1 ring-primary/20">
+              <RoleIcon className="h-3 w-3" />
+              {roleLabel}
+            </span>
           </h1>
           <p className="text-muted-foreground mt-1">{subtitle}</p>
         </div>

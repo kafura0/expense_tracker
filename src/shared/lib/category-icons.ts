@@ -20,6 +20,8 @@ import {
   Stethoscope,
   Truck,
   Sparkles,
+  TrendingUp,
+  PiggyBank,
   MoreHorizontal,
   type LucideIcon,
 } from 'lucide-react'
@@ -57,6 +59,8 @@ const iconMap: Record<string, LucideIcon> = {
   gym: Dumbbell,
   medical: Stethoscope,
   delivery: Truck,
+  'trending-up': TrendingUp,
+  'piggy-bank': PiggyBank,
   misc: Sparkles,
 }
 

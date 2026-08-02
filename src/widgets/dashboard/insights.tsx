@@ -16,7 +16,7 @@ interface Insight {
 
 export function Insights({ scope }: { scope: DashboardScope }) {
   const supabase = createClient()
-  const teamView = scope.persona === 'manager' || scope.persona === 'org-admin'
+  const teamView = scope.persona === 'org' || scope.persona === 'platform-admin'
   const subject = teamView ? 'the team' : 'you'
 
   const fetchInsights = async (): Promise<Insight[]> => {

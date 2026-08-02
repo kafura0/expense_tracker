@@ -11,18 +11,14 @@
  *
  * PERSONAS
  * --------
- * - platform-admin : super_admin role — org-wide view of their active org.
- * - org-admin      : manager who created the org — Command Center.
- * - manager        : manager role — Team Pulse (org-wide).
- * - client         : client role — own expenses only.
+ * - platform-admin : super_admin role — lives on the /admin console.
+ * - org            : any organization member — org-wide view.
  * - solo           : no org membership — personal expenses only.
  *
  * SECURITY NOTE
  * -------------
  * Scoping is applied at the application layer; Supabase RLS remains the
- * authoritative boundary. `applyExpenseScope` for the client persona filters
- * to `user_id` so clients only see their own rows in the UI even though the
- * org-client RLS policy permits viewing org expenses.
+ * authoritative boundary.
  */
 
 import { useEffect, useState } from 'react'
@@ -30,7 +26,7 @@ import type { PostgrestFilterBuilder } from '@supabase/supabase-js'
 import { createClient } from '@/shared/lib/supabase/client'
 import { useOrg } from '@/shared/lib/org-provider'
 
-export type DashboardPersona = 'platform-admin' | 'org-admin' | 'manager' | 'client' | 'solo'
+export type DashboardPersona = 'platform-admin' | 'org' | 'solo'
 
 export interface DashboardScope {
   orgId: string | null
@@ -57,9 +53,6 @@ export function applyExpenseScope<B extends AnyFilterBuilder>(query: B, scope: D
     case 'solo':
       q = q.eq('user_id', scope.userId).is('org_id', null)
       break
-    case 'client':
-      q = q.eq('org_id', scope.orgId).eq('user_id', scope.userId)
-      break
     default:
       q = q.eq('org_id', scope.orgId)
   }
@@ -82,16 +75,13 @@ export function applyCategoryScope<B extends AnyFilterBuilder>(query: B, scope: 
 
 /**
  * Apply the persona-appropriate budgets filter. Clients and solo users read
- * personal (scope='user') budgets; managers and org-admins read org budgets.
+ * personal (scope='user') budgets; org members read org budgets.
  */
 export function applyBudgetScope<B extends AnyFilterBuilder>(query: B, scope: DashboardScope): B {
   let q: AnyFilterBuilder = query
   switch (scope.persona) {
     case 'solo':
       q = q.eq('scope', 'user').eq('user_id', scope.userId).is('org_id', null)
-      break
-    case 'client':
-      q = q.eq('scope', 'user').eq('user_id', scope.userId).eq('org_id', scope.orgId)
       break
     default:
       q = q.eq('scope', 'org').eq('org_id', scope.orgId)
@@ -102,9 +92,8 @@ export function applyBudgetScope<B extends AnyFilterBuilder>(query: B, scope: Da
 /**
  * Resolve the current user's dashboard scope.
  *
- * Combines the org context from `useOrg` with the authenticated user id, the
- * org creator (to separate org-admins from managers), and the user's base
- * currency preference from settings.
+ * Combines the org context from `useOrg` with the authenticated user id and the
+ * user's base currency preference from settings.
  *
  * Returns `{ scope, loading }`. While loading, `scope` is null — callers should
  * render skeletons. Once resolved the scope object is memoized per session.
@@ -136,20 +125,10 @@ export function useDashboardScope(): ResolvedScopeState {
 
         if (role === 'super_admin') {
           persona = 'platform-admin'
-        } else if (role === 'client') {
-          persona = 'client'
         } else {
-          // manager — distinguish org-admin (org creator) from plain manager
-          const { data: org } = await supabase
-            .from('organizations')
-            .select('created_by')
-            .eq('id', orgId)
-            .maybeSingle()
-
-          persona =
-            org && (org as { created_by?: string | null }).created_by === user.id
-              ? 'org-admin'
-              : 'manager'
+          // Every org member sees the same org-wide view — manager/client
+          // roles are no longer differentiated at the persona level.
+          persona = 'org'
         }
 
         const { data: settings } = await supabase

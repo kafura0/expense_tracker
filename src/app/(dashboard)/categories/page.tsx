@@ -104,12 +104,12 @@ export default function CategoriesPage() {
     enabled: !!scope,
   })
 
-  const budgetScope = scope && (scope.persona === 'client' || scope.persona === 'solo') ? 'user' : 'org'
+  const budgetScope = scope && scope.persona === 'solo' ? 'user' : 'org'
 
   const totalBudget = useMemo(() => (data || []).reduce((a, c) => a + c.budget_cents, 0), [data])
   const totalSpent = useMemo(() => (data || []).reduce((a, c) => a + c.spent_cents, 0), [data])
 
-  const canManageCategories = scope ? scope.persona !== 'client' : false
+  const canManageCategories = true
 
   const inputValue = (cat: CategoryRow) =>
     budgetInputs[cat.id] ?? (cat.budget_cents > 0 ? String(cat.budget_cents / 100) : '')

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Input } from '@/shared/ui/input'
 import { Button } from '@/shared/ui/button'
+import { createClient } from '@/shared/lib/supabase/client'
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 
 export default function LoginPage() {
@@ -26,7 +27,19 @@ export default function LoginPage() {
       setError(result.error)
       setLoading(false)
     } else {
-      router.push('/dashboard')
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      let dest = '/dashboard'
+      if (user) {
+        const { data: superAdmin } = await supabase
+          .from('org_members')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('role', 'super_admin')
+          .maybeSingle()
+        if (superAdmin) dest = '/admin'
+      }
+      router.push(dest)
       router.refresh()
     }
   }
