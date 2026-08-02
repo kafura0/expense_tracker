@@ -164,9 +164,11 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
   }, [fetchRates])
 
   useEffect(() => {
-    if (watchedAmount && watchedCurrency && rates) {
+    if (watchedAmount && watchedCurrency) {
       const converted = convertAmount(watchedAmount, watchedCurrency, BASE_CURRENCY, rates)
-      setConvertedAmount(Math.round(converted))
+      setConvertedAmount(converted !== null ? Math.round(converted) : null)
+    } else {
+      setConvertedAmount(null)
     }
   }, [watchedAmount, watchedCurrency, rates])
 
@@ -188,13 +190,22 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
         resolvedCategoryId = await resolveCategoryId(categoryKey)
       }
 
+      const needsConversion = data.currency !== BASE_CURRENCY
+      const rate = rates[data.currency]
+
+      // Never store a silently 1:1 converted amount — require a real rate.
+      if (needsConversion && rate === undefined) {
+        toast(`Exchange rate for ${data.currency} is unavailable. Try again shortly.`, 'error')
+        return
+      }
+
       const submissionData = {
         ...data,
         category_id: resolvedCategoryId,
         date: new Date(data.date).toISOString(),
-        converted_amount_cents: convertedAmount ?? undefined,
+        converted_amount_cents: needsConversion ? convertedAmount : undefined,
         converted_currency: BASE_CURRENCY,
-        exchange_rate_used: rates[data.currency] || 1,
+        exchange_rate_used: needsConversion ? rate : undefined,
         tax_rate_used: data.is_taxable ? DEFAULT_VAT_RATE : undefined,
         tax_amount_cents: vatResult?.tax,
       }

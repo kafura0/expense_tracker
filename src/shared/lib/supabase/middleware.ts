@@ -160,7 +160,7 @@ export async function updateSession(request: NextRequest) {
 
   /** Protected routes — require authentication AND valid org membership.
    *  These are the main authenticated app routes. */
-  const protectedPaths = ['/dashboard', '/expenses', '/settings']
+  const protectedPaths = ['/dashboard', '/expenses', '/settings', '/reports', '/categories']
   const isProtectedPath = protectedPaths.some(
     (path) => pathname === path || pathname.startsWith(path + '/')
   )
@@ -211,7 +211,7 @@ export async function updateSession(request: NextRequest) {
   // Authenticated users who land on auth pages (login, reset-password, etc.)
   // are redirected to the dashboard. The /auth/callback exception is necessary
   // because the OAuth callback flow needs to complete before redirecting.
-  if (isPublicPath && pathname !== '/auth/callback' && pathname !== '/onboarding' && pathname !== '/' && pathname !== '/suspended') {
+  if (isPublicPath && pathname !== '/auth/callback' && pathname !== '/onboarding' && pathname !== '/' && pathname !== '/suspended' && pathname !== '/invite' && pathname !== '/update-password') {
     // Super admins are redirected to the admin console, not the dashboard.
     try {
       const { data: superAdmin } = await supabase
@@ -306,6 +306,15 @@ export async function updateSession(request: NextRequest) {
         // to the user's first available org, and re-render.
         // Note: We intentionally do NOT redirect here. The client will
         // set the cookie and the page will render with the default org.
+      }
+
+      // Organization life-cycle enforcement: members of a suspended or
+      // cancelled org are confined to /suspended (mirrors profile-level
+      // suspension). RLS also blocks access via is_org_member.
+      if (validOrg && isProtectedPath && validOrg.organizations?.status !== 'active') {
+        const url = request.nextUrl.clone()
+        url.pathname = '/suspended'
+        return NextResponse.redirect(url)
       }
 
       // Admin route guard: require super_admin role in at least one org.

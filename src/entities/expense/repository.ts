@@ -1,5 +1,6 @@
 import { createClient } from '@/shared/lib/supabase/server'
 import { getActiveOrgId } from '@/shared/lib/org-context'
+import { escapeLikePattern } from '@/shared/lib/like-escape'
 import { expenseSchema, type Expense, type ExpenseInsert, type ExpenseUpdate } from './schema'
 import type { ExpenseListParams, ExpenseListResponse } from './types'
 
@@ -10,6 +11,9 @@ function orgScopeFilter(query: any, orgId: string | null, userId: string) {
   }
   return query.eq('user_id', userId).is('org_id', null)
 }
+
+/** Escapes ILIKE/LIKE metacharacters so user input cannot widen a match. */
+// (delegated to the shared escapeLikePattern helper imported above)
 
 async function getOrgId(): Promise<string | null> {
   const activeOrgId = await getActiveOrgId()
@@ -68,6 +72,10 @@ export async function findAllExpenses(params: ExpenseListParams = {}): Promise<E
   const orgId = await getOrgId()
   const { filters = {}, pagination = { page: 1, page_size: 20 }, sort = { field: 'date', direction: 'desc' } } = params
 
+  // Clamp pagination so hostile/errant inputs cannot break range math.
+  const page = Math.max(1, Math.floor(pagination.page))
+  const page_size = Math.max(1, Math.min(100, Math.floor(pagination.page_size)))
+
   let query = supabase
     .from('expenses')
     .select('*, categories(id, name, icon, color)', { count: 'exact' })
@@ -80,7 +88,10 @@ export async function findAllExpenses(params: ExpenseListParams = {}): Promise<E
   if (filters.search) {
     // Full-text search across notes and title using PostgREST's ilike operator.
     // The `%` wildcards enable substring matching (PostgreSQL ILIKE syntax).
-    query = query.or(`notes.ilike.%${filters.search}%,title.ilike.%${filters.search}%`)
+    // Escape Postgres ILIKE metacharacters so user input like "100%" cannot
+    // widen the match into "everything".
+    const escaped = escapeLikePattern(filters.search)
+    query = query.or(`notes.ilike.%${escaped}%,title.ilike.%${escaped}%`)
   }
   if (filters.entry_type) {
     query = query.eq('entry_type', filters.entry_type)
@@ -110,8 +121,8 @@ export async function findAllExpenses(params: ExpenseListParams = {}): Promise<E
   // Calculate offset-based pagination range.
   // PostgREST `range(from, to)` is inclusive on both ends (0-indexed).
   // Example: page 1, size 20 → range(0, 19); page 2, size 20 → range(20, 39)
-  const from = (pagination.page - 1) * pagination.page_size
-  const to = from + pagination.page_size - 1
+  const from = (page - 1) * page_size
+  const to = from + page_size - 1
   query = query.range(from, to)
 
   const { data, error, count } = await query
@@ -119,13 +130,13 @@ export async function findAllExpenses(params: ExpenseListParams = {}): Promise<E
   if (error) throw new Error(`Failed to fetch expenses: ${error.message}`)
 
   const total = count || 0
-  const total_pages = Math.ceil(total / pagination.page_size)
+  const total_pages = Math.ceil(total / page_size)
 
   return {
     data: data || [],
     total,
-    page: pagination.page,
-    page_size: pagination.page_size,
+    page,
+    page_size,
     total_pages,
   }
 }

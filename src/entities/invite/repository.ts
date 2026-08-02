@@ -89,53 +89,19 @@ export async function findInviteByToken(token: string): Promise<Invite | null> {
   return inviteSchema.parse(data)
 }
 
-export async function acceptInvite(token: string, userId: string): Promise<string> {
+export async function acceptInvite(token: string): Promise<string> {
   const supabase = await createClient()
 
-  const invite = await findInviteByToken(token)
-  if (!invite) throw new Error('Invite not found or expired')
+  // The accept_invite RPC is SECURITY DEFINER and performs the membership
+  // insert, the data reassignment, and the status flip atomically. It also
+  // binds the token to the invitee's email (auth.uid() -> auth.users.email),
+  // so a token can only be accepted by the invited account.
+  const { data: orgId, error } = await supabase.rpc('accept_invite', {
+    p_token: token,
+  })
 
-  const { error: memberError } = await supabase
-    .from('org_members')
-    .insert({
-      org_id: invite.org_id,
-      user_id: userId,
-      role: 'member',
-    })
+  if (error) throw new Error(error.message)
+  if (!orgId) throw new Error('Failed to accept invite')
 
-  if (memberError) throw new Error(`Failed to add to organization: ${memberError.message}`)
-
-  await supabase
-    .from('profiles')
-    .update({ org_id: invite.org_id })
-    .eq('user_id', userId)
-    .is('org_id', null)
-
-  await supabase
-    .from('categories')
-    .update({ org_id: invite.org_id })
-    .eq('user_id', userId)
-    .is('org_id', null)
-
-  await supabase
-    .from('expenses')
-    .update({ org_id: invite.org_id })
-    .eq('user_id', userId)
-    .is('org_id', null)
-
-  await supabase
-    .from('expense_settings')
-    .update({ org_id: invite.org_id })
-    .eq('user_id', userId)
-    .is('org_id', null)
-
-  await supabase
-    .from('invites')
-    .update({
-      status: 'accepted',
-      accepted_by: userId,
-    })
-    .eq('id', invite.id)
-
-  return invite.org_id
+  return orgId as string
 }

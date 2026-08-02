@@ -11,13 +11,20 @@ export async function completeOnboarding(orgName?: string) {
   if (!user) return { error: 'Not authenticated' }
 
   if (orgName) {
-    const slug = orgName
+    const name = orgName.trim().slice(0, 80)
+    if (!name) return { error: 'Organization name is required' }
+
+    let slug = name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '')
+    // Non-Latin names produce an empty slug — fall back to a random one.
+    if (!slug) {
+      slug = `org-${crypto.randomUUID().slice(0, 8)}`
+    }
 
     const { data: orgId, error: rpcError } = await supabase.rpc('create_org_for_user', {
-      p_org_name: orgName,
+      p_org_name: name,
       p_org_slug: slug,
       p_user_id: user.id,
       p_plan_slug: 'free',

@@ -118,7 +118,7 @@ describe('Exchange Rate API Route', () => {
       expect(getExchangeRates).toHaveBeenCalledWith('USD')
     })
 
-    it('should return 500 on service error', async () => {
+    it('should degrade gracefully on service error', async () => {
       const { createClient } = await import('@/shared/lib/supabase/server')
       vi.mocked(createClient).mockResolvedValue({
         auth: {
@@ -135,8 +135,11 @@ describe('Exchange Rate API Route', () => {
       const response = await GET(request)
       const data = await response.json()
       
-      expect(response.status).toBe(500)
-      expect(data.error).toBe('Failed to fetch exchange rates')
+      expect(response.status).toBe(200)
+      expect(data.base).toBe('USD')
+      expect(data.rates).toEqual({})
+      expect(data.stale).toBe(true)
+      expect(data.error).toBeTruthy()
     })
 
     it('should support all valid currencies', async () => {

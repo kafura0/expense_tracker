@@ -29,10 +29,13 @@ export async function GET(request: NextRequest) {
     const rates = await getExchangeRates(base)
     return NextResponse.json(rates)
   } catch (error) {
+    // Upstream down AND no cached rates: return an empty, flagged response
+    // rather than a 500. Clients use the flag to refuse cross-currency
+    // conversions instead of silently converting at 1:1.
     console.error('Error fetching rates:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch exchange rates' },
-      { status: 500 }
+      { base, rates: {}, stale: true, error: 'Failed to fetch exchange rates' },
+      { status: 200 }
     )
   }
 }

@@ -66,16 +66,18 @@ function checkRateLimit(
 }
 
 function getClientIP(request: NextRequest): string {
-  // Check for forwarded IP first (for deployments behind proxies)
-  const forwarded = request.headers.get('x-forwarded-for')
-  if (forwarded) {
-    return forwarded.split(',')[0].trim()
-  }
-  
-  // Check for real IP
+  // Prefer the proxy-set real IP. When reading x-forwarded-for, use the LAST
+  // entry: proxies append, so the right-most untrusted hop is the client; the
+  // FIRST entry is client-supplied and trivially spoofed to bypass limits.
   const realIP = request.headers.get('x-real-ip')
   if (realIP) {
-    return realIP
+    return realIP.trim()
+  }
+
+  const forwarded = request.headers.get('x-forwarded-for')
+  if (forwarded) {
+    const parts = forwarded.split(',')
+    return parts[parts.length - 1].trim()
   }
 
   // Fallback to unknown (request.ip is not available in Next.js 16)

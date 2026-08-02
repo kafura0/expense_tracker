@@ -3,7 +3,22 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/shared/lib/supabase/server'
+import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
 import { clientRequestSchema } from '@/entities/org/schema'
+
+/**
+ * Service-role client used ONLY in approveClientRequest to create/look up
+ * auth users (auth.admin.* requires the service-role key). Never exposed to
+ * the client; the caller has already been verified as a super admin.
+ */
+function createServiceClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return null
+  return createSupabaseJsClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
+}
 
 function getSiteUrl(): string {
   if (process.env.NEXT_PUBLIC_SITE_URL) {
@@ -171,16 +186,22 @@ export async function approveClientRequest(
     return { error: 'Request already reviewed' }
   }
 
-  // Check if user already exists
-  const { data: existingUsers } = await supabase.auth.admin.listUsers()
-  const existingUser = existingUsers?.users?.find(u => u.email === request.email)
+  // Check if user already exists (case-insensitive match)
+  const service = createServiceClient()
+  if (!service) {
+    return { error: 'Service client unavailable' }
+  }
+  const { data: existingUsers } = await service.auth.admin.listUsers()
+  const existingUser = existingUsers?.users?.find(
+    (u) => u.email?.toLowerCase() === request.email.toLowerCase()
+  )
 
   let targetUserId = existingUser?.id
 
   if (!existingUser) {
     // Create the user with a temporary password (they'll reset it)
     const tempPassword = crypto.randomUUID().slice(0, 16) + 'A1!'
-    const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+    const { data: newUser, error: createError } = await service.auth.admin.createUser({
       email: request.email,
       password: tempPassword,
       email_confirm: true,
@@ -195,7 +216,7 @@ export async function approveClientRequest(
     targetUserId = newUser.user.id
 
     // Send password reset email so they can set their own password
-    await supabase.auth.admin.inviteUserByEmail(request.email, {
+    await service.auth.admin.inviteUserByEmail(request.email, {
       redirectTo: `${getSiteUrl()}/auth/callback?next=/update-password`,
     })
   }
@@ -206,7 +227,10 @@ export async function approveClientRequest(
 
   // Create org using the SQL function
   const orgName = request.business_name || request.name
-  const orgSlug = orgName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+  let orgSlug = orgName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+  if (!orgSlug) {
+    orgSlug = `org-${crypto.randomUUID().slice(0, 8)}`
+  }
 
   const { data: orgId, error: orgError } = await supabase.rpc('create_org_for_user', {
     p_org_name: orgName,

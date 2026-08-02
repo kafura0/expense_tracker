@@ -35,7 +35,7 @@ export async function acceptInviteAction(token: string) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'Please log in first to accept this invite' }
 
-    const orgId = await acceptInvite(token, user.id)
+    const orgId = await acceptInvite(token)
     await setActiveOrgId(orgId)
 
     return { success: true, error: null }

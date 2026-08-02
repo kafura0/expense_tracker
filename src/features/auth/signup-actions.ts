@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/shared/lib/supabase/server'
+import { validatePasswordStrength } from '@/shared/lib/password'
 
 export async function signup(formData: FormData) {
   const supabase = await createClient()
@@ -13,21 +14,9 @@ export async function signup(formData: FormData) {
     return { error: 'Email and password are required' }
   }
 
-  if (password.length < 8) {
-    return { error: 'Password must be at least 8 characters' }
-  }
-
-  // Check password strength: must have uppercase, lowercase, number, and special char
-  const hasUppercase = /[A-Z]/.test(password)
-  const hasLowercase = /[a-z]/.test(password)
-  const hasNumber = /[0-9]/.test(password)
-  const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password)
-
-  if (!hasUppercase || !hasLowercase || !hasNumber || !hasSpecial) {
-    return {
-      error:
-        'Password must include uppercase, lowercase, number, and special character',
-    }
+  const passwordError = validatePasswordStrength(password)
+  if (passwordError) {
+    return { error: passwordError }
   }
 
   const { error } = await supabase.auth.signUp({

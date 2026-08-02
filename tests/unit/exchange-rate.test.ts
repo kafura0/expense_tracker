@@ -37,7 +37,11 @@ describe('convertAmount', () => {
     expect(convertAmount(100, 'KES', 'EUR', rates)).toBeCloseTo(inBase * 0.87)
   })
 
-  it('falls back to rate 1 for unknown currencies', () => {
-    expect(convertAmount(100, 'USD', 'XXX', rates)).toBe(100)
+  it('returns null when a needed rate is missing', () => {
+    expect(convertAmount(100, 'USD', 'XXX', rates)).toBeNull()
+  })
+
+  it('returns null when the source rate is missing', () => {
+    expect(convertAmount(100, 'XXX', 'USD', rates)).toBeNull()
   })
 })

@@ -1,7 +1,6 @@
 import { type ExchangeRateResponse, SUPPORTED_CURRENCIES } from './types'
 import { findLatestRates, isRatesStale, upsertRates } from './repository'
 import { fillMissingRates } from './utils'
-
 const FRANKFURTER_API_BASE = 'https://api.frankfurter.app'
 const API_TIMEOUT_MS = 5000
 

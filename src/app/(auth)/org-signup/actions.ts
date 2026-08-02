@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/shared/lib/supabase/server'
+import { validatePasswordStrength } from '@/shared/lib/password'
 
 export async function orgSignup(formData: FormData) {
   const supabase = await createClient()
@@ -22,8 +23,9 @@ export async function orgSignup(formData: FormData) {
     return { error: 'Email is required' }
   }
 
-  if (!password || password.length < 8) {
-    return { error: 'Password must be at least 8 characters' }
+  const passwordError = validatePasswordStrength(password)
+  if (passwordError) {
+    return { error: passwordError }
   }
 
   const { error } = await supabase.auth.signUp({

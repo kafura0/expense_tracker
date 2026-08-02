@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef, useMemo } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/shared/lib/supabase/client'
 import { useDashboardScope, applyExpenseScope } from '@/features/dashboard/scope'
@@ -14,6 +14,7 @@ import { ExpenseDialog } from '@/features/expenses/expense-dialog'
 import { deleteExpense, duplicateExpense } from '@/features/expenses/actions'
 import { useToast } from '@/shared/ui/toast'
 import { cn } from '@/shared/lib/utils'
+import { escapeLikePattern } from '@/shared/lib/like-escape'
 import type { ExpenseListParams, ExpenseFilters as FilterType, ExpenseWithCategory } from '@/entities/expense/types'
 
 export default function ExpensesPage() {
@@ -27,7 +28,6 @@ export default function ExpensesPage() {
   const supabase = createClient()
   const queryClient = useQueryClient()
   const { toast } = useToast()
-  const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const { scope, loading: scopeLoading } = useDashboardScope()
 
   const fetchExpenses = async (params: ExpenseListParams) => {
@@ -41,7 +41,8 @@ export default function ExpensesPage() {
     query = applyExpenseScope(query, scope)
 
     if (params.filters?.search) {
-      query = query.or(`notes.ilike.%${params.filters.search}%,title.ilike.%${params.filters.search}%`)
+      const escaped = escapeLikePattern(params.filters.search)
+      query = query.or(`notes.ilike.%${escaped}%,title.ilike.%${escaped}%`)
     }
     if (params.filters?.entry_type) {
       query = query.eq('entry_type', params.filters.entry_type)
@@ -158,16 +159,14 @@ export default function ExpensesPage() {
 
     queryClient.invalidateQueries({ queryKey: ['expenses'] })
 
-    toast('Expense deleted. Click Undo to restore.', 'default')
-
-    if (undoTimeoutRef.current) {
-      clearTimeout(undoTimeoutRef.current)
+    // If we deleted the last row of a non-first page, step back so the
+    // current page never renders out of range.
+    if (data && data.data.length === 1 && page > 1) {
+      setPage(page - 1)
     }
 
-    undoTimeoutRef.current = setTimeout(async () => {
-      undoTimeoutRef.current = null
-    }, 30000)
-  }, [queryClient, toast])
+    toast('Expense deleted', 'default')
+  }, [queryClient, toast, data, page])
 
   const handleDuplicate = useCallback(async (id: string) => {
     const result = await duplicateExpense(id)

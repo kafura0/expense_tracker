@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createExpense as createExpenseRepo, updateExpense as updateExpenseRepo, softDeleteExpense as softDeleteExpenseRepo, restoreExpense as restoreExpenseRepo } from '@/entities/expense/repository'
-import { expenseInsertSchema, expenseUpdateSchema, type ExpenseInsert, type ExpenseUpdate } from '@/entities/expense/schema'
+import { expenseInsertSchema, expenseUpdateSchema, type Expense, type ExpenseInsert, type ExpenseUpdate } from '@/entities/expense/schema'
 
 export async function createExpense(expense: ExpenseInsert) {
   const parsed = expenseInsertSchema.safeParse(expense)
@@ -59,14 +59,16 @@ export async function restoreExpense(id: string) {
 export async function duplicateExpense(id: string) {
   try {
     const { findExpenseById } = await import('@/entities/expense/repository')
-    const expense = await findExpenseById(id)
+    // findExpenseById selects a joined `categories` object that is NOT an
+    // expenses column — it must be stripped before re-inserting the row.
+    const expense = (await findExpenseById(id)) as Expense & { categories?: unknown }
     
     if (!expense) {
       return { data: null, error: 'Expense not found' }
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { id: _, user_id: __, created_at: ___, updated_at: ____, ...expenseData } = expense
+    const { id: _, user_id: __, created_at: ___, updated_at: ____, categories: _____, ...expenseData } = expense
     
     const newExpense = await createExpenseRepo({
       ...expenseData,

@@ -40,8 +40,19 @@ function createServiceClient() {
 async function emailLookup(): Promise<Map<string, string>> {
   const service = createServiceClient()
   if (!service) return new Map()
-  const { data } = await service.auth.admin.listUsers({ page: 1, perPage: 1000 })
-  return new Map((data?.users || []).map((u) => [u.id, u.email || '']))
+  const map = new Map<string, string>()
+  const perPage = 1000
+  let page = 1
+  // auth.admin.listUsers paginates; keep paging until a short page is returned
+  // so the admin roster is not silently truncated at the first 1000 users.
+  for (;;) {
+    const { data } = await service.auth.admin.listUsers({ page, perPage })
+    const users = data?.users || []
+    for (const u of users) map.set(u.id, u.email || '')
+    if (users.length < perPage) break
+    page += 1
+  }
+  return map
 }
 
 function sanitizeText(value: string): string {
@@ -71,7 +82,7 @@ export async function getAdminClients() {
       .order('created_at', { ascending: false }),
     supabase.from('org_members').select('user_id, org_id, role'),
     supabase.from('profiles').select('user_id, display_name, is_suspended, created_at'),
-    supabase.from('subscriptions').select('org_id, plan(name, price_monthly)'),
+    supabase.from('subscriptions').select('org_id, plan(name, price_monthly_cents)'),
   ])
 
   if (orgError || memError || profError || subError) {
@@ -92,12 +103,13 @@ export async function getAdminClients() {
         email: emailByUserId.get(m.user_id) || '',
       }))
     const sub = (subscriptions || []).find((s) => s.org_id === org.id)
-    const plan = (sub as { plan?: { name?: string; price_monthly?: number } } | undefined)?.plan
+    const plan = (sub as { plan?: { name?: string; price_monthly_cents?: number } } | undefined)?.plan
     return {
       ...org,
       members,
       plan: plan?.name || null,
-      plan_price: plan?.price_monthly ?? null,
+      plan_price:
+        plan?.price_monthly_cents != null ? Number(plan.price_monthly_cents) / 100 : null,
     }
   })
 
@@ -463,7 +475,7 @@ export async function getAdminPlans() {
   const { data, error: queryError } = await supabase
     .from('plans')
     .select('*')
-    .order('price_monthly', { ascending: true })
+    .order('price_monthly_cents', { ascending: true })
 
   if (queryError) return { error: queryError.message }
   return { plans: data }
@@ -471,7 +483,13 @@ export async function getAdminPlans() {
 
 export async function updatePlan(
   planId: string,
-  updates: { name?: string; price_monthly?: number; features?: string[] }
+  updates: {
+    name?: string
+    price_monthly_cents?: number
+    price_yearly_cents?: number
+    max_members?: number
+    features?: string[]
+  }
 ) {
   const { supabase, error } = await verifySuperAdmin()
   if (error) return { error }

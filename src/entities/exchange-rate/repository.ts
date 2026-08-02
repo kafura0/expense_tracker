@@ -1,4 +1,5 @@
 import { createClient } from '@/shared/lib/supabase/server'
+import { createServiceClient } from '@/shared/lib/supabase/service'
 import { type ExchangeRate, type ExchangeRateResponse } from './types'
 
 export async function findLatestRates(baseCurrency: string): Promise<ExchangeRate[]> {
@@ -32,8 +33,15 @@ export async function isRatesStale(baseCurrency: string): Promise<boolean> {
 }
 
 export async function upsertRates(rates: ExchangeRateResponse): Promise<void> {
-  const supabase = await createClient()
-  
+  // Written with the service-role client: the exchange_rates cache is a
+  // shared public reference table (no client write policies exist for it),
+  // and this runs server-side from the authenticated /api/rates route.
+  const service = createServiceClient()
+  if (!service) {
+    console.warn('Service client unavailable; skipping exchange rate cache write')
+    return
+  }
+
   const now = new Date().toISOString()
   
   const rateEntries = Object.entries(rates.rates).map(([target, rate]) => ({
@@ -43,7 +51,7 @@ export async function upsertRates(rates: ExchangeRateResponse): Promise<void> {
     fetched_at: now,
   }))
 
-  const { error } = await supabase
+  const { error } = await service
     .from('exchange_rates')
     .upsert(rateEntries, {
       onConflict: 'base_currency,target_currency',
