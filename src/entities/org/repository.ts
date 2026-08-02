@@ -4,7 +4,7 @@ export interface OrgMember {
   id: string
   org_id: string
   user_id: string
-  role: 'super_admin' | 'manager' | 'client'
+  role: 'super_admin' | 'member'
   created_at: string
 }
 
@@ -21,7 +21,7 @@ export interface Organization {
 export interface OrgContext {
   org_id: string
   org: Organization
-  role: 'super_admin' | 'manager' | 'client'
+  role: 'super_admin' | 'member'
 }
 
 /**
@@ -50,7 +50,7 @@ export async function resolveUserOrgs(userId: string): Promise<OrgContext[]> {
 /**
  * Get the current org context for a user.
  * Super admins get the first org or null.
- * Managers/Clients get their assigned org.
+ * Other members get their assigned org.
  */
 export async function getCurrentOrg(userId: string): Promise<OrgContext | null> {
   const orgs = await resolveUserOrgs(userId)
@@ -83,7 +83,7 @@ export async function isSuperAdmin(userId: string): Promise<boolean> {
 }
 
 /**
- * Check if user can write (manager or super_admin) in an org.
+ * Check if user can write in an org (every org member can write).
  */
 export async function canWriteInOrg(userId: string, orgId: string): Promise<boolean> {
   const supabase = await createClient()
@@ -96,7 +96,7 @@ export async function canWriteInOrg(userId: string, orgId: string): Promise<bool
     .single()
 
   if (error || !data) return false
-  return data.role === 'super_admin' || data.role === 'manager'
+  return data.role === 'super_admin' || data.role === 'member'
 }
 
 /**

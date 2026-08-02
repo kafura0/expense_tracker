@@ -5,7 +5,7 @@ import { getActiveOrgId } from '@/shared/lib/org-context'
 import { createInvite, listInvites, revokeInvite } from '@/entities/invite/repository'
 import { revalidatePath } from 'next/cache'
 
-export async function createInviteAction(email: string, role: 'manager' | 'client' = 'client') {
+export async function createInviteAction(email: string) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -25,7 +25,7 @@ export async function createInviteAction(email: string, role: 'manager' | 'clien
       return { error: 'Only organization members can invite others' }
     }
 
-    const invite = await createInvite({ org_id: orgId, email, role })
+    const invite = await createInvite({ org_id: orgId, email })
     revalidatePath('/')
     return { data: invite, error: null }
   } catch (error) {

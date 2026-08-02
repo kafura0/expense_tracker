@@ -1295,11 +1295,11 @@ function InvitesTab() {
             <p className="text-sm text-muted-foreground text-center py-8">No invites sent yet</p>
           ) : (
             <div className="space-y-2">
-              {invites.map((invite: { id: string; email: string; role: string; status: string }) => (
+              {invites.map((invite: { id: string; email: string; status: string }) => (
                 <div key={invite.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/50">
                   <div>
                     <p className="text-sm font-medium text-foreground">{invite.email}</p>
-                    <p className="text-xs text-muted-foreground">{invite.role} · {invite.status}</p>
+                    <p className="text-xs text-muted-foreground">Org Member · {invite.status}</p>
                   </div>
                   {invite.status === 'pending' && (
                     <Button variant="ghost" size="sm" onClick={() => handleRevoke(invite.id)}>

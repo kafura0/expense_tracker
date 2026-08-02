@@ -24,13 +24,13 @@ const USERS = [
     email: 'manager@ledgerly.app',
     password: 'Manager@123!',
     full_name: 'Emily Chen',
-    role_description: 'Manager — manages expenses in "Carter Enterprises", can invite clients',
+    role_description: 'Org Member — shared expenses in "Carter Enterprises", can invite members',
   },
   {
     email: 'client@ledgerly.app',
     password: 'Client@123!',
     full_name: 'David Park',
-    role_description: 'Client — views own expenses in "Carter Enterprises"',
+    role_description: 'Org Member — shared expenses in "Carter Enterprises", can invite members',
   },
   {
     email: 'solo@ledgerly.app',
@@ -230,8 +230,8 @@ async function seed() {
 
   // Memberships
   const memberships = [
-    { user_id: managerUser.id, role: 'manager' },
-    { user_id: clientUser.id, role: 'client' },
+    { user_id: managerUser.id, role: 'member' },
+    { user_id: clientUser.id, role: 'member' },
   ]
   for (const m of memberships) {
     const { error } = await supabase.from('org_members').upsert(
@@ -519,20 +519,20 @@ async function seed() {
   console.log('    Password: Admin@123456789!')
   console.log('    Access:   Full admin dashboard, all orgs')
   console.log('')
-  console.log('  ORG ADMIN (Carter Enterprises)')
+  console.log('  ORG MEMBER — FIRST (Carter Enterprises)')
   console.log('    Email:    orgadmin@ledgerly.app')
   console.log('    Password: OrgAdmin@123!')
-  console.log('    Access:   Command Center, manage members, org-wide expenses')
+  console.log('    Access:   Shared org expenses, budgets, reports, can invite')
   console.log('')
-  console.log('  MANAGER (Carter Enterprises)')
+  console.log('  ORG MEMBER (Carter Enterprises)')
   console.log('    Email:    manager@ledgerly.app')
   console.log('    Password: Manager@123!')
-  console.log('    Access:   Team Pulse, org-wide expenses + budgets')
+  console.log('    Access:   Shared org expenses, budgets, reports, can invite')
   console.log('')
-  console.log('  CLIENT (Carter Enterprises)')
+  console.log('  ORG MEMBER (Carter Enterprises)')
   console.log('    Email:    client@ledgerly.app')
   console.log('    Password: Client@123!')
-  console.log('    Access:   Own expenses + personal budget within org')
+  console.log('    Access:   Shared org expenses, budgets, reports, can invite')
   console.log('')
   console.log('  SOLO USER (No Org)')
   console.log('    Email:    solo@ledgerly.app')

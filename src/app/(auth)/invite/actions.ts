@@ -19,7 +19,6 @@ export async function getInviteDetails(token: string) {
     return {
       data: {
         email: invite.email,
-        role: invite.role,
         expires_at: invite.expires_at,
         org_name: org?.name || 'Organization',
       },

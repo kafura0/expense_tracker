@@ -219,14 +219,14 @@ export async function approveClientRequest(
     return { error: `Failed to create organization: ${orgError.message}` }
   }
 
-  // Assign money manager
+  // Add existing team member to the new org
   if (managerId) {
     await supabase
       .from('org_members')
       .upsert({
         org_id: orgId as string,
         user_id: managerId,
-        role: 'manager',
+        role: 'member',
       }, { onConflict: 'org_id,user_id' })
   }
 
@@ -368,7 +368,7 @@ export async function getAdminDashboardData() {
     supabase
       .from('org_members')
       .select('id, user_id, org_id, role')
-      .eq('role', 'manager'),
+      .neq('role', 'super_admin'),
     supabase
       .from('plans')
       .select('*'),
@@ -397,7 +397,7 @@ export async function getAdminDashboardData() {
       id: m.id || '',
       user_id: m.user_id,
       org_id: m.org_id || '',
-      role: m.role || 'manager',
+      role: m.role || 'member',
       profiles: profileByUserId.get(m.user_id) || null,
     })),
     plans: plansResult.data || [],

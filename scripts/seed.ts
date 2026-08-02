@@ -362,14 +362,14 @@ async function seedDemoClientAndOrg(managerId: string) {
   await supabase.from('org_members').insert({
     org_id: org.id,
     user_id: clientUser.user.id,
-    role: 'client',
+    role: 'member',
   })
 
-  // Assign manager
+  // Assign manager as member
   await supabase.from('org_members').insert({
     org_id: org.id,
     user_id: managerId,
-    role: 'manager',
+    role: 'member',
   })
 
   // Create subscription

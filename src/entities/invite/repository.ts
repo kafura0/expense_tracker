@@ -100,7 +100,7 @@ export async function acceptInvite(token: string, userId: string): Promise<strin
     .insert({
       org_id: invite.org_id,
       user_id: userId,
-      role: invite.role,
+      role: 'member',
     })
 
   if (memberError) throw new Error(`Failed to add to organization: ${memberError.message}`)

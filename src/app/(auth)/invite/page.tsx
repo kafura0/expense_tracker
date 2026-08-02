@@ -7,11 +7,10 @@ import { getInviteDetails, acceptInviteAction } from './actions'
 import { Card, CardContent } from '@/shared/ui/card'
 import { Button } from '@/shared/ui/button'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { Building2, Shield, Users, ArrowLeft, CheckCircle } from 'lucide-react'
+import { Building2, Users, ArrowLeft, CheckCircle } from 'lucide-react'
 
 interface InviteDetails {
   email: string
-  role: 'manager' | 'client'
   expires_at: string
   org_name: string
 }
@@ -121,14 +120,8 @@ function InviteContent() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 pt-1">
-                        {details.role === 'manager' ? (
-                          <Shield className="h-4 w-4 text-primary" />
-                        ) : (
-                          <Users className="h-4 w-4 text-muted-foreground" />
-                        )}
-                        <span className="text-sm text-muted-foreground capitalize">
-                          {details.role} role
-                        </span>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">Org Member</span>
                       </div>
                     </div>
 

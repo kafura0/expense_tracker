@@ -4,7 +4,6 @@ export const inviteSchema = z.object({
   id: z.string().uuid(),
   org_id: z.string().uuid(),
   email: z.string().email(),
-  role: z.enum(['manager', 'client']),
   token: z.string(),
   invited_by: z.string().uuid().nullable(),
   status: z.enum(['pending', 'accepted', 'revoked', 'expired']),
@@ -21,8 +20,6 @@ export const inviteInsertSchema = inviteSchema.omit({
   accepted_by: true,
   created_at: true,
   expires_at: true,
-}).extend({
-  role: z.enum(['manager', 'client']).default('client'),
 })
 
 export type Invite = z.infer<typeof inviteSchema>

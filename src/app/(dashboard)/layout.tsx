@@ -120,8 +120,7 @@ export default function DashboardLayout({
 
   const roleLabels: Record<string, string> = {
     super_admin: 'Super Admin',
-    manager: 'Org Member',
-    client: 'Org Member',
+    member: 'Org Member',
   }
 
   const prevPathname = usePrevious(pathname)
@@ -246,11 +245,9 @@ export default function DashboardLayout({
                     <span className={cn(
                       'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-200',
                       userRole === 'super_admin' && 'bg-purple-500/15 text-purple-400 ring-1 ring-purple-500/20',
-                      userRole === 'manager' && 'bg-blue-500/15 text-blue-400 ring-1 ring-blue-500/20',
-                      userRole === 'client' && 'bg-slate-500/15 text-slate-400 ring-1 ring-slate-500/20',
+                      userRole !== 'super_admin' && 'bg-primary/10 text-primary ring-1 ring-primary/20',
                     )}>
-                      {userRole === 'super_admin' && <Shield className="h-3 w-3" />}
-                      {userRole === 'manager' && <Users className="h-3 w-3" />}
+                      {userRole === 'super_admin' ? <Shield className="h-3 w-3" /> : <Users className="h-3 w-3" />}
                       {roleLabels[userRole] || userRole}
                     </span>
                   </div>

@@ -2,21 +2,19 @@
 
 import { useOrg } from '@/shared/lib/org-provider'
 import { cn } from '@/shared/lib/utils'
-import { ChevronDown, Building2, Shield, Users, Eye } from 'lucide-react'
+import { ChevronDown, Building2, Shield, Users } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 
 import type { LucideIcon } from 'lucide-react'
 
 const roleIcons: Record<string, LucideIcon> = {
   super_admin: Shield,
-  manager: Users,
-  client: Eye,
+  member: Users,
 }
 
 const roleLabels: Record<string, string> = {
   super_admin: 'Super Admin',
-  manager: 'Manager',
-  client: 'Client',
+  member: 'Org Member',
 }
 
 export function OrgSwitcher() {
