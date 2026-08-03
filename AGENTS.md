@@ -25,7 +25,7 @@ Premium SaaS expense tracker built with Next.js 16, Supabase, Tailwind CSS v4. D
 ## Supabase
 - **Project ref:** `weitlewvoufvgfpkryvg`
 - **URL:** `https://weitlewvoufvgfpkryvg.supabase.co`
-- **Migrations:** `supabase/migrations/` (11 files, 001-011)
+- **Migrations:** `supabase/migrations/` (13 files, 001-012 — note two `002_*` files exist)
 - **Schema changes:** All future Supabase schema changes MUST be applied via the **Management API** (not direct SQL/psql, not the Supabase CLI `db push`). Author the migration file under `supabase/migrations/` for versioning, then apply it through the Management API endpoint (e.g. `POST /v1/projects/{ref}/database/query`).
 - **RLS helpers:** `is_super_admin()`, `is_org_member()`, `can_write_in_org()`, `is_solo_user()`, `is_row_owner()`
 

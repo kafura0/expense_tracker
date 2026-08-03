@@ -1,96 +1,98 @@
 ---
 stepsCompleted:
   - step-01-validate-prerequisites
-  - step-02-design-epics
-  - step-03-create-stories
 inputDocuments:
-  - _bmad-output/planning-artifacts/prds/prd-expenseos-2026-07-17/prd.md
-  - _bmad-output/planning-artifacts/architecture/architecture-expenseos-2026-07-17/ARCHITECTURE-SPINE.md
+  - _bmad-output/planning-artifacts/prds/prd-expense-tracker-2026-08-03/prd.md
+  - _bmad-output/planning-artifacts/architecture/architecture-expense-tracker-2026-08-03/ARCHITECTURE-SPINE.md
+  - _bmad-output/planning-artifacts/ux-designs/ux-expense-tracker-2026-08-03/DESIGN.md
+  - _bmad-output/planning-artifacts/ux-designs/ux-expense-tracker-2026-08-03/EXPERIENCE.md
 ---
 
-# ExpenseOS - Epic Breakdown
+# expense tracker - Epic Breakdown
 
 ## Overview
 
-This document provides the complete epic and story breakdown for ExpenseOS, decomposing the requirements from the PRD, Architecture, and technical decisions into implementable stories.
+This document provides the complete epic and story breakdown for expense tracker (Ledgerly Org Administration scope), decomposing the requirements from the PRD, UX Design contract, and Architecture spine into implementable stories.
 
 ## Requirements Inventory
 
 ### Functional Requirements
 
-FR-1: Email Registration — users can create an account via email and password with verification
-FR-2: Email Login — users can log in with registered email and password
-FR-3: Password Recovery — users can request password reset via email
-FR-4: Protected Routes — unauthenticated users cannot access protected pages
-FR-5: Logout — users can log out, clearing session data
-FR-6: KPI Display — dashboard shows key metrics (total spend, transaction count, averages)
-FR-7: Monthly Trend Chart — interactive line chart showing spending over time
-FR-8: Category Insights — donut chart showing expense distribution by category
-FR-9: Recent Activity — list of last 10-20 expenses with quick actions
-FR-10: Tax Summary — summary of VAT/tax collected
-FR-11: Currency Summary — breakdown of expenses by currency with converted totals
-FR-12: Dynamic Insights — rule-based insights about spending patterns
-FR-13: Create Expense — create expenses with amount, currency, category, date, notes
-FR-14: Edit Expense — modify any field of an existing expense
-FR-15: Delete Expense — delete expenses with confirmation and soft delete
-FR-16: Undo Delete — restore recently deleted expenses within time window
-FR-17: Duplicate Expense — duplicate an expense as template for new entries
-FR-18: Search Expenses — search expenses by notes, category, or amount
-FR-19: Sort Expenses — sort expenses by date, amount, or category
-FR-20: Filter Expenses — filter by category, date range, currency, or tax status
-FR-21: Paginate Expenses — paginated list with configurable page size
-FR-22: Export Expenses — export filtered expenses to CSV or PDF
-FR-23: Currency Selection — select currency when creating expenses
-FR-24: Exchange Rate Fetching — fetch live rates from Frankfurter API with caching
-FR-25: Currency Conversion — convert expenses to base currency for reporting
-FR-26: VAT Rate Configuration — configure VAT rate in settings
-FR-27: Tax Calculation — calculate tax based on amount and configured rate
-FR-28: Tax Summary Reporting — dashboard shows total tax from taxable expenses
-FR-29: Theme Selection — switch between Light, Dark, and System themes
-FR-30: Currency Settings — set base currency for reporting
-FR-31: Profile Management — update display name and email preferences
-FR-32: PWA Preferences — configure offline behavior and notification settings
-FR-33: CSV Export — export expenses to CSV format
-FR-34: PDF Export — export expenses to professionally formatted PDF
-FR-35: PWA Manifest — web manifest for installability
-FR-36: Offline Support — core functionality available offline with sync
-FR-37: Install Prompt — prompt users to install app on supported devices
+- FR-1: Switch active org via server-validated action — `switchOrg` server action validates `org_members` membership and sets the httpOnly cookie; page reloads on success.
+- FR-2: Resolve active org with first-membership fallback — absent/invalid cookie resolves to earliest-`created_at` membership via `ensureActiveOrg` server action writing the cookie; no-membership resolves to null (RLS returns no rows).
+- FR-3: Clear active org on logout — `logout` deletes the `ledgerly_active_org` cookie.
+- FR-4: Show org switcher on every org surface — sidebar switcher visible on all protected org pages when >1 membership; hidden at ≤1; never rendered for `super_admin`.
+- FR-5: Assign org_admin role — `org_members.role` accepts `super_admin | org_admin | member`; Org Admin promotes/demotes members subject to FR-6; data-write permissions stay uniform.
+- FR-6: Preserve last Org Admin — system refuses to demote or remove the last remaining Org Admin.
+- FR-7: View roster — Org Admin views name, email (service-role lookup), role, membership since, status; non-admins do not see the surface.
+- FR-8: Remove a member — revokes membership (delete `org_members` row), blocks org data access; data stays in org; middleware no-access redirect for members with no remaining membership; audit-logged.
+- FR-9: Re-role a member — promote `member`→`org_admin` and demote `org_admin`→`member`, subject to FR-6; audit-logged with actor id.
+- FR-10: Member status visibility — roster reflects `profiles.is_suspended` with a status badge; suspension is platform-only in v1.
+- FR-11: Send invite (org admin only) — create pending Invite with unique ≥32-byte token, 7-day expiry; duplicate-pending rejected; member role cannot create.
+- FR-12: Email the join link — transactional provider (Resend) with dev logged no-op; one email per create/resend; link `/invite?token=<token>`.
+- FR-13: Accept invite — binds token to JWT email (case-insensitive), inserts membership, migrates `org_id IS NULL` rows, marks `accepted`, sets active-org cookie; runs against corrected `accept_invite` RPC (FR-30); succeeds exactly once.
+- FR-14: Solo-data migration is explicit — join confirmation states "your existing expenses will move into this organization"; solo visibility ends after acceptance.
+- FR-15: Revoke & resend invites — revoke sets `revoked`; resend resets expiry +7 days and re-emails; member role can do neither.
+- FR-16: Expired invites — expired tokens read as `expired`, cannot be accepted; "link expired — ask for a new invite" state.
+- FR-17: Edit org profile — Org Admin edits organization name/slug; slug validated for uniqueness and format.
+- FR-18: Set org-wide defaults — base currency (supported list) + VAT (0-100); members without a personal override inherit; VAT applies to NEW entries only (no retro-rewrite).
+- FR-19: Personal overrides are per-field — currency or VAT override independently.
+- FR-20: Org settings access control — only Org Admins mutate org-wide settings; members read them.
+- FR-21: Review request queue — Platform Admin sees all `client_requests` newest-first with status filter; non-super-admins denied.
+- FR-22: Approve with plan assignment — approval creates user (if new), org, membership, active subscription, marks request approved; optional "assign as Org Admin" (first-admin bootstrap, FR-34); supersedes `approve_client_request` RPC.
+- FR-23: Reject a request — records reviewer + timestamp; no user/org created; re-approval impossible; re-submission after rejection creates a new pending row.
+- FR-24: View plans — Platform Admin sees all Plans with price + member/expense limits.
+- FR-25: Edit plan pricing — update monthly/yearly price in cents; negative/non-numeric rejected; audit-logged.
+- FR-26: Per-org subscription view — Clients shows each org's plan + status; Platform Admin can change an org's plan (new action); audit-logged.
+- FR-27: Record sensitive actions — audit entry for membership add/remove, role change, org settings change, invite send/revoke/accept, org status change, plan change, request review; insert-only via FR-33 path.
+- FR-28: Browse & filter audit log — Platform Admin filters by actor, action type, org, date range; newest-first; paginated.
+- FR-29: Org-admin visibility (scoped) — Org Admin reads only own-org audit rows; plain members cannot read; Platform Admin sees all orgs.
+- FR-30: Correct `accept_invite` — migration 013 fixes the `UPDATE` targeting the nonexistent `expense_settings` to `settings`; membership insert, row migration, status flip commit atomically.
+- FR-31: Close roster & invite RLS escalation — replace `FOR ALL USING (can_write_in_org())` policies on `org_members`/`invites` with `can_admin_org()`-gated policies + `super_admin` carve-out; no self-insert to `super_admin`.
+- FR-32: `can_admin_org` boundary and `/admin` guard — SECURITY DEFINER helper true for `org_admin` + `super_admin` memberships of active org; does NOT grant `/admin`; `super_admin` rows out of org-admin scope.
+- FR-33: Audit write authorization and tamper evidence — single SECURITY DEFINER logging RPC; client/anon inserts revoked; UPDATE/DELETE revoked; org-member SELECT narrowed to `can_admin_org`; exactly one audit implementation.
+- FR-34: Approval creates users + first-admin bootstrap and backfill — approval creates user (service-role), org, membership, active subscription; approver checkbox sets `org_admin` else `member`; migration 013 backfills earliest-`created_at` member to `org_admin` for existing orgs.
 
 ### Non-Functional Requirements
 
-NFR-1: Authentication flow must complete within 2 seconds
-NFR-2: Password requirements: minimum 8 characters, at least one number and one letter
-NFR-3: Dashboard must load within 2 seconds on 3G connection
-NFR-4: Charts must be accessible (keyboard navigation, screen reader labels)
-NFR-5: Exchange rate API timeout: 5 seconds
-NFR-6: Exchange rate cache hit rate target: >80%
-NFR-7: Graceful degradation when currency API unavailable
-NFR-8: WCAG accessibility compliance (zero critical violations)
-NFR-9: All data writes through Server Actions — never direct DB from client
-NFR-10: RLS policies on all tables — users access only their own data
-NFR-11: Amounts stored as integer cents to avoid float precision issues
-NFR-12: Dates stored as timestamptz ISO 8601 UTC
+- NFR-1: Auditability — every mutation FR covered by FR-27; audit writes go through the authorized write path (FR-33) within the mutation's server action.
+- NFR-2: Security — all admin/server mutations validate `auth.getUser()`, verify membership + role server-side, never trust client-supplied org ids; active org is a single httpOnly cookie, deleted on logout.
+- NFR-3: Performance — roster and audit queries paginated; audit log browse under 500ms p95 at 10k+ rows (index on `(user_id, action, org_id, created_at)`).
+- NFR-4: Accessibility — Members/Invite/Admin surfaces meet the existing WCAG bar: keyboard navigable, visible focus rings, Radix dialogs/menus, real `<table>` markup, `aria-describedby` error association, WCAG AA contrast.
+- NFR-5: Observability — every outbound invite email logged with send id + status for delivery diagnosis.
+- NFR-6: RLS is the authoritative data boundary; app-level checks are defense-in-depth only.
+- NFR-7: Server actions are the only path to mutate org membership, roles, settings, plans, and audit rows.
 
 ### Additional Requirements (from Architecture)
 
-AR-1: Feature-Sliced Design — code organized into app/, widgets/, features/, entities/, shared/, processes/
-AR-2: Server Actions as mutation boundary — no direct DB access from client components
-AR-3: Route Handlers for external API proxies and file generation only
-AR-4: Zod schemas as single validation source — shared between client and server
-AR-5: TanStack Query for all server state — React Context only for UI state
-AR-6: VAT engine as pure service function in shared/lib/
-AR-7: Exchange rate service with cache fallback — DB cache, 1 hour TTL
-AR-8: Server Components by default — client components only where interactivity required
-AR-9: Business logic in shared/lib/ — vat.ts, currency.ts, date.ts, format.ts, export/
-AR-10: Entity repositories in entities/<name>/repository.ts encapsulating DB access
-AR-11: RLS policies on all tables — user_id = auth.uid()
-AR-12: Supabase SSR for session management
-AR-13: Amounts stored as integer cents
-AR-14: UUID v4 for all entity IDs
+- AR-1: Server actions are the only mutation boundary; repositories (`entities/*/repository.ts`) and `shared/lib` are read-only builders and may write only when invoked from inside a server action (AD-1).
+- AR-2: RLS authoritative; new SECURITY DEFINER `can_admin_org(org_id)` helper; `org_admin` is a plain `org_members.role` value, no separate table (AD-2, AD-4).
+- AR-3: Active-org tenancy = single httpOnly cookie `ledgerly_active_org`, written only by server code; switching triggers full-page reload; `ensureActiveOrg` (read surface `getActiveOrgIdAction`) repins earliest-`created_at` membership on absent/invalid/stale cookie; logout clears the cookie before `signOut` (AD-3, FR-1/2/3).
+- AR-4: Migration 013 authored under `supabase/migrations/` and applied via the Management API (prefer `database/migrations` endpoint, fall back to `database/query`); never `db push` (AD-2 convention).
+- AR-5: Single audit logging RPC (SECURITY DEFINER, insert-only, re-derives actor server-side); service-role key revoked from `audit_logs`; canonical migration-002 schema shape; pinned action vocabulary; all existing write sites migrated (AD-6).
+- AR-6: Join/approval sequence is `createUser (GoTrue, outside DB txn) → DB commit → email after both succeed`; `accept_invite` settings write uses `ON CONFLICT (user_id, org_id) DO UPDATE` per-field merge (AD-5).
+- AR-7: Mailer module (`shared/lib/mailer`) behind transactional provider (Resend); `DEV_EMAIL_*` logged no-op; send-id logged and correlated to request/invite rows (AD-7).
+- AR-8: Org-wide defaults on `organizations.default_currency` / `default_vat_rate` columns; single effective-value resolver precedence: org default → personal override → per-entry value (AD-8).
+- AR-9: Member emails resolved only via service-role `auth.admin.listUsers` matching; no `profiles.email` column; no direct SQL against `auth.users` (AD-9).
+- AR-10: `/admin` guard requires `role = 'super_admin'` only; org_admin cannot reach `/admin`; `/no-access` reserved for users with no membership; members with other memberships return to `/dashboard` for repin (AD-4).
+- AR-11: Pinned stack — Next.js 16.2.10 (Turbopack), React 19.2.4, TypeScript ^5, Tailwind v4, @supabase/ssr ^0.6.1 + supabase-js ^2.49.1, zod ^3.24.1, react-hook-form, TanStack Query ^5.64.1, Radix primitives, cva, date-fns, recharts ^2.15.0, lucide-react, Vitest ^4.1.10, ESLint 9; Resend SDK new in scope (AD-11 stack).
+- AR-12: UI must reuse the existing token + component system; no new hex colors; deprecated Material tokens forbidden (DESIGN.md).
 
 ### UX Design Requirements
 
-(None — no UX design contract exists yet)
+- UX-DR1: Roster table (Member / Email / Role chip / Member since / Status / row menu) with mobile card-list fallback per the Admin Users pattern; `super_admin` rows render no row menu.
+- UX-DR2: Invite pending list with email, status badge, expiry, inline Revoke/Resend outline buttons; duplicate-pending inline error; expired invites show warning badge.
+- UX-DR3: Requests queue (card-per-request) with Approve Dialog (plan `Select` + "Assign as Org Admin" checkbox) and Reject inline confirm; Requests tab badge decrements after decision.
+- UX-DR4: Plans editor table with numeric cents price inputs and per-row Save; per-org subscription plan `Select` in the Clients tab accordion.
+- UX-DR5: Audit log filter bar (actor, action, org, date range) above a newest-first table with pagination; monospace timestamps; org-admin reads scoped to own org.
+- UX-DR6: Org settings form (name/slug + currency `Select` with "members default" helper + VAT input); per-field "use org default" affordance on personal Currency/VAT cards.
+- UX-DR7: No-access state route (`/no-access`) — EmptyState-style block with "You don't have access to this workspace" + "Back to login".
+- UX-DR8: Role/status badge semantics reusing the existing Badge vocabulary — Org Admin emerald chip, Super Admin purple chip, active/suspended/pending/approved/rejected/expired badges; no new tokens.
+- UX-DR9: OrgSwitcher behavioral contract — never for `super_admin`, hidden at ≤1 membership, panel opens upward, switch = full reload (no optimistic UI).
+- UX-DR10: Accessibility floor — keyboard-reachable controls, visible focus ring, Radix-managed focus trap/Esc, badges never the sole status indicator, real table semantics, `aria-describedby` error association, WCAG AA contrast.
+- UX-DR11: State patterns — PageLoader for page fetches, Skeleton rows for tables, EmptyState for empty surfaces, ErrorState with retry, inline field errors, permission-denied = controls hidden (never disabled-only).
+- UX-DR12: Interaction primitives — destructive actions behind confirm dialogs stating "This action cannot be undone"; DropdownMenu for dense rows; controlled forms calling server actions with toast + revalidate.
+- UX-DR13: Responsive/mobile — tables collapse to card lists, forms stack full-width, dialogs `max-h-[90vh] overflow-y-auto`, PWA safe-area handling, toast offset `bottom-20 md:bottom-4`.
 
 ### FR Coverage Map
 
@@ -100,267 +102,27 @@ AR-14: UUID v4 for all entity IDs
 
 (To be completed)
 
-## Epic 1: Project Foundation & Auth
+<!-- Repeat for each epic in epics_list (N = 1, 2, 3...) -->
 
-**Goal:** Scaffold the ExpenseOS project with FSD architecture, database schema, and full authentication flow.
+## Epic {{N}}: {{epic_title_N}}
 
-### Story 1.1: Initialize Next.js Project with FSD Structure
+{{epic_goal_N}}
 
-As a developer,
-I want to scaffold the Next.js 15 project with Feature-Sliced Design directory structure and all dependencies installed,
-So that the codebase has a consistent, scalable architecture from day one.
+<!-- Repeat for each story (M = 1, 2, 3...) within epic N -->
 
-**Acceptance Criteria:**
-- Next.js 15 project created with App Router
-- FSD directory structure in place: app/, widgets/, features/, entities/, shared/, processes/
-- All dependencies installed: TailwindCSS, shadcn/ui, Supabase JS, TanStack Query, Zod, React Hook Form, Framer Motion, Recharts, date-fns, Lucide React
-- TypeScript strict mode enabled
-- TailwindCSS configured with design tokens
+### Story {{N}}.{{M}}: {{story_title_N_M}}
 
-### Story 1.2: Configure Supabase Database Schema
-
-As a developer,
-I want to create the PostgreSQL schema with all tables, indexes, constraints, and RLS policies,
-So that the data layer is ready for feature implementation.
+As a {{user_type}},
+I want {{capability}},
+So that {{value_benefit}}.
 
 **Acceptance Criteria:**
-- Tables created: profiles, categories, expenses, settings, exchange_rates
-- UUID primary keys on all tables
-- user_id foreign key to auth.users on all tables
-- RLS policies: user_id = auth.uid() on all tables
-- Indexes on: user_id, created_at, category_id, date
-- Categories seeded with defaults (Meals & Entertainment, Transport, Housing, Utilities, Shopping, Health, Education, Other)
 
-### Story 1.3: Implement Email Authentication
+<!-- for each AC on this story -->
 
-As a user,
-I want to sign up, log in, and reset my password using email,
-So that I can access my expenses securely.
+**Given** {{precondition}}
+**When** {{action}}
+**Then** {{expected_outcome}}
+**And** {{additional_criteria}}
 
-**Acceptance Criteria:**
-- Registration with email + password creates Supabase Auth user
-- Verification email sent on registration
-- Unverified users cannot access protected pages
-- Login with valid credentials redirects to dashboard
-- Invalid credentials show generic error (no user enumeration)
-- Password reset via email with expiring link
-- Logout clears session and redirects to login
-- Protected routes redirect to /login for unauthenticated users
-- Session persists across browser sessions via httpOnly cookie
-
-### Story 1.4: Create Shared UI Kit (shadcn/ui)
-
-As a developer,
-I want to initialize and customize shadcn/ui components and design tokens,
-So that all UI components follow consistent styling.
-
-**Acceptance Criteria:**
-- shadcn/ui initialized with custom theme colors
-- Base components: Button, Input, Card, Dialog, Table, Badge, Avatar, Dropdown
-- Light, Dark, and System theme support via TailwindCSS dark mode
-- Consistent spacing scale
-- Loading, empty, and error state components created
-- Toast notification system configured
-
-## Epic 2: Expense CRUD
-
-**Goal:** Build complete expense management with create, read, update, delete, search, sort, filter, pagination, and undo delete.
-
-### Story 2.1: Create Expense Entity & Repository
-
-As a developer,
-I want to create the expense entity with Zod schema, repository, and Server Actions,
-So that expense data operations are encapsulated and type-safe.
-
-**Acceptance Criteria:**
-- Zod schema for expense validation: amount (cents), currency, category_id, date, notes (optional), tax_applicable (boolean)
-- TypeScript types derived from Zod schema
-- Entity repository: findAll, findById, create, update, softDelete methods
-- Server Actions: createExpense, updateExpense, deleteExpense
-- RLS verified on all expense queries
-
-### Story 2.2: Build Expense List Page
-
-As a user,
-I want to view all my expenses in a paginated table with search, sort, and filter,
-So that I can quickly find and review my spending.
-
-**Acceptance Criteria:**
-- TanStack Table displaying expenses with columns: Date, Amount, Currency, Category, Notes
-- Search bar filters by notes, category, or amount (case-insensitive, debounced)
-- Sortable columns: date, amount, category
-- Filters: category dropdown, date range picker, currency selector, tax status toggle
-- Active filters shown as removable chips
-- Pagination with configurable page size (default 20)
-- Page state preserved during session
-- Empty state when no expenses exist
-
-### Story 2.3: Build Create & Edit Expense Forms
-
-As a user,
-I want to create and edit expenses with a form that validates my input,
-So that I can accurately record my financial transactions.
-
-**Acceptance Criteria:**
-- Create Expense form: amount, currency, category, date, notes (optional), tax_applicable toggle
-- Edit Expense form pre-populated with existing values
-- Validation: required fields marked, negative amounts rejected
-- Currency selector shows all supported currencies (KES, USD, EUR, GBP, CAD, AUD, JPY)
-- Category selector shows user's categories
-- Success toast on create/edit
-- Form errors displayed inline
-- Keyboard navigable
-
-### Story 2.4: Implement Delete, Undo Delete, and Duplicate
-
-As a user,
-I want to delete expenses with confirmation, undo deletion, and duplicate expenses,
-So that I have full control over my expense data.
-
-**Acceptance Criteria:**
-- Delete with confirmation dialog
-- Soft delete (is_deleted flag + deleted_at timestamp)
-- Toast notification with Undo button for 30 seconds
-- Undo restores expense to original position
-- Duplicate creates new expense with same fields (date defaults to today)
-- User can modify duplicated expense before saving
-
-## Epic 3: Dashboard & Analytics
-
-**Goal:** Build the premium dashboard with KPIs, charts, insights, and summaries.
-
-### Story 3.1: Build KPI Cards
-
-As a user,
-I want to see key spending metrics on my dashboard,
-So that I can quickly understand my financial health.
-
-**Acceptance Criteria:**
-- KPI cards: Total Monthly Spend, Transaction Count, Average Transaction Size
-- KPIs calculated from current month's expenses (in base currency)
-- Loading skeleton state while fetching
-- Numbers formatted with currency symbol and locale
-- Responsive grid layout (4 columns desktop, 2 tablet, 1 mobile)
-
-### Story 3.2: Build Spending Charts
-
-As a user,
-I want to see interactive charts of my spending over time and by category,
-So that I can visualize my financial patterns.
-
-**Acceptance Criteria:**
-- Monthly trend line chart (Recharts) — last 6 months
-- Category donut chart — distribution by category for current month
-- Hover on chart shows exact amounts
-- Clicking category segment filters the recent activity list
-- Charts are keyboard navigable and have screen reader labels
-- Responsive resize handling
-- Empty state when no data
-
-### Story 3.3: Build Recent Activity & Insights
-
-As a user,
-I want to see my recent transactions and spending insights on the dashboard,
-So that I can take action on my latest expenses.
-
-**Acceptance Criteria:**
-- Recent Activity list: last 10 expenses sorted by date descending
-- Quick actions: edit, delete from activity list
-- Dynamic Insights section: rule-based observations (e.g., "Spent 20% more on dining this month")
-- Tax Summary card: total VAT/tax from taxable expenses
-- Currency Summary card: breakdown by currency with converted totals
-
-## Epic 4: Multi-Currency & VAT Engine
-
-**Goal:** Implement currency conversion with live rates and configurable VAT/tax engine.
-
-### Story 4.1: Implement Exchange Rate Service
-
-As a developer,
-I want to create the currency exchange service with Frankfurter API integration and caching,
-So that expenses can be converted between currencies reliably.
-
-**Acceptance Criteria:**
-- Exchange rate service fetches from Frankfurter API
-- Rates cached in exchange_rates table (1 hour TTL)
-- Fallback to stale cache when API fails
-- Manual refresh button available
-- API timeout: 5 seconds
-- Supported currencies: KES, USD, EUR, GBP, CAD, AUD, JPY
-- Route Handler: GET /api/rates?base=USD
-
-### Story 4.2: Build Currency Conversion on Expenses
-
-As a user,
-I want expenses in foreign currencies to be converted to my base currency,
-So that I can see my total spending in a currency I understand.
-
-**Acceptance Criteria:**
-- Currency selector on expense create/edit shows all supported currencies
-- Stored amount: original currency amount + cents
-- Converted amount: base currency equivalent calculated at creation
-- Dashboard summaries use base currency
-- Display original amount alongside converted amount
-- Precision: 2 decimal places for display, integer cents for storage
-
-### Story 4.3: Implement VAT/Tax Engine
-
-As a user,
-I want configurable VAT/tax applied to my expenses,
-So that I can track tax-eligible spending accurately.
-
-**Acceptance Criteria:**
-- VAT engine: pure function calculateVAT(amount, rate) returns { tax, total }
-- Tax shown alongside expense amount when tax_applicable = true
-- Total tax summary on dashboard
-- VAT rate configured in Settings (default 16%)
-- Rate changes apply to new expenses only
-- Historical expenses retain original rate
-
-## Epic 5: Settings, Export & PWA
-
-**Goal:** Build settings page, data export features, and PWA capabilities.
-
-### Story 5.1: Build Settings Page
-
-As a user,
-I want to configure my preferences including theme, currency, VAT, and profile,
-So that the app works the way I want.
-
-**Acceptance Criteria:**
-- Theme selector: Light, Dark, System (applies immediately, persists across sessions)
-- Base currency selector (changes affect dashboard calculations)
-- VAT rate configuration
-- Profile: display name, avatar upload (Supabase Storage)
-- Form validation on all settings
-- Changes saved via Server Actions
-
-### Story 5.2: Implement CSV and PDF Export
-
-As a user,
-I want to export my expenses as CSV or PDF,
-So that I can share or archive my financial records.
-
-**Acceptance Criteria:**
-- CSV export: Date, Amount, Currency, Category, Notes, Tax columns
-- PDF export: professional financial statement format with header, user name, date range
-- Export respects active filters
-- Downloads triggered immediately
-- Page numbers on multi-page PDF
-- UTF-8 encoding
-
-### Story 5.3: Implement PWA Support
-
-As a user,
-I want to install ExpenseOS on my device and use it offline,
-So that I can track expenses without internet access.
-
-**Acceptance Criteria:**
-- Web manifest with app name, icons, theme colors
-- Service worker registered for offline support
-- Start URL points to dashboard
-- Display mode: standalone
-- Install prompt appears after 3 sessions (dismissable)
-- Core functionality works offline (view expenses)
-- Mutations queued for sync when back online
-- Responsive icons for all device sizes
+<!-- End story repeat -->
