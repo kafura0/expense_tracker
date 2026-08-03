@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/shared/lib/supabase/server'
+import { clearActiveOrgId } from '@/shared/lib/org-context'
 import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
 import { clientRequestSchema } from '@/entities/org/schema'
 
@@ -107,6 +108,7 @@ export async function requestAccess(formData: FormData) {
 export async function logout() {
   const supabase = await createClient()
   await supabase.auth.signOut()
+  await clearActiveOrgId()
   redirect('/login')
 }
 

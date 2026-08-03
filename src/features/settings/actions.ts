@@ -2,6 +2,7 @@
 
 import { createClient } from '@/shared/lib/supabase/server'
 import { getActiveOrgId } from '@/shared/lib/org-context'
+import { SUPPORTED_CURRENCIES } from '@/entities/exchange-rate/types'
 import { revalidatePath } from 'next/cache'
 
 export interface UserSettings {
@@ -58,8 +59,8 @@ export async function getSettings(): Promise<UserSettings> {
     settingsQuery = settingsQuery.is('org_id', null)
   }
 
-  const { data: profile } = await profileQuery.single()
-  const { data: settings } = await settingsQuery.single()
+  const { data: profile } = await profileQuery.maybeSingle()
+  const { data: settings } = await settingsQuery.maybeSingle()
 
   return {
     theme: (settings?.theme as 'light' | 'dark' | 'system') || 'dark',
@@ -92,12 +93,18 @@ export async function updateSettings(settings: Partial<UserSettings>) {
 
   const settingsUpdate: Record<string, string | number> = {}
   if (settings.theme !== undefined) settingsUpdate.theme = settings.theme
-  if (settings.base_currency !== undefined) settingsUpdate.base_currency = settings.base_currency
-  if (settings.vat_rate !== undefined) {
-    if (settings.vat_rate < 0 || settings.vat_rate > 100) {
-      return { error: 'VAT rate must be between 0 and 100' }
+  if (settings.base_currency !== undefined) {
+    if (!SUPPORTED_CURRENCIES.includes(settings.base_currency as (typeof SUPPORTED_CURRENCIES)[number])) {
+      return { error: 'Unsupported currency' }
     }
-    settingsUpdate.vat_rate = settings.vat_rate
+    settingsUpdate.base_currency = settings.base_currency
+  }
+  if (settings.vat_rate !== undefined) {
+    const vatRate = Number(settings.vat_rate)
+    if (Number.isNaN(vatRate) || vatRate < 0 || vatRate > 100) {
+      return { error: 'VAT rate must be a number between 0 and 100' }
+    }
+    settingsUpdate.vat_rate = vatRate
   }
 
   if (Object.keys(settingsUpdate).length > 0) {

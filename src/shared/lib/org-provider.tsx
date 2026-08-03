@@ -8,15 +8,16 @@
  * ROLE IN THE ARCHITECTURE:
  * This provider sits at the top of the component tree and:
  * 1. Fetches all org memberships for the current user on mount
- * 2. Determines the active org from the server-side cookie (via server action)
+ * 2. Determines the active org from the server-side httpOnly cookie (via server action)
  * 3. Provides org data + switchOrg function to all child components
  * 4. Syncs the active org between server and client state
  *
  * COOKIE SYNC:
- * - Server sets the cookie via httpOnly (secure, not readable by JS)
+ * - The active org lives ONLY in a server-set httpOnly cookie (not readable by JS)
  * - This provider reads it via server action (authenticated, server-side)
- * - When user switches org, this provider calls switchOrg() server action
- * - Server action sets the new cookie, then we reload to refetch all data
+ * - When the user switches org, this provider calls the switchOrg() server action
+ * - The server action validates membership and sets the new httpOnly cookie, then
+ *   we reload to refetch all data
  *
  * WHY FULL PAGE RELOAD ON SWITCH:
  * Every component in the app has its own React Query cache keyed by org_id.
@@ -27,11 +28,9 @@
  * This is the safest approach for data consistency across the entire app.
  */
 
-'use client'
-
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/shared/lib/supabase/client'
-import { getActiveOrgIdAction } from '@/shared/lib/org-actions'
+import { getActiveOrgIdAction, switchOrg as switchOrgAction } from '@/shared/lib/org-actions'
 
 /**
  * Represents an organization the user belongs to.
@@ -160,7 +159,6 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
      * Determine the active org:
      * 1. Try reading from the server action (which reads the httpOnly cookie)
      * 2. If no cookie or invalid cookie, fall back to the first org
-     * 3. Ensure the cookie is set for the next page load
      */
     const activeOrgId = await getActiveOrgIdAction()
 
@@ -170,21 +168,6 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
 
     if (active) {
       setActiveOrg(active)
-      /**
-       * If the cookie is missing or points to a different org,
-       * update it. This handles the case where:
-       * - User's first login (no cookie yet)
-       * - User was removed from the org in the cookie
-       * - Cookie expired
-       *
-       * NOTE: We set a non-httpOnly cookie here for the client to read on next mount.
-       * The server-side cookie (setActiveOrgId) is httpOnly for security.
-       * This dual-cookie approach ensures both server and client can access the org_id.
-       * The server action provides the authoritative value; this is a convenience cache.
-       */
-      if (!activeOrgId || activeOrgId !== active.org_id) {
-        document.cookie = `ledgerly_active_org=${active.org_id}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`
-      }
     } else {
       setActiveOrg(null)
     }
@@ -202,46 +185,23 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
    * Switch to a different organization.
    *
    * SECURITY FLOW:
-   * 1. Call switchOrg() server action — it validates the user's membership
+   * 1. Call the switchOrg() server action — it authenticates the user and
+   *    validates their membership in the target org
    * 2. If validation passes, the server sets the httpOnly cookie
-   * 3. We also set a client-readable cookie for the OrgProvider on next mount
-   * 4. Reload the page to ensure all React Query caches are invalidated
+   * 3. Reload the page so all React Query caches are invalidated
    *
-   * The full page reload is intentional — it guarantees that every component
-   * re-renders with the new org context, preventing stale data display.
+   * No client-side cookie is ever written — the httpOnly cookie is the single
+   * source of truth, and org membership is validated server-side only.
    */
   const switchOrg = useCallback(async (orgId: string) => {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    // Client-side validation (defense-in-depth — server action also validates)
-    const { data: membership } = await supabase
-      .from('org_members')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('org_id', orgId)
-      .single()
-
-    if (!membership) {
-      throw new Error('You do not have access to this organization')
+    const result = await switchOrgAction(orgId)
+    if (result.error) {
+      throw new Error(result.error)
     }
 
-    const org = orgs.find(o => o.org_id === orgId)
-    if (!org) return
-
-    /**
-     * Set client-readable cookie for the OrgProvider on next mount.
-     * The server action also sets an httpOnly cookie for server-side security.
-     * This dual approach ensures both server components and client components
-     * can resolve the active org_id.
-     */
-    document.cookie = `ledgerly_active_org=${orgId}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`
-    setActiveOrg(org)
-
-    // Reload to refetch all data with new org context
+    // Reload to refetch all data with the new org context
     window.location.reload()
-  }, [orgs])
+  }, [])
 
   const refreshOrgs = useCallback(async () => {
     setLoading(true)
