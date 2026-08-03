@@ -1,6 +1,9 @@
 ---
 stepsCompleted:
   - step-01-validate-prerequisites
+  - step-02-design-epics
+  - step-03-create-stories
+  - step-04-final-validation
 inputDocuments:
   - _bmad-output/planning-artifacts/prds/prd-expense-tracker-2026-08-03/prd.md
   - _bmad-output/planning-artifacts/architecture/architecture-expense-tracker-2026-08-03/ARCHITECTURE-SPINE.md
@@ -96,33 +99,551 @@ This document provides the complete epic and story breakdown for expense tracker
 
 ### FR Coverage Map
 
-(To be completed after epic design)
+FR-1: Epic 2 — Switch active org via server-validated action
+FR-2: Epic 2 — Resolve active org with first-membership fallback
+FR-3: Epic 2 — Clear active org on logout
+FR-4: Epic 2 — Show org switcher on every org surface
+FR-5: Epic 3 — Assign org_admin role
+FR-6: Epic 3 — Preserve last Org Admin
+FR-7: Epic 3 — View roster
+FR-8: Epic 3 — Remove a member
+FR-9: Epic 3 — Re-role a member
+FR-10: Epic 3 — Member status visibility
+FR-11: Epic 4 — Send invite (org admin only)
+FR-12: Epic 4 — Email the join link
+FR-13: Epic 4 — Accept invite
+FR-14: Epic 4 — Solo-data migration is explicit
+FR-15: Epic 4 — Revoke & resend invites
+FR-16: Epic 4 — Expired invites
+FR-17: Epic 5 — Edit org profile
+FR-18: Epic 5 — Set org-wide defaults
+FR-19: Epic 5 — Personal overrides are per-field
+FR-20: Epic 5 — Org settings access control
+FR-21: Epic 6 — Review request queue
+FR-22: Epic 6 — Approve with plan assignment
+FR-23: Epic 6 — Reject a request
+FR-24: Epic 6 — View plans
+FR-25: Epic 6 — Edit plan pricing
+FR-26: Epic 6 — Per-org subscription view
+FR-27: Epic 6 — Record sensitive actions
+FR-28: Epic 6 — Browse & filter audit log
+FR-29: Epic 6 — Org-admin visibility (scoped)
+FR-30: Epic 1 — Correct `accept_invite` (join flow executable)
+FR-31: Epic 1 — Close roster & invite RLS escalation
+FR-32: Epic 1 — `can_admin_org` boundary and `/admin` guard
+FR-33: Epic 1 — Audit write authorization and tamper evidence
+FR-34: Epic 1 — Approval creates users + first-admin bootstrap and backfill
 
 ## Epic List
 
-(To be completed)
+### Epic 1: Org Administration Foundation (Correctness & Security)
+Migration 013 lands: the join flow, roster/invite RLS, org-admin boundary, audit write path, and approval bootstrap all work as specced — before any feature is built on them.
+**FRs covered:** FR-30, FR-31, FR-32, FR-33, FR-34
 
-<!-- Repeat for each epic in epics_list (N = 1, 2, 3...) -->
+### Epic 2: Org Switching & Tenancy
+Multi-org users can safely switch between organizations; the active org always resolves correctly and never leaks across sessions.
+**FRs covered:** FR-1, FR-2, FR-3, FR-4
 
-## Epic {{N}}: {{epic_title_N}}
+### Epic 3: Org Admin Role & Roster Management
+Org Admins can view the member roster, remove members, and promote/demote roles — with the last-admin guard and full audit trail.
+**FRs covered:** FR-5, FR-6, FR-7, FR-8, FR-9, FR-10
 
-{{epic_goal_N}}
+### Epic 4: Invites & Joining
+Org Admins invite members by email (7-day, single-use tokens with real delivery); invitees join without losing existing data.
+**FRs covered:** FR-11, FR-12, FR-13, FR-14, FR-15, FR-16
 
-<!-- Repeat for each story (M = 1, 2, 3...) within epic N -->
+### Epic 5: Org Settings & Shared Defaults
+Org Admins set org-wide name/slug, currency, and VAT defaults; members inherit them with per-field personal overrides.
+**FRs covered:** FR-17, FR-18, FR-19, FR-20
 
-### Story {{N}}.{{M}}: {{story_title_N_M}}
+### Epic 6: Admin Console — Requests, Plans & Audit
+Platform Admins review and approve client requests with plan assignment, manage plan pricing and per-org subscriptions, and investigate via a tamper-evident audit trail.
+**FRs covered:** FR-21, FR-22, FR-23, FR-24, FR-25, FR-26, FR-27, FR-28, FR-29
 
-As a {{user_type}},
-I want {{capability}},
-So that {{value_benefit}}.
+## Epic 1: Org Administration Foundation (Correctness & Security)
+
+**Goal:** Migration 013 lands so the join flow, roster/invite RLS, org-admin boundary, audit write path, and approval bootstrap all work as specced before any feature is built on them. Ships the primitives later epics build on.
+
+### Story 1.1: Add `can_admin_org` helper and close roster/invite RLS escalation
+
+As a security-conscious developer,
+I want migration 013 to add the `can_admin_org(org_id)` SECURITY DEFINER helper and replace the uniform-write policies on `org_members` and `invites` with `can_admin_org`-gated policies plus a `super_admin` carve-out,
+So that only org admins (and platform staff) can mutate membership and invite rows, and no member can self-escalate.
 
 **Acceptance Criteria:**
 
-<!-- for each AC on this story -->
+**Given** migration 013 has been applied (via the Management API, never `db push`)
+**When** a `member`-role user attempts to INSERT, UPDATE, or DELETE a row in `org_members` or `invites` for their org
+**Then** RLS rejects the write (zero rows affected)
 
-**Given** {{precondition}}
-**When** {{action}}
-**Then** {{expected_outcome}}
-**And** {{additional_criteria}}
+**And** a `member`-role user attempting to insert a row with `role = 'super_admin'` fails — `is_super_admin()` cannot be reached by self-insertion (FR-31, FR-32)
 
-<!-- End story repeat -->
+**And** an `org_admin` of an active org can mutate roster and invite rows in their org (FR-31)
+
+**And** a platform `super_admin` can mutate roster and invite rows in any org (FR-31 carve-out)
+
+**And** `can_admin_org` is a SECURITY DEFINER STABLE helper; app-level checks remain defense-in-depth only (AR-2)
+
+**And** Vitest/integration tests cover member-vs-admin RLS boundaries and the self-escalation attempt (FR-31, R1)
+
+### Story 1.2: Correct the `accept_invite` RPC for an atomic join
+
+As a developer,
+I want migration 013 to fix the `accept_invite` RPC — correcting the `UPDATE` on the nonexistent `expense_settings` table to `settings`, and making membership insert, row migration (profiles, categories, expenses, settings), and status flip commit in one transaction with an `ON CONFLICT (user_id, org_id)` per-field merge for settings,
+So that joining an organization succeeds exactly once without partial state or constraint violations.
+
+**Acceptance Criteria:**
+
+**Given** a valid pending invite
+**When** the invitee's join is processed through the corrected RPC
+**Then** all steps commit atomically — no statement references a nonexistent relation (`settings`, never `expense_settings`) (FR-30)
+
+**And** re-joining a member who previously left does not violate the `settings` uniqueness constraint (per-field `ON CONFLICT` merge, AD-5)
+
+**And** a regression test over migration 013 proves single-transaction commit (FR-30)
+
+### Story 1.3: Authorize audit writes with a single tamper-evident logging RPC
+
+As a developer,
+I want migration 013 to provide a single SECURITY DEFINER audit logging RPC (insert-only, re-deriving the actor server-side) plus the app's `shared/lib/audit-logger.ts` rewritten onto it, with client/anon inserts and all UPDATE/DELETE revoked and the org-member SELECT policy narrowed to `can_admin_org`,
+So that audit rows are append-only, attributable, and readable by exactly the right roles.
+
+**Acceptance Criteria:**
+
+**Given** an org-admin action (e.g. role change) triggers the audit logger
+**When** the logger calls the SECURITY DEFINER logging RPC
+**Then** a retrievable entry is written with actor, action, target, timestamp, and outcome (FR-27, FR-33)
+
+**And** a direct client insert or a DELETE on `audit_logs` fails (revoked); the service-role key has no write path to the table (FR-33, AD-6)
+
+**And** a plain `member` can neither read nor write audit rows; an `org_admin` reads only own-org rows; `super_admin` reads all (FR-29, FR-33)
+
+**And** exactly one audit implementation exists in the codebase (the previous direct repository insert is migrated off) (FR-33)
+
+**And** the audit row schema matches the migration-002 canonical shape (`org_id, user_id, action, entity_type, entity_id, old_value, new_value`) with a pinned action vocabulary (AD-6)
+
+### Story 1.4: Backfill first Org Admin for existing organizations
+
+As a developer,
+I want migration 013 to promote the earliest-`created_at` member to `org_admin` in every existing organization (and ensure new orgs get one at approval),
+So that every org has exactly one designated Org Admin at launch.
+
+**Acceptance Criteria:**
+
+**Given** migration 013 runs against existing seeded and pre-existing orgs
+**When** the backfill completes
+**Then** every existing org has at least one `org_admin` — the earliest-`created_at` member, deterministically chosen (FR-34)
+
+**And** orgs with zero members are unaffected; new orgs receive their admin via the approval path (FR-34)
+
+**And** the backfill is idempotent (re-running does not duplicate promotions) and audit-logged where applicable (FR-34)
+
+### Story 1.5: Provision users, orgs, and subscriptions via a service-role action
+
+As a developer,
+I want a server-side service-role provisioning primitive that creates a user if none exists, then the org, the membership (with configurable first-admin role), and an `active` subscription in one flow, with email sent only after both commit,
+So that the approval path can create working organizations for new clients and the primitive supersedes the shipped `approve_client_request` RPC for new users.
+
+**Acceptance Criteria:**
+
+**Given** an approved client request with no existing account
+**When** the provisioning primitive runs
+**Then** it creates the user, the org, the membership, and the `active` subscription; the sequence is `createUser (GoTrue) → DB commit → email only after both succeed` (FR-34, AD-5, AD-7)
+
+**And** the new owner's role is `org_admin` when the approver checked "assign as Org Admin", otherwise `member` (FR-34)
+
+**And** the role assignment is deterministic and audit-logged (FR-34)
+
+**And** the shipped `approve_client_request` RPC is superseded for the new-user path and no longer the source of truth (FR-22, FR-34)
+
+## Epic 2: Org Switching & Tenancy
+
+**Goal:** Multi-org users can safely switch between organizations; the active org always resolves correctly and never leaks across sessions. Tenancy corrections on top of the existing org-context machinery.
+
+### Story 2.1: Resolve active org server-side with first-membership fallback
+
+As a multi-org user,
+I want my active org to resolve automatically to my earliest-`created_at` membership when my cookie is absent or invalid,
+So that I can always reach the dashboard without losing my place or hitting errors.
+
+**Acceptance Criteria:**
+
+**Given** I have memberships but no (or an invalid/stale) `ledgerly_active_org` cookie
+**When** I load the dashboard
+**Then** `ensureActiveOrg` (server action, read surface `getActiveOrgIdAction`) resolves me to my earliest-`created_at` org and writes the cookie server-side (FR-2, AD-3)
+
+**And** a user with no memberships resolves to null and org-scoped queries return no rows (RLS), never an error (FR-2)
+
+**And** the cookie is only ever written by server code; client code contains no `document.cookie` write for it (FR-1, AD-3 regression guard)
+
+**And** repinning runs before the `/no-access` branch can fire for a user who still has memberships (AD-3, AD-4)
+
+### Story 2.2: Harden `switchOrg` with server-validated membership
+
+As a multi-org user,
+I want switching orgs to validate my membership server-side, set the httpOnly cookie, and reload,
+So that I can move between my organizations safely without stale data.
+
+**Acceptance Criteria:**
+
+**Given** I select a target org in the switcher
+**When** `switchOrg` runs
+**Then** it authenticates me, validates membership against `org_members`, and on success sets the httpOnly cookie and triggers a full page reload (FR-1, AD-3)
+
+**And** switching to an org I do not belong to returns an error and does not change the cookie (FR-1)
+
+**And** after a successful switch the cookie equals the target org id and the next request renders that org's data (FR-1)
+
+### Story 2.3: Gate the OrgSwitcher by membership count and role
+
+As an org member,
+I want the switcher visible on every org surface only when I have more than one membership, and never shown to platform admins,
+So that the UI reflects my actual switching needs and keeps super admins pinned to the console.
+
+**Acceptance Criteria:**
+
+**Given** I have ≥2 memberships
+**When** I visit `/dashboard`, `/expenses`, `/reports`, `/categories`, or `/settings`
+**Then** the switcher renders in the sidebar (FR-4, UX-DR9)
+
+**And** with ≤1 membership it is hidden (FR-4)
+
+**And** a `super_admin` never sees the switcher on any surface — they remain pinned to `/admin` (FR-4, AR-10)
+
+**And** the switch interaction is a full-page reload with no optimistic UI (UX-DR9, EXPERIENCE.md Interaction Primitives)
+
+### Story 2.4: Clear the active-org cookie on logout
+
+As a user,
+I want logout to delete the `ledgerly_active_org` cookie before signing out,
+So that no stale org context leaks into the next session.
+
+**Acceptance Criteria:**
+
+**Given** I am signed in with an active org cookie
+**When** I log out
+**Then** the cookie is absent afterwards, and a subsequent login by a different user resolves to their memberships only (FR-3, AD-3)
+
+## Epic 3: Org Admin Role & Roster Management
+
+**Goal:** Org Admins can view the member roster, remove members, and promote/demote roles — with the last-admin guard and full audit trail.
+
+### Story 3.1: Build the Members surface with the roster table
+
+As an Org Admin,
+I want a Members surface under Settings that lists every member with name, email, role, member-since, and status,
+So that I can see exactly who is in my organization.
+
+**Acceptance Criteria:**
+
+**Given** I am an `org_admin` of an active org
+**When** I open `/settings → Members`
+**Then** I see the full roster — active and suspended members, with no orphaned or soft-deleted entries (FR-7)
+
+**And** member email is resolved via a service-role `auth.admin.listUsers` lookup (the existing `emailLookup` pattern) — no `profiles.email` column, no direct SQL against `auth.users` (FR-7, AR-9, AD-9)
+
+**And** a `member`-role user does not see the surface (hidden, never disabled-only) (FR-7, UX-DR11)
+
+**And** the table is responsive: desktop table, mobile card-list fallback per the Admin Users pattern (UX-DR1, UX-DR13)
+
+**And** role and status render as chips/badges per the token set — Org Admin emerald chip, Super Admin purple chip, Active/Suspended badges (UX-DR8)
+
+**And** rows load with Skeleton, empty state uses EmptyState, failures use ErrorState with retry (UX-DR11)
+
+### Story 3.2: Promote and demote members with the last-admin guard
+
+As an Org Admin,
+I want to promote members to Org Admin and demote them back, subject to a last-admin guard,
+So that I can manage administration without locking my organization out.
+
+**Acceptance Criteria:**
+
+**Given** I am an `org_admin`
+**When** I promote a `member` to `org_admin`
+**Then** they can access admin surfaces immediately, and the change is audit-logged with my actor id (FR-5, FR-9)
+
+**And** demoting an `org_admin` to `member` makes admin surfaces reject them on their next action (FR-9)
+
+**And** demoting or removing the last remaining Org Admin fails with a clear reason and the roster is unchanged (FR-6)
+
+**And** any action targeting a `super_admin` membership row fails server-side — those rows are out of org-admin scope (FR-32, AD-4)
+
+**And** promote/demote runs through server actions gated by `can_admin_org`, confirmed inline (no dialog for non-destructive), with a toast (UX-DR12, EXPERIENCE.md Component Patterns)
+
+### Story 3.3: Remove a member with immediate access revocation
+
+As an Org Admin,
+I want to remove a member so their org access ends immediately while their previously imported data stays in the org,
+So that my roster reflects reality without destroying history.
+
+**Acceptance Criteria:**
+
+**Given** I choose to remove a member
+**When** the removal is confirmed in a dialog stating "This action cannot be undone"
+**Then** their `org_members` row is deleted, their next org-scoped query returns zero rows (RLS), and the org's expense/data rows are untouched (FR-8)
+
+**And** the removal is audit-logged (FR-8, FR-27)
+
+**And** a removed member with no other membership lands on `/no-access` on their next request; a removed member with other memberships is repinned by `ensureActiveOrg` (FR-8, AD-3/AD-4 split)
+
+**And** last-admin removal is refused (FR-6), and the confirm dialog names the consequence ("lose access", not "deleted") (UX-DR12, EXPERIENCE.md Anti-patterns)
+
+### Story 3.4: Surface member suspension status
+
+As an Org Admin,
+I want suspended members marked with a status badge in the roster,
+So that I can see at a glance who is suspended.
+
+**Acceptance Criteria:**
+
+**Given** a member has `profiles.is_suspended = true`
+**When** the roster renders
+**Then** that member shows a "Suspended" warning badge while their membership row still exists (FR-10, UX-DR8)
+
+**And** suspension itself remains a platform-admin-only action in v1 — no org-admin suspension control is rendered (FR-10)
+
+### Story 3.5: Add the no-access route and middleware guard
+
+As a user whose active-org membership has vanished,
+I want a `/no-access` state instead of silently falling through to a solo dashboard,
+So that I understand I no longer have access to that workspace.
+
+**Acceptance Criteria:**
+
+**Given** my active-org membership no longer exists and I hold no other membership
+**When** I make an org-scoped request
+**Then** middleware redirects me to `/no-access`, an EmptyState-style block with "You don't have access to this workspace" and a "Back to login" action (FR-8, UX-DR7)
+
+**And** a user who still has other memberships is never sent to `/no-access` — they are repinned to a valid org (AD-4)
+
+**And** the route is keyboard-accessible and mobile-rendered per the accessibility floor (UX-DR10, UX-DR13)
+
+## Epic 4: Invites & Joining
+
+**Goal:** Org Admins invite members by email (7-day, single-use tokens with real delivery); invitees join without losing existing data.
+
+### Story 4.1: Create invites (org admin only) with high-entropy tokens
+
+As an Org Admin,
+I want to create a pending invite for an email with a unique, unguessable token and a 7-day expiry,
+So that I can securely invite someone to join my organization.
+
+**Acceptance Criteria:**
+
+**Given** I am an `org_admin`
+**When** I create an invite for an email
+**Then** a `pending` Invite is created with a unique token of ≥32 bytes of randomness and `expires_at = now + 7 days` (FR-11)
+
+**And** creating an invite for an email with an existing `pending` invite in the same org fails with a clear error (partial unique index on `(org_id, lower(email)) WHERE status='pending'`) (FR-11)
+
+**And** a `member`-role user cannot create invites (server action rejects with a permission error) (FR-11, AD-4)
+
+**And** the action is gated by `can_admin_org` (FR-31, FR-32)
+
+### Story 4.2: Deliver join-link emails through the mailer module
+
+As a developer,
+I want all invite emails delivered through a single mailer module backed by a transactional provider, with a logged no-op in dev,
+So that invites actually reach their recipients and delivery is observable.
+
+**Acceptance Criteria:**
+
+**Given** an invite is created or resent
+**When** the mailer runs
+**Then** exactly one outbound email (dev: one logged send) containing `/invite?token=<token>` is sent through the transactional provider with a configured from-address (FR-12, AD-7)
+
+**And** `RESEND_API_KEY` lives in server env only and never in the repo or client bundle; `DEV_EMAIL_*` vars produce a logged no-op (FR-12, AD-7)
+
+**And** the send is non-blocking to invite creation, and each send logs a send-id + status correlated to the invite row for delivery diagnosis (NFR-5, AD-7, R3)
+
+### Story 4.3: Build the invite management surface (list, revoke, resend, expiry)
+
+As an Org Admin,
+I want a pending-invite list with status badges, expiry, and inline Revoke/Resend actions,
+So that I can manage outstanding invitations.
+
+**Acceptance Criteria:**
+
+**Given** I open `/settings → Members`
+**When** the invite list renders
+**Then** each row shows email, status badge (pending/accepted/revoked/expired), expiry, and inline Revoke/Resend outline buttons (FR-15, FR-16, UX-DR2)
+
+**And** Revoke sets `revoked` (revoked invites cannot be accepted); Resend resets `expires_at` to now + 7 days and triggers a new email (FR-15)
+
+**And** expired invites render a warning badge and are labelled as expired in the list (FR-16, UX-DR2)
+
+**And** a duplicate-pending creation shows the inline error "This email already has a pending invite." (UX-DR2)
+
+**And** `member`-role users can do none of this; empty state shows "No pending invites" via EmptyState (FR-15, UX-DR11)
+
+### Story 4.4: Build the invite-accept flow with solo-data migration
+
+As an invited user,
+I want to accept an invite by confirming the organization, and have my existing personal rows migrate into it with my active-org cookie set,
+So that I join without re-entering my history.
+
+**Acceptance Criteria:**
+
+**Given** I am authenticated and open `/invite?token=<token>` for a valid pending invite to my email
+**When** I confirm the join (with the copy "your existing expenses will move into this organization")
+**Then** the corrected `accept_invite` RPC binds the token to my JWT email (case-insensitive), inserts my membership, migrates my `org_id IS NULL` rows (profiles, categories, expenses, settings), marks the invite `accepted`, sets the active-org cookie, and redirects to `/dashboard` (FR-13, FR-14, AD-5)
+
+**And** accepting with the wrong email fails and does not consume the token; a second accept attempt fails (token single-use) (FR-13)
+
+**And** my previously personal rows now carry the org id and are visible org-wide; solo-only visibility of those rows ends (FR-13, FR-14)
+
+**And** the surface shows distinct states for valid / expired / revoked / already-accepted, with expired showing "link expired — ask for a new invite" (FR-16, EXPERIENCE.md K2)
+
+## Epic 5: Org Settings & Shared Defaults
+
+**Goal:** Org Admins set org-wide name/slug, currency, and VAT defaults; members inherit them with per-field personal overrides.
+
+### Story 5.1: Build the Organization settings surface and edit org profile
+
+As an Org Admin,
+I want an Organization section under Settings where I can edit the org name and slug,
+So that my organization's identity is accurate.
+
+**Acceptance Criteria:**
+
+**Given** I am an `org_admin`
+**When** I open `/settings → Organization`
+**Then** I see a form with org name and slug; saving via the server action updates the org (FR-17, FR-20)
+
+**And** a duplicate or invalid slug is rejected with a message; renaming does not alter member data or the active cookie (FR-17)
+
+**And** a `member` calling the update action receives a permission error and the settings are unchanged (FR-20)
+
+**And** the form uses the existing tokens/kit, shows "Saving…" progress and a success toast (UX-DR6, UX-DR12)
+
+### Story 5.2: Set org-wide currency and VAT defaults with an effective-value resolver
+
+As an Org Admin,
+I want to set org-wide base currency and VAT defaults that members inherit unless they have a personal override,
+So that the team's shared financial defaults are consistent.
+
+**Acceptance Criteria:**
+
+**Given** I am an `org_admin`
+**When** I save org-wide defaults
+**Then** `organizations.default_currency` and `default_vat_rate` update; currency outside `SUPPORTED_CURRENCIES` is rejected and non-numeric/out-of-range VAT (0-100) is rejected (FR-18, AR-8)
+
+**And** a member with no personal override sees the org default in dashboards and forms; a member with a Personal Setting keeps their value (FR-18)
+
+**And** the org-wide VAT default applies to new expense entries only — stored `tax_amount_cents` / `tax_rate_used` on existing rows are not retroactively rewritten (FR-18)
+
+**And** dashboard, settings, and expense entry all read the same effective-value resolver with precedence org default → personal override → per-entry value (AR-8, AD-8)
+
+### Story 5.3: Per-field personal overrides with "use org default" affordance
+
+As an org member,
+I want to override the org-wide currency or VAT per field, and clear an override to return to the org default,
+So that my personal view stays exactly how I want it.
+
+**Acceptance Criteria:**
+
+**Given** the org has defaults set
+**When** I view my personal Currency/VAT settings cards
+**Then** I can override currency or VAT independently — a currency-only override leaves VAT on the org default (FR-19)
+
+**And** each card shows a "use org default" affordance that clears the personal field back to the org default (FR-19, UX-DR6)
+
+**And** the effective-value resolver returns the org default when the personal row is absent/cleared (AR-8)
+
+## Epic 6: Admin Console — Requests, Plans & Audit
+
+**Goal:** Platform Admins review and approve client requests with plan assignment, manage plan pricing and per-org subscriptions, and investigate via a tamper-evident audit trail.
+
+### Story 6.1: Build the Requests queue surface
+
+As a Platform Admin,
+I want a Requests tab listing all client requests newest-first with a status filter,
+So that I can review who is asking for access.
+
+**Acceptance Criteria:**
+
+**Given** I am a `super_admin`
+**When** I open `/admin → Requests`
+**Then** I see all `client_requests` newest-first with pending/approved/rejected status filters and timestamps (FR-21, UX-DR3)
+
+**And** the pending count drives a badge on the Requests tab; empty state shows "No client requests" via EmptyState (UX-DR3, UX-DR11)
+
+**And** non-super-admins get a permission error or the surface is hidden; the tab bar renders per the existing admin pattern (FR-21, AR-10)
+
+### Story 6.2: Approve a request with plan assignment and first-admin bootstrap
+
+As a Platform Admin,
+I want to approve a pending request by choosing a plan and optionally assigning the new owner as Org Admin,
+So that the requester gets a working organization immediately.
+
+**Acceptance Criteria:**
+
+**Given** a pending request
+**When** I approve it in the Approve dialog (plan `Select` + "Assign as Org Admin" checkbox)
+**Then** the provisioning primitive (Story 1.5) creates the user (if new), org, membership, and `active` subscription; the request is marked `approved`; the pending badge clears (FR-22, FR-34, UX-DR3)
+
+**And** approving an already-approved request fails (status guarded); all mutations run through authenticated server actions (FR-22)
+
+**And** the resulting org appears under Clients with the chosen plan, and the approval is audit-logged (FR-22, FR-27)
+
+**And** the requester receives a sign-in email and can log in; outcome email to the requester remains out of scope (FR-22)
+
+### Story 6.3: Reject a request with re-submission support
+
+As a Platform Admin,
+I want to reject a pending request, recording reviewer and timestamp,
+So that I can decline access without creating anything.
+
+**Acceptance Criteria:**
+
+**Given** a pending request
+**When** I reject it (inline confirm dialog)
+**Then** the request records reviewer + `reviewed_at`; no user or org is created; re-approval of that row is impossible (FR-23)
+
+**And** the requester's `requestAccess` re-submission after a rejection creates a new `pending` row — only `approved` and `pending` rows block re-submission (FR-23)
+
+### Story 6.4: Build the Plans editor with pricing validation
+
+As a Platform Admin,
+I want to view all plans and edit monthly/yearly prices in cents,
+So that pricing stays current.
+
+**Acceptance Criteria:**
+
+**Given** I am a `super_admin`
+**When** I open `/admin → Plans`
+**Then** I see all plans (seeded free/pro/enterprise and any custom) with price + member/expense limits (FR-24, UX-DR4)
+
+**And** I can edit monthly/yearly price (cents, numeric); negative or non-numeric values are rejected (FR-25)
+
+**And** saving an edit is audit-logged (FR-25, FR-27)
+
+### Story 6.5: Change a per-org subscription plan
+
+As a Platform Admin,
+I want to see each organization's plan and subscription status and change the plan,
+So that I can manage client tiers.
+
+**Acceptance Criteria:**
+
+**Given** I open the Clients tab
+**When** I change an org's plan from the accordion plan `Select`
+**Then** `subscriptions.plan_id` updates, the status transition respects the `active | trialing | cancelled | expired | past_due` set, and the change is audit-logged (FR-26, UX-DR4)
+
+### Story 6.6: Build the Audit Log browse and filter surface
+
+As a Platform Admin,
+I want to browse and filter the audit trail by actor, action type, org, and date range,
+So that I can investigate what happened, when, and by whom.
+
+**Acceptance Criteria:**
+
+**Given** I open `/admin → Audit Logs`
+**When** I apply filters (actor, action, org, date range)
+**Then** results are newest-first, filters combine, and pagination holds for large volumes (FR-28, UX-DR5, NFR-3)
+
+**And** an `org_admin` viewing the audit surface sees only their own org's rows; a plain `member` cannot read audit rows (FR-29)
+
+**And** timestamps render in monospace; the empty state shows "No audit entries match the filters" (UX-DR5, UX-DR11)
+
+**And** browse stays under 500ms p95 at 10k+ rows using the `(user_id, action, org_id, created_at)` index (NFR-3)
