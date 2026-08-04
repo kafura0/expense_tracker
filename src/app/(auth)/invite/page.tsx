@@ -3,16 +3,48 @@
 import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { getInviteDetails, acceptInviteAction } from './actions'
+import {
+  getInviteDetails,
+  acceptInviteAction,
+  type InviteDetails,
+} from './actions'
 import { Card, CardContent } from '@/shared/ui/card'
 import { Button } from '@/shared/ui/button'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { Building2, Users, ArrowLeft, CheckCircle } from 'lucide-react'
+import { Building2, Users, ArrowLeft, CheckCircle, AlertTriangle, Ban, Clock, FileQuestion } from 'lucide-react'
 
-interface InviteDetails {
-  email: string
-  expires_at: string
-  org_name: string
+function StateMessage({
+  icon,
+  title,
+  description,
+  actionHref,
+  actionLabel,
+}: {
+  icon: React.ReactNode
+  title: string
+  description: string
+  actionHref?: string
+  actionLabel?: string
+}) {
+  return (
+    <div className="text-center space-y-4">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-muted/50">
+        {icon}
+      </div>
+      <div className="space-y-1">
+        <p className="text-foreground font-medium">{title}</p>
+        <p className="text-sm text-muted-foreground">{description}</p>
+      </div>
+      {actionHref && actionLabel && (
+        <Link href={actionHref}>
+          <Button variant="outline" className="w-full h-11 gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            {actionLabel}
+          </Button>
+        </Link>
+      )}
+    </div>
+  )
 }
 
 function InviteContent() {
@@ -22,7 +54,7 @@ function InviteContent() {
 
   const [details, setDetails] = useState<InviteDetails | null>(null)
   const [loading, setLoading] = useState(!!token)
-  const [error, setError] = useState(token ? '' : 'No invite token provided')
+  const [loadError, setLoadError] = useState(token ? '' : 'No invite token provided')
   const [accepting, setAccepting] = useState(false)
   const [accepted, setAccepted] = useState(false)
 
@@ -31,7 +63,7 @@ function InviteContent() {
 
     getInviteDetails(token).then((result) => {
       if (result.error) {
-        setError(result.error)
+        setLoadError(result.error)
       } else if (result.data) {
         setDetails(result.data)
       }
@@ -46,11 +78,80 @@ function InviteContent() {
     const result = await acceptInviteAction(token)
 
     if (result.error) {
-      setError(result.error)
+      if (result.error === 'invite.expired') {
+        setDetails((prev) => (prev ? { ...prev, state: 'expired' } : prev))
+      } else if (result.error === 'invite.revoked') {
+        setDetails((prev) => (prev ? { ...prev, state: 'revoked' } : prev))
+      } else if (result.error === 'invite.accepted') {
+        setDetails((prev) => (prev ? { ...prev, state: 'accepted' } : prev))
+      } else {
+        setLoadError(result.error)
+      }
       setAccepting(false)
     } else {
       setAccepted(true)
-      setTimeout(() => router.push('/dashboard'), 1500)
+      setTimeout(() => router.push('/dashboard'), 1200)
+    }
+  }
+
+  const renderState = () => {
+    if (loadError) {
+      return (
+        <StateMessage
+          icon={<FileQuestion className="h-7 w-7 text-muted-foreground" />}
+          title="This invite link is invalid"
+          description={loadError}
+          actionHref="/login"
+          actionLabel="Go to Login"
+        />
+      )
+    }
+
+    if (!details) return null
+
+    switch (details.state) {
+      case 'expired':
+        return (
+          <StateMessage
+            icon={<Clock className="h-7 w-7 text-amber-400" />}
+            title="This invite link has expired"
+            description="Ask an Org Admin to send you a new invite. Links last 7 days."
+            actionHref="/login"
+            actionLabel="Go to Login"
+          />
+        )
+      case 'revoked':
+        return (
+          <StateMessage
+            icon={<Ban className="h-7 w-7 text-red-400" />}
+            title="This invite was revoked"
+            description="The Org Admin cancelled this invitation. Ask them for a new one if you still want to join."
+            actionHref="/login"
+            actionLabel="Go to Login"
+          />
+        )
+      case 'accepted':
+        return (
+          <StateMessage
+            icon={<CheckCircle className="h-7 w-7 text-emerald-400" />}
+            title="You've already joined this organization"
+            description="This invite has already been accepted."
+            actionHref="/dashboard"
+            actionLabel="Go to Dashboard"
+          />
+        )
+      case 'not_found':
+        return (
+          <StateMessage
+            icon={<FileQuestion className="h-7 w-7 text-muted-foreground" />}
+            title="Invite not found"
+            description="This invite may have been removed or the link is incorrect. Ask an Org Admin to send a new invite."
+            actionHref="/login"
+            actionLabel="Go to Login"
+          />
+        )
+      default:
+        return null
     }
   }
 
@@ -83,64 +184,58 @@ function InviteContent() {
               </div>
             )}
 
-            {!loading && error && (
-              <div className="text-center space-y-4">
-                <div className="p-3 text-sm text-red-400 bg-red-900/20 border border-red-800/30 rounded-lg">
-                  {error}
+            {!loading && details?.state !== 'pending' && renderState()}
+
+            {!loading && !accepted && details?.state === 'pending' && (
+              <div className="space-y-6">
+                <div className="space-y-3 p-4 rounded-xl bg-muted/50 border border-border">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center">
+                      <Building2 className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{details.org_name}</p>
+                      <p className="text-xs text-muted-foreground">{details.email || 'Invited account'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 pt-1">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Org Member</span>
+                  </div>
                 </div>
-                <Link href="/login">
-                  <Button variant="outline" className="w-full h-11 gap-2">
-                    <ArrowLeft className="h-4 w-4" />
-                    Go to Login
-                  </Button>
-                </Link>
+
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-left">
+                  <AlertTriangle className="h-4 w-4 text-indigo-400 shrink-0 mt-0.5" />
+                  <p className="text-xs text-muted-foreground">
+                    Your existing expenses will move into this organization and will be
+                    visible org-wide once you join.
+                  </p>
+                </div>
+
+                <Button
+                  onClick={handleAccept}
+                  disabled={accepting}
+                  loading={accepting}
+                  className="w-full h-11"
+                >
+                  Accept Invite
+                </Button>
+
+                <div className="text-center">
+                  <Link href="/login" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                    Not you? Go to login
+                  </Link>
+                </div>
               </div>
             )}
 
-            {!loading && !error && details && (
-              <div className="space-y-6">
-                {accepted ? (
-                  <div className="text-center py-4 space-y-3">
-                    <div className="mx-auto w-12 h-12 rounded-full bg-emerald-500/15 flex items-center justify-center">
-                      <CheckCircle className="h-6 w-6 text-emerald-400" />
-                    </div>
-                    <p className="text-foreground font-medium">Welcome to {details.org_name}!</p>
-                    <p className="text-sm text-muted-foreground">Redirecting to your dashboard...</p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="space-y-3 p-4 rounded-xl bg-muted/50 border border-border">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center">
-                          <Building2 className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-foreground">{details.org_name}</p>
-                          <p className="text-xs text-muted-foreground">{details.email}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 pt-1">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">Org Member</span>
-                      </div>
-                    </div>
-
-                    <Button
-                      onClick={handleAccept}
-                      disabled={accepting}
-                      loading={accepting}
-                      className="w-full h-11"
-                    >
-                      Accept Invite
-                    </Button>
-
-                    <div className="text-center">
-                      <Link href="/login" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                        Not you? Go to login
-                      </Link>
-                    </div>
-                  </>
-                )}
+            {accepted && details && (
+              <div className="text-center py-4 space-y-3">
+                <div className="mx-auto w-12 h-12 rounded-full bg-emerald-500/15 flex items-center justify-center">
+                  <CheckCircle className="h-6 w-6 text-emerald-400" />
+                </div>
+                <p className="text-foreground font-medium">Welcome to {details.org_name}!</p>
+                <p className="text-sm text-muted-foreground">Redirecting to your dashboard...</p>
               </div>
             )}
           </CardContent>

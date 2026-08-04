@@ -25,9 +25,11 @@ Premium SaaS expense tracker built with Next.js 16, Supabase, Tailwind CSS v4. D
 ## Supabase
 - **Project ref:** `weitlewvoufvgfpkryvg`
 - **URL:** `https://weitlewvoufvgfpkryvg.supabase.co`
-- **Migrations:** `supabase/migrations/` (13 files, 001-012 — note two `002_*` files exist)
+- **Migrations:** `supabase/migrations/` (14 files, 001-013 — note two `002_*` files exist)
 - **Schema changes:** All future Supabase schema changes MUST be applied via the **Management API** (not direct SQL/psql, not the Supabase CLI `db push`). Author the migration file under `supabase/migrations/` for versioning, then apply it through the Management API endpoint (e.g. `POST /v1/projects/{ref}/database/query`).
-- **RLS helpers:** `is_super_admin()`, `is_org_member()`, `can_write_in_org()`, `is_solo_user()`, `is_row_owner()`
+- **RLS helpers:** `is_super_admin()`, `is_org_member()`, `can_write_in_org()`, `can_admin_org()`, `is_solo_user()`, `is_row_owner()`
+- **Roles:** `org_members.role` is `super_admin | org_admin | member`. `super_admin` = platform staff (owns `/admin`); `org_admin` = org-level admin (roster/invites/org-settings); `member` = plain write access.
+- **Audit logging:** All app audit writes go through the `log_audit_event` RPC (pinned vocabulary in `src/shared/lib/audit-logger.ts`). Never write `audit_logs` directly from app code; the service-role key has no write path to the table.
 
 ## Seed Data
 ```bash

@@ -54,15 +54,38 @@ export async function listInvites(orgId: string): Promise<Invite[]> {
   return (data || []).map((item) => inviteSchema.parse(item))
 }
 
-export async function revokeInvite(inviteId: string): Promise<void> {
+export async function revokeInvite(orgId: string, inviteId: string): Promise<Invite | null> {
   const supabase = await createClient()
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('invites')
     .update({ status: 'revoked' })
     .eq('id', inviteId)
+    .eq('org_id', orgId)
+    .eq('status', 'pending')
+    .select()
+    .maybeSingle()
 
   if (error) throw new Error(`Failed to revoke invite: ${error.message}`)
+  return data ? inviteSchema.parse(data) : null
+}
+
+export async function resendInvite(orgId: string, inviteId: string): Promise<Invite | null> {
+  const supabase = await createClient()
+
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+
+  const { data, error } = await supabase
+    .from('invites')
+    .update({ status: 'pending', expires_at: expiresAt })
+    .eq('id', inviteId)
+    .eq('org_id', orgId)
+    .in('status', ['pending', 'expired'])
+    .select()
+    .maybeSingle()
+
+  if (error) throw new Error(`Failed to resend invite: ${error.message}`)
+  return data ? inviteSchema.parse(data) : null
 }
 
 export async function findInviteByToken(token: string): Promise<Invite | null> {

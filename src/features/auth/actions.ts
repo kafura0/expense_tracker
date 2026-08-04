@@ -107,8 +107,10 @@ export async function requestAccess(formData: FormData) {
 
 export async function logout() {
   const supabase = await createClient()
-  await supabase.auth.signOut()
+  // Clear the active-org cookie BEFORE signOut so no stale org context leaks
+  // into the next session (FR-3, AD-3).
   await clearActiveOrgId()
+  await supabase.auth.signOut()
   redirect('/login')
 }
 

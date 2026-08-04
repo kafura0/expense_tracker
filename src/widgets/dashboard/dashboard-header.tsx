@@ -26,15 +26,19 @@ export function DashboardHeader({ subtitle }: DashboardHeaderProps) {
 
   const roleLabel = activeOrg?.role === 'super_admin'
     ? 'Super Admin'
-    : isSolo
-      ? 'Solo'
-      : 'Org Member'
+    : activeOrg?.role === 'org_admin'
+      ? 'Org Admin'
+      : isSolo
+        ? 'Solo'
+        : 'Org Member'
 
   const RoleIcon = activeOrg?.role === 'super_admin'
     ? ShieldCheck
-    : isSolo
-      ? User
-      : Users
+    : activeOrg?.role === 'org_admin'
+      ? Users
+      : isSolo
+        ? User
+        : Users
 
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'

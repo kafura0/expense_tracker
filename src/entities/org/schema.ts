@@ -14,7 +14,7 @@ export const orgMemberSchema = z.object({
   id: z.string().uuid(),
   org_id: z.string().uuid(),
   user_id: z.string().uuid(),
-  role: z.enum(['super_admin', 'member']),
+  role: z.enum(['super_admin', 'org_admin', 'member']),
   created_at: z.string().datetime(),
 })
 

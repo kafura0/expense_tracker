@@ -144,6 +144,7 @@ export async function updateSession(request: NextRequest) {
     '/org-signup',
     '/invite',
     '/suspended',
+    '/no-access',
   ]
   const isPublicPath = publicPaths.some(
     (path) => pathname === path || pathname.startsWith(path + '/')
@@ -291,6 +292,28 @@ export async function updateSession(request: NextRequest) {
         const url = request.nextUrl.clone()
         url.pathname = '/'
         return NextResponse.redirect(url)
+      }
+
+      // Removed-member confinement: if the user has no memberships but their
+      // profile is still bound to an org, they were removed from that org.
+      // Confine them to /no-access (where they can sign out or request access
+      // again). Solo users (profiles.org_id IS NULL) are allowed through.
+      if (isProtectedPath) {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('org_id')
+            .eq('user_id', user.id)
+            .maybeSingle()
+
+          if (profile?.org_id) {
+            const url = request.nextUrl.clone()
+            url.pathname = '/no-access'
+            return NextResponse.redirect(url)
+          }
+        } catch {
+          // If the profiles query fails, fall through and let the request continue
+        }
       }
     } else {
       // Validate that the org cookie references a real membership.

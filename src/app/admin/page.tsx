@@ -15,6 +15,14 @@ import {
   getAdminMessages,
   getAdminUsers,
   getAdminOrganizations,
+  getClientRequests,
+  approveRequestAction,
+  rejectRequestAction,
+  getAdminPlans,
+  updatePlan,
+  createPlan,
+  setOrgPlan,
+  getAdminAuditLogs,
   replyToMessage,
   closeMessage,
   toggleOrgStatus,
@@ -26,14 +34,18 @@ import {
   Users, Building2, Megaphone, MessageSquare, Shield, RefreshCw,
   Mail, X, Send, ChevronDown, ChevronUp, AlertTriangle, Search, Filter,
   ReceiptText, Wallet, UserRound, Gift, Wrench, Trash2,
+  Inbox, CreditCard, ScrollText, CheckCircle2, XCircle, Clock,
 } from 'lucide-react'
 import { formatMoneyCompact } from '@/shared/lib/currency'
 
-type Tab = 'users' | 'clients' | 'invites' | 'announcements' | 'messages'
+type Tab = 'users' | 'clients' | 'requests' | 'plans' | 'audit' | 'invites' | 'announcements' | 'messages'
 
 const tabs: { id: Tab; label: string; icon: typeof Users }[] = [
   { id: 'users', label: 'Users', icon: Users },
   { id: 'clients', label: 'Clients', icon: Building2 },
+  { id: 'requests', label: 'Requests', icon: Inbox },
+  { id: 'plans', label: 'Plans', icon: CreditCard },
+  { id: 'audit', label: 'Audit Logs', icon: ScrollText },
   { id: 'invites', label: 'Invites', icon: Send },
   { id: 'announcements', label: 'Announcements', icon: Megaphone },
   { id: 'messages', label: 'Messages', icon: MessageSquare },
@@ -74,6 +86,9 @@ interface AdminOrg {
   members: Array<{ user_id: string; role: string; display_name: string; email: string }>
   plan: string | null
   plan_price: number | null
+  subscription_id: string | null
+  plan_id: string | null
+  subscription_status: string | null
 }
 
 interface AdminSolo {
@@ -127,6 +142,17 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>('users')
   const queryClient = useQueryClient()
 
+  const requestsQuery = useQuery({
+    queryKey: ['admin', 'requests', 'count'],
+    queryFn: async () => {
+      const result = await getClientRequests()
+      if ('error' in result && result.error) throw new Error(result.error)
+      return result
+    },
+    staleTime: 30_000,
+  })
+  const pendingCount = requestsQuery.data?.pendingCount || 0
+
   return (
     <div className="space-y-6 p-4 md:p-6">
       <div className="flex items-center justify-between">
@@ -162,6 +188,11 @@ export default function AdminDashboard() {
           >
             <tab.icon className={`h-4 w-4 ${activeTab === tab.id ? 'text-primary' : ''}`} />
             {tab.label}
+            {tab.id === 'requests' && pendingCount > 0 && (
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-bold text-primary-foreground">
+                {pendingCount}
+              </span>
+            )}
             {activeTab === tab.id && (
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-8 bg-primary rounded-full" />
             )}
@@ -171,6 +202,9 @@ export default function AdminDashboard() {
 
       {activeTab === 'users' && <UsersTab />}
       {activeTab === 'clients' && <ClientsTab />}
+      {activeTab === 'requests' && <RequestsTab />}
+      {activeTab === 'plans' && <PlansTab />}
+      {activeTab === 'audit' && <AuditLogsTab />}
       {activeTab === 'invites' && <InvitesTab />}
       {activeTab === 'announcements' && <AnnouncementsTab />}
       {activeTab === 'messages' && <MessagesTab />}
@@ -566,6 +600,27 @@ function ClientsTab() {
     onError: (e: Error) => toast(e.message, 'error'),
   })
 
+  const plansQuery = useQuery({
+    queryKey: ['admin', 'plans'],
+    queryFn: async () => {
+      const result = await getAdminPlans()
+      if ('error' in result && result.error) throw new Error(result.error)
+      return (result as { plans?: Array<{ id: string; name: string; slug: string }> }).plans || []
+    },
+  })
+
+  const planMutation = useMutation({
+    mutationFn: async ({ orgId, planId }: { orgId: string; planId: string }) => {
+      const result = await setOrgPlan({ orgId, planId })
+      if ('error' in result && result.error) throw new Error(result.error)
+    },
+    onSuccess: () => {
+      toast('Subscription plan updated', 'success')
+      queryClient.invalidateQueries({ queryKey: ['admin', 'clients'] })
+    },
+    onError: (e: Error) => toast(e.message, 'error'),
+  })
+
   const clients = useMemo(() => (data as { clients?: AdminOrg[] })?.clients || [], [data])
   const soloAccounts = useMemo(() => (data as { soloAccounts?: AdminSolo[] })?.soloAccounts || [], [data])
   const activeOrgs = clients.filter((c) => c.status === 'active').length
@@ -655,10 +710,33 @@ function ClientsTab() {
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div className="space-y-1">
                               <p className="text-xs text-muted-foreground">Plan</p>
-                              <p className="text-sm font-medium text-foreground">{org.plan || 'No plan'}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-medium text-foreground">{org.plan || 'No plan'}</p>
+                                {org.subscription_status && (
+                                  <Badge variant={org.subscription_status === 'active' ? 'success' : 'outline'} className="text-[10px]">
+                                    {org.subscription_status}
+                                  </Badge>
+                                )}
+                              </div>
                               {org.plan_price != null && (
                                 <p className="text-xs text-muted-foreground">${Number(org.plan_price).toFixed(2)}/mo</p>
                               )}
+                              <select
+                                value={org.plan_id || ''}
+                                onChange={(e) => {
+                                  const planId = e.target.value
+                                  if (planId && planId !== org.plan_id) {
+                                    planMutation.mutate({ orgId: org.id, planId })
+                                  }
+                                }}
+                                disabled={planMutation.isPending}
+                                className="mt-1 w-full h-8 rounded-lg border border-border bg-muted px-2 text-xs text-foreground"
+                              >
+                                <option value="">Change plan…</option>
+                                {(plansQuery.data || []).map((plan) => (
+                                  <option key={plan.id} value={plan.id}>{plan.name}</option>
+                                ))}
+                              </select>
                             </div>
                             <div className="space-y-1">
                               <p className="text-xs text-muted-foreground">Members</p>
@@ -1208,6 +1286,676 @@ function MessagesTab() {
           })}
         </div>
       )}
+    </div>
+  )
+}
+
+function RequestsTab() {
+  const [statusFilter, setStatusFilter] = useState<'pending' | 'approved' | 'rejected'>('pending')
+  const [approving, setApproving] = useState<{ id: string; name: string } | null>(null)
+  const [approvePlan, setApprovePlan] = useState('')
+  const [assignAdmin, setAssignAdmin] = useState(false)
+  const [rejecting, setRejecting] = useState<{ id: string; name: string } | null>(null)
+  const [busy, setBusy] = useState(false)
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin', 'requests', statusFilter],
+    queryFn: async () => {
+      const result = await getClientRequests({ status: statusFilter })
+      if ('error' in result && result.error) throw new Error(result.error)
+      return result
+    },
+  })
+
+  const plansQuery = useQuery({
+    queryKey: ['admin', 'plans'],
+    queryFn: async () => {
+      const result = await getAdminPlans()
+      if ('error' in result && result.error) throw new Error(result.error)
+      return (result as { plans?: Array<{ id: string; name: string; slug: string }> }).plans || []
+    },
+  })
+
+  const requests = (data as { requests?: Array<{
+    id: string; name: string; email: string; business_name: string | null;
+    status: string; created_at: string; message: string | null;
+  }> })?.requests || []
+
+  const confirmApprove = async () => {
+    if (!approving || !approvePlan) return
+    setBusy(true)
+    try {
+      const result = await approveRequestAction({
+        requestId: approving.id,
+        planSlug: approvePlan,
+        assignOrgAdmin: assignAdmin,
+      })
+      if ('error' in result && result.error) throw new Error(result.error)
+      toast('Request approved', 'success')
+      setApproving(null)
+      setApprovePlan('')
+      setAssignAdmin(false)
+      queryClient.invalidateQueries({ queryKey: ['admin', 'requests'] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'clients'] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'kpis'] })
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Approval failed', 'error')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const confirmReject = async () => {
+    if (!rejecting) return
+    setBusy(true)
+    try {
+      const result = await rejectRequestAction(rejecting.id)
+      if ('error' in result && result.error) throw new Error(result.error)
+      toast('Request rejected', 'success')
+      setRejecting(null)
+      queryClient.invalidateQueries({ queryKey: ['admin', 'requests'] })
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Rejection failed', 'error')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const statusChips: { id: 'pending' | 'approved' | 'rejected'; label: string; icon: typeof Clock }[] = [
+    { id: 'pending', label: 'Pending', icon: Clock },
+    { id: 'approved', label: 'Approved', icon: CheckCircle2 },
+    { id: 'rejected', label: 'Rejected', icon: XCircle },
+  ]
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 flex-wrap">
+        {statusChips.map((chip) => (
+          <button
+            key={chip.id}
+            onClick={() => setStatusFilter(chip.id)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              statusFilter === chip.id
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <chip.icon className="h-3.5 w-3.5" />
+            {chip.label}
+          </button>
+        ))}
+        <span className="text-xs text-muted-foreground ml-auto">
+          {requests.length} request{requests.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+
+      <Card className="glass-card border-border">
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-20 w-full rounded-xl" />
+              <Skeleton className="h-20 w-full rounded-xl" />
+              <Skeleton className="h-20 w-full rounded-xl" />
+            </div>
+          ) : requests.length === 0 ? (
+            <EmptyState
+              icon={<Inbox className="h-8 w-8" />}
+              title="No client requests"
+              description={statusFilter === 'pending' ? 'No pending access requests right now' : `No ${statusFilter} requests`}
+            />
+          ) : (
+            <div className="space-y-3">
+              {requests.map((req) => (
+                <div key={req.id} className="p-4 rounded-xl bg-muted/50 border border-border/20">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <span className="text-sm font-bold text-primary">{req.name.charAt(0).toUpperCase()}</span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-foreground truncate">{req.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{req.email}</p>
+                        {req.business_name && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{req.business_name}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge
+                        variant={req.status === 'pending' ? 'warning' : req.status === 'approved' ? 'success' : 'destructive'}
+                      >
+                        {req.status}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {new Date(req.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                  {req.message && (
+                    <p className="text-sm text-muted-foreground mt-2 whitespace-pre-wrap">{req.message}</p>
+                  )}
+                  {req.status === 'pending' && (
+                    <div className="flex justify-end gap-2 mt-3 pt-3 border-t border-border/20">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setRejecting({ id: req.id, name: req.name })}
+                        disabled={busy}
+                        className="text-red-400 border-red-800 hover:bg-red-900/20"
+                      >
+                        <XCircle className="h-4 w-4 mr-1" />
+                        Reject
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setApproving({ id: req.id, name: req.name })
+                          setApprovePlan(plansQuery.data?.[0]?.slug || '')
+                        }}
+                        disabled={busy || (plansQuery.data?.length || 0) === 0}
+                        className="bg-primary text-primary-foreground hover:bg-primary/90"
+                      >
+                        <CheckCircle2 className="h-4 w-4 mr-1" />
+                        Approve
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {approving && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => !busy && setApproving(null)}>
+          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-foreground font-headline">Approve request</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Create an organization for <span className="text-foreground font-medium">{approving.name}</span>. The owner receives a sign-in email.
+            </p>
+            <div className="space-y-4 mt-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">Plan</label>
+                <select
+                  value={approvePlan}
+                  onChange={(e) => setApprovePlan(e.target.value)}
+                  className="flex w-full h-10 rounded-lg border border-input bg-muted/50 px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                >
+                  {(plansQuery.data || []).map((plan) => (
+                    <option key={plan.id} value={plan.slug}>{plan.name}</option>
+                  ))}
+                </select>
+              </div>
+              <label className="flex items-center gap-2.5 text-sm text-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={assignAdmin}
+                  onChange={(e) => setAssignAdmin(e.target.checked)}
+                  className="h-4 w-4 rounded border-border bg-muted accent-emerald-500"
+                />
+                Assign owner as Org Admin
+              </label>
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <Button size="sm" variant="outline" onClick={() => setApproving(null)} disabled={busy}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={confirmApprove}
+                disabled={busy || !approvePlan}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                {busy ? 'Approving...' : 'Approve request'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {rejecting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => !busy && setRejecting(null)}>
+          <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-foreground font-headline">Reject request</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Decline access for <span className="text-foreground font-medium">{rejecting.name}</span>? No account or organization will be created.
+            </p>
+            <div className="flex justify-end gap-2 mt-6">
+              <Button size="sm" variant="outline" onClick={() => setRejecting(null)} disabled={busy}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={confirmReject}
+                disabled={busy}
+                className="text-red-400 border-red-800 bg-transparent border hover:bg-red-900/20"
+              >
+                {busy ? 'Rejecting...' : 'Reject'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function PlansTab() {
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [draft, setDraft] = useState<{ monthly: string; yearly: string }>({ monthly: '', yearly: '' })
+  const [creating, setCreating] = useState(false)
+  const [newPlan, setNewPlan] = useState({ name: '', slug: '', monthly: '', yearly: '', maxMembers: '' })
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin', 'plans'],
+    queryFn: async () => {
+      const result = await getAdminPlans()
+      if ('error' in result && result.error) throw new Error(result.error)
+      return result
+    },
+  })
+
+  const saveMutation = useMutation({
+    mutationFn: async ({ id, monthly, yearly }: { id: string; monthly: string; yearly: string }) => {
+      const m = Number(monthly)
+      const y = Number(yearly)
+      if (!Number.isInteger(m) || m < 0 || !Number.isInteger(y) || y < 0) {
+        throw new Error('Prices must be non-negative whole numbers')
+      }
+      const result = await updatePlan(id, {
+        price_monthly_cents: m,
+        price_yearly_cents: y,
+      })
+      if ('error' in result && result.error) throw new Error(result.error)
+    },
+    onSuccess: () => {
+      toast('Plan updated', 'success')
+      setEditingId(null)
+      queryClient.invalidateQueries({ queryKey: ['admin', 'plans'] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'clients'] })
+    },
+    onError: (e: Error) => toast(e.message, 'error'),
+  })
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const result = await createPlan({
+        name: newPlan.name.trim(),
+        slug: newPlan.slug.trim(),
+        price_monthly_cents: Number(newPlan.monthly),
+        price_yearly_cents: Number(newPlan.yearly),
+        max_members: Number(newPlan.maxMembers),
+        max_expenses_per_month: -1,
+      })
+      if ('error' in result && result.error) throw new Error(result.error)
+    },
+    onSuccess: () => {
+      toast('Plan created', 'success')
+      setCreating(false)
+      setNewPlan({ name: '', slug: '', monthly: '', yearly: '', maxMembers: '' })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'plans'] })
+    },
+    onError: (e: Error) => toast(e.message, 'error'),
+  })
+
+  const plans = (data as { plans?: Array<{
+    id: string; name: string; slug: string;
+    price_monthly_cents: number; price_yearly_cents: number;
+    max_members: number; max_expenses_per_month: number; features: Record<string, unknown>;
+  }> })?.plans || []
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-40 rounded-xl" />
+        <Skeleton className="h-40 rounded-xl" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card className="glass-card border-border">
+        <CardHeader>
+          <CardTitle className="font-headline">Subscription Plans</CardTitle>
+          <CardDescription>Prices are stored in cents. Negative or non-numeric values are rejected.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {plans.map((plan) => {
+            const isEditing = editingId === plan.id
+            const monthly = isEditing ? draft.monthly : String(plan.price_monthly_cents)
+            const yearly = isEditing ? draft.yearly : String(plan.price_yearly_cents)
+            return (
+              <div key={plan.id} className="p-4 rounded-xl bg-muted/50 border border-border/20">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="font-medium text-foreground">{plan.name}</p>
+                    <p className="text-xs text-muted-foreground">/{plan.slug}</p>
+                    <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                      <span>{plan.max_members === -1 ? 'Unlimited' : plan.max_members} members</span>
+                      <span>{plan.max_expenses_per_month === -1 ? 'Unlimited' : plan.max_expenses_per_month} expenses/mo</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {isEditing ? (
+                      <>
+                        <label className="text-xs text-muted-foreground">Monthly ¢</label>
+                        <Input
+                          type="number"
+                          value={monthly}
+                          onChange={(e) => setDraft({ ...draft, monthly: e.target.value })}
+                          className="w-24 h-9"
+                          min={0}
+                        />
+                        <label className="text-xs text-muted-foreground">Yearly ¢</label>
+                        <Input
+                          type="number"
+                          value={yearly}
+                          onChange={(e) => setDraft({ ...draft, yearly: e.target.value })}
+                          className="w-24 h-9"
+                          min={0}
+                        />
+                        <Button
+                          size="sm"
+                          onClick={() => saveMutation.mutate({ id: plan.id, monthly, yearly })}
+                          disabled={saveMutation.isPending}
+                          className="bg-primary text-primary-foreground"
+                        >
+                          Save
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>
+                          Cancel
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-foreground tabular-nums">
+                            ${(Number(plan.price_monthly_cents) / 100).toFixed(2)}/mo
+                          </p>
+                          <p className="text-xs text-muted-foreground tabular-nums">
+                            ${(Number(plan.price_yearly_cents) / 100).toFixed(2)}/yr
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setEditingId(plan.id)
+                            setDraft({
+                              monthly: String(plan.price_monthly_cents),
+                              yearly: String(plan.price_yearly_cents),
+                            })
+                          }}
+                        >
+                          Edit
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </CardContent>
+      </Card>
+
+      {creating && (
+        <Card className="glass-card border-border">
+          <CardHeader>
+            <CardTitle className="font-headline">Create Plan</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Name</label>
+                <Input value={newPlan.name} onChange={(e) => setNewPlan({ ...newPlan, name: e.target.value })} placeholder="Custom" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Slug</label>
+                <Input value={newPlan.slug} onChange={(e) => setNewPlan({ ...newPlan, slug: e.target.value })} placeholder="custom" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Monthly (cents)</label>
+                <Input type="number" value={newPlan.monthly} onChange={(e) => setNewPlan({ ...newPlan, monthly: e.target.value })} min={0} />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Yearly (cents)</label>
+                <Input type="number" value={newPlan.yearly} onChange={(e) => setNewPlan({ ...newPlan, yearly: e.target.value })} min={0} />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Max members</label>
+                <Input type="number" value={newPlan.maxMembers} onChange={(e) => setNewPlan({ ...newPlan, maxMembers: e.target.value })} placeholder="-1 = unlimited" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button size="sm" variant="outline" onClick={() => setCreating(false)}>Cancel</Button>
+              <Button
+                size="sm"
+                onClick={() => createMutation.mutate()}
+                disabled={createMutation.isPending || !newPlan.name || !newPlan.slug}
+                className="bg-primary text-primary-foreground"
+              >
+                {createMutation.isPending ? 'Creating...' : 'Create plan'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!creating && (
+        <div className="flex justify-end">
+          <Button size="sm" variant="outline" onClick={() => setCreating(true)}>
+            <CreditCard className="h-4 w-4 mr-2" />
+            Create custom plan
+          </Button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+interface AuditLogRow {
+  id: string
+  action: string
+  entity_type: string | null
+  entity_id: string | null
+  old_value: Record<string, unknown> | null
+  new_value: Record<string, unknown> | null
+  created_at: string
+  user_id: string | null
+  org_id: string | null
+  actor_email: string | null
+}
+
+function AuditLogsTab() {
+  const [actionFilter, setActionFilter] = useState('')
+  const [orgFilter, setOrgFilter] = useState('')
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
+  const [page, setPage] = useState(0)
+  const pageSize = 50
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin', 'audit', actionFilter, orgFilter, from, to, page],
+    queryFn: async () => {
+      const result = await getAdminAuditLogs({
+        action: actionFilter || undefined,
+        org_id: orgFilter || undefined,
+        from: from || undefined,
+        to: to || undefined,
+        limit: pageSize,
+        offset: page * pageSize,
+      })
+      if ('error' in result && result.error) throw new Error(result.error)
+      return result
+    },
+  })
+
+  const orgsQuery = useQuery({
+    queryKey: ['admin', 'orgs'],
+    queryFn: async () => {
+      const result = await getAdminOrganizations()
+      if ('error' in result && result.error) throw new Error(result.error)
+      return (result as { orgs?: Array<{ id: string; name: string; slug: string; status: string }> }).orgs || []
+    },
+  })
+
+  const logs = (data as { logs?: AuditLogRow[] })?.logs || []
+  const total = (data as { total?: number })?.total || 0
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
+
+  return (
+    <div className="space-y-4">
+      <Card className="glass-card border-border">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
+            <select
+              value={actionFilter}
+              onChange={(e) => { setActionFilter(e.target.value); setPage(0) }}
+              className="bg-muted border border-border rounded-lg px-3 py-1.5 text-sm text-foreground"
+            >
+              <option value="">All actions</option>
+              <option value="user.login">user.login</option>
+              <option value="expense.create">expense.create</option>
+              <option value="expense.update">expense.update</option>
+              <option value="expense.delete">expense.delete</option>
+              <option value="member.add">member.add</option>
+              <option value="member.remove">member.remove</option>
+              <option value="member.role_change">member.role_change</option>
+              <option value="invite.send">invite.send</option>
+              <option value="invite.revoke">invite.revoke</option>
+              <option value="invite.accept">invite.accept</option>
+              <option value="settings.update">settings.update</option>
+              <option value="org.profile_update">org.profile_update</option>
+              <option value="org.status_change">org.status_change</option>
+              <option value="request.approve">request.approve</option>
+              <option value="request.reject">request.reject</option>
+              <option value="plan.price_update">plan.price_update</option>
+              <option value="subscription.plan_change">subscription.plan_change</option>
+            </select>
+            <select
+              value={orgFilter}
+              onChange={(e) => { setOrgFilter(e.target.value); setPage(0) }}
+              className="bg-muted border border-border rounded-lg px-3 py-1.5 text-sm text-foreground"
+            >
+              <option value="">All organizations</option>
+              {(orgsQuery.data || []).map((org) => (
+                <option key={org.id} value={org.id}>{org.name}</option>
+              ))}
+            </select>
+            <input
+              type="date"
+              value={from}
+              onChange={(e) => { setFrom(e.target.value); setPage(0) }}
+              className="bg-muted border border-border rounded-lg px-3 py-1.5 text-sm text-foreground"
+            />
+            <span className="text-xs text-muted-foreground">to</span>
+            <input
+              type="date"
+              value={to}
+              onChange={(e) => { setTo(e.target.value); setPage(0) }}
+              className="bg-muted border border-border rounded-lg px-3 py-1.5 text-sm text-foreground"
+            />
+            {(actionFilter || orgFilter || from || to) && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => { setActionFilter(''); setOrgFilter(''); setFrom(''); setTo(''); setPage(0) }}
+              >
+                <X className="h-4 w-4 mr-1" />
+                Clear
+              </Button>
+            )}
+            <span className="text-xs text-muted-foreground ml-auto">{total} entries</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="glass-card border-border">
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-12 w-full rounded-xl" />
+              <Skeleton className="h-64 w-full rounded-xl" />
+            </div>
+          ) : logs.length === 0 ? (
+            <EmptyState
+              icon={<ScrollText className="h-8 w-8" />}
+              title="No audit entries match the filters"
+              description="Adjust the filters or broaden the date range to see more activity"
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border/20">
+                    <th className="text-left py-3 px-3 text-muted-foreground font-medium">When</th>
+                    <th className="text-left py-3 px-3 text-muted-foreground font-medium">Action</th>
+                    <th className="text-left py-3 px-3 text-muted-foreground font-medium">Actor</th>
+                    <th className="text-left py-3 px-3 text-muted-foreground font-medium">Entity</th>
+                    <th className="text-left py-3 px-3 text-muted-foreground font-medium">Changes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs.map((log) => (
+                    <tr key={log.id} className="border-b border-border/10 hover:bg-muted/50 transition-colors">
+                      <td className="py-3 px-3 font-mono text-xs text-muted-foreground whitespace-nowrap">
+                        {new Date(log.created_at).toLocaleString()}
+                      </td>
+                      <td className="py-3 px-3">
+                        <Badge variant="outline" className="font-mono text-[10px]">{log.action}</Badge>
+                      </td>
+                      <td className="py-3 px-3 text-xs text-foreground">{log.actor_email || log.user_id || '—'}</td>
+                      <td className="py-3 px-3 text-xs text-muted-foreground">
+                        <span className="font-mono text-[10px]">{log.entity_type || '—'}</span>
+                        {log.entity_id && <span className="ml-1 font-mono text-[10px] opacity-60">{log.entity_id.slice(0, 8)}…</span>}
+                      </td>
+                      <td className="py-3 px-3">
+                        <div className="space-y-0.5">
+                          {log.old_value && (
+                            <pre className="text-[10px] font-mono text-muted-foreground/70 whitespace-pre-wrap leading-tight">
+                              {JSON.stringify(log.old_value)}
+                            </pre>
+                          )}
+                          {log.new_value && (
+                            <pre className="text-[10px] font-mono text-foreground/80 whitespace-pre-wrap leading-tight">
+                              {JSON.stringify(log.new_value)}
+                            </pre>
+                          )}
+                          {!log.old_value && !log.new_value && <span className="text-xs text-muted-foreground/50">—</span>}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-4">
+              <span className="text-xs text-muted-foreground">
+                Page {page + 1} of {totalPages}
+              </span>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage(page - 1)}>
+                  Previous
+                </Button>
+                <Button size="sm" variant="outline" disabled={page + 1 >= totalPages} onClick={() => setPage(page + 1)}>
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

@@ -9,11 +9,13 @@ import type { LucideIcon } from 'lucide-react'
 
 const roleIcons: Record<string, LucideIcon> = {
   super_admin: Shield,
+  org_admin: Users,
   member: Users,
 }
 
 const roleLabels: Record<string, string> = {
   super_admin: 'Super Admin',
+  org_admin: 'Org Admin',
   member: 'Org Member',
 }
 
@@ -34,8 +36,12 @@ export function OrgSwitcher() {
 
   if (loading || orgs.length === 0) return null
 
-  // If user only has one org, no need for switcher
-  if (orgs.length === 1 && !activeOrg) return null
+  // Never render for platform super admins (FR-4, UX-DR9) — they are pinned
+  // to the /admin console and should never see an org switcher.
+  if (activeOrg?.role === 'super_admin') return null
+
+  // Hidden at ≤1 membership — nothing to switch between (FR-4, UX-DR9).
+  if (orgs.length <= 1) return null
 
   return (
     <div ref={ref} className="relative">

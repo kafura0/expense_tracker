@@ -32,8 +32,10 @@ export interface DashboardScope {
   orgId: string | null
   userId: string
   persona: DashboardPersona
-  /** Base currency for the scope (solo personal budgets default to KES). */
+  /** Effective base currency (personal override → org default → USD). */
   baseCurrency: string
+  /** Effective VAT rate (personal override → org default → 16). */
+  vatRate: number
 }
 
 interface ResolvedScopeState {
@@ -118,6 +120,12 @@ export function useDashboardScope(): ResolvedScopeState {
       let orgId: string | null = null
       let persona: DashboardPersona = 'solo'
       let baseCurrency = 'USD'
+      let vatRate = 16
+
+      const applyPersonalSettings = (settings: { base_currency?: string | null; vat_rate?: number | null }) => {
+        if (settings.base_currency) baseCurrency = settings.base_currency
+        if (settings.vat_rate != null) vatRate = Number(settings.vat_rate)
+      }
 
       if (!isSolo && activeOrg) {
         orgId = activeOrg.org_id
@@ -131,32 +139,42 @@ export function useDashboardScope(): ResolvedScopeState {
           persona = 'org'
         }
 
-        const { data: settings } = await supabase
-          .from('settings')
-          .select('base_currency')
-          .eq('user_id', user.id)
-          .eq('org_id', orgId)
-          .maybeSingle()
+        const [{ data: settings }, { data: org }] = await Promise.all([
+          supabase
+            .from('settings')
+            .select('base_currency, vat_rate')
+            .eq('user_id', user.id)
+            .eq('org_id', orgId)
+            .maybeSingle(),
+          supabase
+            .from('organizations')
+            .select('default_currency, default_vat_rate')
+            .eq('id', orgId)
+            .maybeSingle(),
+        ])
 
-        if (settings) {
-          baseCurrency = (settings as { base_currency?: string }).base_currency || 'USD'
-        }
+        // Effective values: personal override → org default → fallback.
+        baseCurrency = settings?.base_currency || org?.default_currency || 'USD'
+        vatRate =
+          settings?.vat_rate != null
+            ? Number(settings.vat_rate)
+            : org?.default_vat_rate != null
+              ? Number(org.default_vat_rate)
+              : 16
       } else {
         const { data: settings } = await supabase
           .from('settings')
-          .select('base_currency')
+          .select('base_currency, vat_rate')
           .eq('user_id', user.id)
           .is('org_id', null)
           .maybeSingle()
 
-        if (settings) {
-          baseCurrency = (settings as { base_currency?: string }).base_currency || 'USD'
-        }
+        applyPersonalSettings(settings ?? {})
       }
 
       if (!cancelled) {
         setState({
-          scope: { orgId, userId: user.id, persona, baseCurrency },
+          scope: { orgId, userId: user.id, persona, baseCurrency, vatRate },
           loading: false,
         })
       }

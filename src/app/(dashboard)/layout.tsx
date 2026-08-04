@@ -120,6 +120,7 @@ export default function DashboardLayout({
 
   const roleLabels: Record<string, string> = {
     super_admin: 'Super Admin',
+    org_admin: 'Org Admin',
     member: 'Org Member',
   }
 

@@ -4,7 +4,7 @@ export interface OrgMember {
   id: string
   org_id: string
   user_id: string
-  role: 'super_admin' | 'member'
+  role: 'super_admin' | 'org_admin' | 'member'
   created_at: string
 }
 
@@ -21,7 +21,7 @@ export interface Organization {
 export interface OrgContext {
   org_id: string
   org: Organization
-  role: 'super_admin' | 'member'
+  role: 'super_admin' | 'org_admin' | 'member'
 }
 
 /**
@@ -96,7 +96,7 @@ export async function canWriteInOrg(userId: string, orgId: string): Promise<bool
     .single()
 
   if (error || !data) return false
-  return data.role === 'super_admin' || data.role === 'member'
+  return data.role === 'super_admin' || data.role === 'org_admin' || data.role === 'member'
 }
 
 /**
@@ -142,31 +142,3 @@ export async function createOrganization(
   return data as string
 }
 
-/**
- * Audit log helper.
- */
-export async function logAuditEvent(params: {
-  org_id?: string
-  user_id?: string
-  action: string
-  entity_type: string
-  entity_id?: string
-  old_value?: Record<string, unknown>
-  new_value?: Record<string, unknown>
-  ip_address?: string
-  user_agent?: string
-}): Promise<void> {
-  const supabase = await createClient()
-
-  await supabase.from('audit_logs').insert({
-    org_id: params.org_id || null,
-    user_id: params.user_id || null,
-    action: params.action,
-    entity_type: params.entity_type,
-    entity_id: params.entity_id || null,
-    old_value: params.old_value || null,
-    new_value: params.new_value || null,
-    ip_address: params.ip_address || null,
-    user_agent: params.user_agent || null,
-  })
-}

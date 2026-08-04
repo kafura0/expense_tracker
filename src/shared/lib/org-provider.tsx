@@ -30,7 +30,11 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/shared/lib/supabase/client'
-import { getActiveOrgIdAction, switchOrg as switchOrgAction } from '@/shared/lib/org-actions'
+import {
+  getActiveOrgIdAction,
+  switchOrg as switchOrgAction,
+  ensureActiveOrg,
+} from '@/shared/lib/org-actions'
 
 /**
  * Represents an organization the user belongs to.
@@ -156,22 +160,27 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
     setOrgs(orgList)
 
     /**
-     * Determine the active org:
+     * Resolve the active org:
      * 1. Try reading from the server action (which reads the httpOnly cookie)
-     * 2. If no cookie or invalid cookie, fall back to the first org
+     * 2. If the cookie is absent or invalid but the user has memberships,
+     *    call `ensureActiveOrg` so the server repins to the earliest
+     *    membership and writes the cookie server-side (FR-2, AD-3).
+     * 3. If the user has no orgs at all, leave active org null (solo/no-access).
      */
     const activeOrgId = await getActiveOrgIdAction()
 
-    const active = activeOrgId
+    let active = activeOrgId
       ? orgList.find(o => o.org_id === activeOrgId)
-      : orgList[0]
+      : null
 
-    if (active) {
-      setActiveOrg(active)
-    } else {
-      setActiveOrg(null)
+    if (!active && orgList.length > 0) {
+      const resolved = await ensureActiveOrg()
+      active = resolved.org_id
+        ? orgList.find(o => o.org_id === resolved.org_id) || null
+        : null
     }
 
+    setActiveOrg(active || null)
     setLoading(false)
   }, [])
 

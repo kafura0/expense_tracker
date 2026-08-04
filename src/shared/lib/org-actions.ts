@@ -48,6 +48,71 @@ export async function getActiveOrgIdAction(): Promise<string | null> {
   return getActiveOrgId()
 }
 
+function setActiveOrgCookie(orgId: string) {
+  return cookies().then((cookieStore) =>
+    cookieStore.set(ACTIVE_ORG_COOKIE, orgId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+    })
+  )
+}
+
+/**
+ * Server action: resolve the active org, repinning the httpOnly cookie when it
+ * is absent, invalid, or stale (FR-2, AD-3).
+ *
+ * Resolution order:
+ *   1. If the cookie exists and still references a real membership, keep it.
+ *   2. Otherwise, repin to the caller's earliest-`created_at` membership
+ *      (preferring an ACTIVE organization) and write the cookie server-side.
+ *   3. A user with no memberships resolves to null — no cookie is written and
+ *      org-scoped queries return no rows (RLS), never an error.
+ *
+ * The cookie is only ever written by server code; client code contains no
+ * `document.cookie` write for it.
+ */
+export async function ensureActiveOrg(): Promise<{ org_id: string | null }> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { org_id: null }
+
+  const current = await getActiveOrgId()
+  if (current) {
+    const access = await validateOrgAccess(user.id, current)
+    if (access?.hasAccess) return { org_id: current }
+    // Cookie references a membership that no longer exists — repin below.
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let memberships: any[] | null = null
+  try {
+    const result = await supabase
+      .from('org_members')
+      .select('org_id, created_at, organizations!inner(id, status)')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: true })
+    memberships = result.data
+  } catch {
+    return { org_id: null }
+  }
+
+  if (!memberships || memberships.length === 0) return { org_id: null }
+
+  // Prefer the earliest membership whose org is still active.
+  const active = memberships.find(
+    (m) => (m.organizations as unknown as { status?: string } | null)?.status === 'active'
+  )
+  const target = active?.org_id || memberships[0].org_id
+
+  await setActiveOrgCookie(target)
+  return { org_id: target }
+}
+
 /**
  * Server action: Switch the active organization.
  *
@@ -77,14 +142,17 @@ export async function switchOrg(orgId: string) {
     return { error: 'You do not have access to this organization' }
   }
 
-  const cookieStore = await cookies()
-  cookieStore.set(ACTIVE_ORG_COOKIE, orgId, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 60 * 60 * 24 * 30, // 30 days
-  })
+  // Do not allow switching to a suspended/cancelled org.
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('status')
+    .eq('id', orgId)
+    .maybeSingle()
+  if (org && org.status !== 'active') {
+    return { error: 'This organization is not active' }
+  }
+
+  await setActiveOrgCookie(orgId)
 
   return { success: true }
 }

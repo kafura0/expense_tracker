@@ -55,7 +55,7 @@ export interface OrgContext {
   /** URL-safe slug for routing. */
   org_slug: string
   /** The user's role in THIS org — different users can have different roles in different orgs. */
-  role: 'super_admin' | 'member'
+  role: 'super_admin' | 'org_admin' | 'member'
   /** Org status — only 'active' orgs should allow data access. */
   status: string
 }

@@ -56,6 +56,10 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
   const supabase = createClient()
   const { scope } = useDashboardScope()
 
+  // Effective values (AD-8): personal override → org default → fallback.
+  const effectiveCurrency = scope?.baseCurrency || BASE_CURRENCY
+  const effectiveVatRate = scope?.vatRate ?? DEFAULT_VAT_RATE
+
   const isEditing = !!expense
 
   const {
@@ -78,7 +82,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
       is_taxable: expense.is_taxable ?? false,
     } : {
       entry_type: 'expense',
-      currency: 'USD',
+      currency: effectiveCurrency as ExpenseInsert['currency'],
       date: toLocalDateTimeLocal(new Date()),
       tax_applicable: false,
       is_taxable: false,
@@ -149,7 +153,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
 
   const fetchRates = useCallback(async () => {
     try {
-      const response = await fetch(`/api/rates?base=${BASE_CURRENCY}`)
+      const response = await fetch(`/api/rates?base=${effectiveCurrency}`)
       if (response.ok) {
         const data = await response.json()
         setRates(data.rates)
@@ -157,7 +161,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
     } catch (error) {
       console.error('Error fetching rates:', error)
     }
-  }, [])
+  }, [effectiveCurrency])
 
   useEffect(() => {
     fetchRates()
@@ -165,21 +169,21 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
 
   useEffect(() => {
     if (watchedAmount && watchedCurrency) {
-      const converted = convertAmount(watchedAmount, watchedCurrency, BASE_CURRENCY, rates)
+      const converted = convertAmount(watchedAmount, watchedCurrency, effectiveCurrency, rates)
       setConvertedAmount(converted !== null ? Math.round(converted) : null)
     } else {
       setConvertedAmount(null)
     }
-  }, [watchedAmount, watchedCurrency, rates])
+  }, [watchedAmount, watchedCurrency, rates, effectiveCurrency])
 
   useEffect(() => {
     if (watchedAmount && watchedIsTaxable) {
-      const result = calculateVAT(watchedAmount, DEFAULT_VAT_RATE)
+      const result = calculateVAT(watchedAmount, effectiveVatRate)
       setVatResult(result)
     } else {
       setVatResult(null)
     }
-  }, [watchedAmount, watchedIsTaxable])
+  }, [watchedAmount, watchedIsTaxable, effectiveVatRate])
 
   const onSubmit = async (data: ExpenseInsert) => {
     try {
@@ -190,7 +194,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
         resolvedCategoryId = await resolveCategoryId(categoryKey)
       }
 
-      const needsConversion = data.currency !== BASE_CURRENCY
+      const needsConversion = data.currency !== effectiveCurrency
       const rate = rates[data.currency]
 
       // Never store a silently 1:1 converted amount — require a real rate.
@@ -204,9 +208,9 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
         category_id: resolvedCategoryId,
         date: new Date(data.date).toISOString(),
         converted_amount_cents: needsConversion ? convertedAmount : undefined,
-        converted_currency: BASE_CURRENCY,
+        converted_currency: effectiveCurrency,
         exchange_rate_used: needsConversion ? rate : undefined,
-        tax_rate_used: data.is_taxable ? DEFAULT_VAT_RATE : undefined,
+        tax_rate_used: data.is_taxable ? effectiveVatRate : undefined,
         tax_amount_cents: vatResult?.tax,
       }
 
@@ -300,7 +304,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
         </div>
       </div>
 
-      {convertedAmount !== null && watchedCurrency !== BASE_CURRENCY && (
+      {convertedAmount !== null && watchedCurrency !== effectiveCurrency && (
         <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl border border-border">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <ArrowRightLeft className="h-4 w-4" />
@@ -308,11 +312,11 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
           <div className="flex-1">
             <p className="text-sm text-foreground">
               Converted: <span className="font-bold text-primary">
-                {currencySymbol(BASE_CURRENCY)}{(convertedAmount / 100).toFixed(2)} {BASE_CURRENCY}
+                {currencySymbol(effectiveCurrency)}{(convertedAmount / 100).toFixed(2)} {effectiveCurrency}
               </span>
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Rate: 1 {watchedCurrency} = {rates[watchedCurrency]?.toFixed(4)} {BASE_CURRENCY}
+              Rate: 1 {watchedCurrency} = {rates[watchedCurrency]?.toFixed(4)} {effectiveCurrency}
             </p>
           </div>
         </div>
@@ -396,7 +400,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
           />
           <label htmlFor="is_taxable" className="text-sm font-medium text-foreground cursor-pointer flex items-center gap-2">
             <Percent className="h-3.5 w-3.5 text-muted-foreground" />
-            Tax applicable (VAT {DEFAULT_VAT_RATE}%)
+            Tax applicable (VAT {effectiveVatRate}%)
           </label>
         </div>
       )}
@@ -408,7 +412,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
           </div>
           <div className="flex-1">
             <p className="text-sm text-foreground">
-              Tax ({DEFAULT_VAT_RATE}%):{' '}
+              Tax ({effectiveVatRate}%):{' '}
               <span className="font-bold text-amber-600">
                 {currencySymbol(watchedCurrency)}{(vatResult.tax / 100).toFixed(2)}
               </span>

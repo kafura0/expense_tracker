@@ -1,115 +1,110 @@
+/**
+ * @fileoverview Single audit-logging implementation for Ledgerly.
+ *
+ * Every application-level audit write goes through the SECURITY DEFINER
+ * `log_audit_event` RPC shipped in migration 013. The RPC:
+ *   - re-derives the actor from the session JWT (never trusts a client id)
+ *   - enforces a pinned action vocabulary (must match AUDIT_ACTIONS below)
+ *   - rejects org-scoped writes from users who cannot admin that org
+ *
+ * Direct `audit_logs` INSERT/UPDATE/DELETE are revoked from `authenticated`
+ * and no RLS policy permits them, so this RPC is the ONLY app write path.
+ * (The sole exception is the `invite.accept` row written atomically inside
+ * the DB's `accept_invite` function, whose actor is a new `member`.)
+ *
+ * @see supabase/migrations/013_org_administration.sql
+ */
+
 import { createClient } from '@/shared/lib/supabase/server'
 
-export type AuditAction = 
-  | 'user.login'
-  | 'user.logout'
-  | 'user.password_reset'
-  | 'user.password_update'
-  | 'expense.create'
-  | 'expense.update'
-  | 'expense.delete'
-  | 'expense.restore'
-  | 'expense.duplicate'
-  | 'settings.update'
-  | 'export.csv'
-  | 'export.pdf'
+/** Pinned audit action vocabulary — MUST match the SQL list in migration 013. */
+export const AUDIT_ACTIONS = [
+  'user.login',
+  'user.logout',
+  'user.password_reset',
+  'user.password_update',
+  'expense.create',
+  'expense.update',
+  'expense.delete',
+  'expense.restore',
+  'expense.duplicate',
+  'export.csv',
+  'export.pdf',
+  'settings.update',
+  'member.add',
+  'member.remove',
+  'member.role_change',
+  'invite.send',
+  'invite.revoke',
+  'invite.resend',
+  'invite.accept',
+  'org.profile_update',
+  'org.defaults_update',
+  'org.status_change',
+  'request.approve',
+  'request.reject',
+  'plan.price_update',
+  'subscription.plan_change',
+] as const
 
-interface AuditLogEntry {
+export type AuditAction = (typeof AUDIT_ACTIONS)[number]
+
+export interface AuditLogEntry {
   action: AuditAction
-  user_id?: string
-  resource_type?: string
-  resource_id?: string
-  metadata?: Record<string, unknown>
-  ip_address?: string
-  user_agent?: string
+  /** Org the event belongs to; null for platform/solo events. */
+  org_id?: string | null
+  /** Canonical migration-002 entity type (e.g. 'org_member', 'invite'). */
+  entity_type?: string | null
+  entity_id?: string | null
+  old_value?: Record<string, unknown> | null
+  new_value?: Record<string, unknown> | null
 }
 
 /**
- * Log an audit event to the database
- * 
- * This function is designed to be non-blocking - it logs asynchronously
- * and never throws errors that would break the user's workflow.
+ * Append an audit event via the `log_audit_event` RPC.
+ *
+ * Non-blocking by design: it never throws and never breaks the calling
+ * workflow. Returns the generated audit row id (or null on failure).
  */
-export async function logAuditEvent(entry: AuditLogEntry): Promise<void> {
+export async function logAuditEvent(entry: AuditLogEntry): Promise<string | null> {
   try {
     const supabase = await createClient()
-    
-    // Get current user if not provided
-    let userId = entry.user_id
-    if (!userId) {
-      const { data: { user } } = await supabase.auth.getUser()
-      userId = user?.id
-    }
-
-    // Insert audit log (this table should have RLS disabled for inserts)
-    // or use a service role client for audit logging
-    await supabase.from('audit_logs').insert({
-      action: entry.action,
-      user_id: userId,
-      resource_type: entry.resource_type,
-      resource_id: entry.resource_id,
-      metadata: entry.metadata,
-      ip_address: entry.ip_address,
-      user_agent: entry.user_agent,
-      created_at: new Date().toISOString(),
+    const { data, error } = await supabase.rpc('log_audit_event', {
+      p_action: entry.action,
+      p_org_id: entry.org_id ?? null,
+      p_entity_type: entry.entity_type ?? null,
+      p_entity_id: entry.entity_id ?? null,
+      p_old_value: entry.old_value ?? null,
+      p_new_value: entry.new_value ?? null,
     })
+
+    if (error) throw new Error(error.message)
+    return (data as string | null) ?? null
   } catch (error) {
-    // Audit logging should never fail the main operation
-    // Log to console in development, use a monitoring service in production
+    // Audit logging must never fail the main operation
     console.error('Audit log failed:', error)
+    return null
   }
 }
 
 /**
- * Create an audit logger with pre-filled context
+ * Create an audit logger with a pre-filled org context.
  */
-export function createAuditLogger(context: {
-  ip_address?: string
-  user_agent?: string
-}) {
+export function createAuditLogger(context: { org_id?: string | null } = {}) {
   return {
-    log: (action: AuditAction, details?: Omit<AuditLogEntry, 'action' | 'ip_address' | 'user_agent'>) => {
-      return logAuditEvent({
+    log: (action: AuditAction, details?: Omit<AuditLogEntry, 'action' | 'org_id'>) =>
+      logAuditEvent({
         action,
-        ...context,
+        org_id: context.org_id ?? null,
         ...details,
-      })
-    },
+      }),
   }
 }
 
 /**
- * SQL to create the audit_logs table in Supabase
- * Run this in the SQL Editor if the table doesn't exist
+ * Narrow type guard so callers holding a raw action string can check it
+ * against the pinned vocabulary before logging.
  */
-export const AUDIT_LOGS_TABLE_SQL = `
-CREATE TABLE IF NOT EXISTS audit_logs (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  action TEXT NOT NULL,
-  user_id UUID REFERENCES auth.users(id),
-  resource_type TEXT,
-  resource_id TEXT,
-  metadata JSONB,
-  ip_address TEXT,
-  user_agent TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Index for querying audit logs
-CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
-CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
-CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC);
-
--- Enable RLS but allow inserts from authenticated users (for their own logs)
-ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
-
--- Policy: Users can only read their own audit logs
-CREATE POLICY "Users can read own audit logs" ON audit_logs
-  FOR SELECT
-  USING (auth.uid() = user_id);
-
--- Policy: Authenticated users can insert audit logs
-CREATE POLICY "Authenticated users can insert audit logs" ON audit_logs
-  FOR INSERT
-  WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
-`
+export function isAuditAction(value: string): value is AuditAction {
+  return (AUDIT_ACTIONS as readonly string[]).includes(value)
+}

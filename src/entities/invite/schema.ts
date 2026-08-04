@@ -10,6 +10,8 @@ export const inviteSchema = z.object({
   accepted_by: z.string().uuid().nullable(),
   expires_at: z.string(),
   created_at: z.string(),
+  send_id: z.string().nullable(),
+  last_sent_at: z.string().nullable(),
 })
 
 export const inviteInsertSchema = inviteSchema.omit({
@@ -20,6 +22,8 @@ export const inviteInsertSchema = inviteSchema.omit({
   accepted_by: true,
   created_at: true,
   expires_at: true,
+  send_id: true,
+  last_sent_at: true,
 })
 
 export type Invite = z.infer<typeof inviteSchema>
