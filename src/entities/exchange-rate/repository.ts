@@ -62,3 +62,4 @@ export async function upsertRates(rates: ExchangeRateResponse): Promise<void> {
     throw error
   }
 }
+

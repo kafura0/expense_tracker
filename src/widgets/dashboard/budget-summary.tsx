@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/shared/lib/supabase/client'
 import { applyBudgetScope, applyExpenseScope, type DashboardScope } from '@/features/dashboard/scope'
 import { formatMoney } from '@/shared/lib/currency'
+import { fetchBaseRates } from '@/entities/exchange-rate/base-rates'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card'
 import { CategoryIconTile } from '@/shared/ui/category-icon'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -39,7 +40,7 @@ export function BudgetSummary({ scope }: { scope: DashboardScope }) {
 
     let expenseQuery = supabase
       .from('expenses')
-      .select('amount_cents, category_id')
+      .select('amount_cents, currency, category_id')
       .eq('is_deleted', false)
       .eq('entry_type', 'expense')
       .gte('date', start.toISOString())
@@ -48,10 +49,15 @@ export function BudgetSummary({ scope }: { scope: DashboardScope }) {
     const { data: expenses, error: expenseError } = await expenseQuery
     if (expenseError) throw expenseError
 
+    const rates = await fetchBaseRates(supabase, scope.baseCurrency)
+
     const spentByCategory = expenses?.reduce((acc, e) => {
       const catId = e.category_id
       if (!catId) return acc
-      acc[catId] = (acc[catId] || 0) + e.amount_cents
+      const converted = e.currency === scope.baseCurrency
+        ? e.amount_cents
+        : (rates[e.currency] ? Math.round(e.amount_cents / rates[e.currency]) : 0)
+      acc[catId] = (acc[catId] || 0) + converted
       return acc
     }, {} as Record<string, number>) || {}
 

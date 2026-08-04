@@ -3,6 +3,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/shared/lib/supabase/client'
 import { applyExpenseScope, applyCategoryScope, type DashboardScope } from '@/features/dashboard/scope'
+import { sumInBaseCurrency } from '@/entities/expense/totals'
+import { fetchBaseRates } from '@/entities/exchange-rate/base-rates'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { TrendingUp, TrendingDown, AlertCircle, Lightbulb, Sparkles } from 'lucide-react'
@@ -27,7 +29,7 @@ export function Insights({ scope }: { scope: DashboardScope }) {
 
     let currentQuery = supabase
       .from('expenses')
-      .select('amount_cents, category_id')
+      .select('amount_cents, currency, category_id')
       .eq('is_deleted', false)
       .eq('entry_type', 'expense')
       .gte('date', currentMonthStart.toISOString())
@@ -39,7 +41,7 @@ export function Insights({ scope }: { scope: DashboardScope }) {
 
     let lastQuery = supabase
       .from('expenses')
-      .select('amount_cents, category_id')
+      .select('amount_cents, currency, category_id')
       .eq('is_deleted', false)
       .eq('entry_type', 'expense')
       .gte('date', lastMonthStart.toISOString())
@@ -57,9 +59,11 @@ export function Insights({ scope }: { scope: DashboardScope }) {
 
     if (catError) throw new Error(`Failed to fetch categories: ${catError.message}`)
 
+    const rates = await fetchBaseRates(supabase, scope.baseCurrency)
+
     const insights: Insight[] = []
-    const currentTotal = currentExpenses?.reduce((sum, e) => sum + e.amount_cents, 0) || 0
-    const lastTotal = lastExpenses?.reduce((sum, e) => sum + e.amount_cents, 0) || 0
+    const currentTotal = sumInBaseCurrency(currentExpenses || [], scope.baseCurrency, rates)
+    const lastTotal = sumInBaseCurrency(lastExpenses || [], scope.baseCurrency, rates)
 
     if (lastTotal > 0) {
       const change = ((currentTotal - lastTotal) / lastTotal) * 100
@@ -74,7 +78,9 @@ export function Insights({ scope }: { scope: DashboardScope }) {
       const catId = e.category_id
       if (!catId) return acc
       if (!acc[catId]) acc[catId] = 0
-      acc[catId] += e.amount_cents
+      acc[catId] += e.currency === scope.baseCurrency
+        ? e.amount_cents
+        : (rates[e.currency] ? Math.round(e.amount_cents / rates[e.currency]) : 0)
       return acc
     }, {} as Record<string, number>) || {}
 
@@ -82,7 +88,9 @@ export function Insights({ scope }: { scope: DashboardScope }) {
       const catId = e.category_id
       if (!catId) return acc
       if (!acc[catId]) acc[catId] = 0
-      acc[catId] += e.amount_cents
+      acc[catId] += e.currency === scope.baseCurrency
+        ? e.amount_cents
+        : (rates[e.currency] ? Math.round(e.amount_cents / rates[e.currency]) : 0)
       return acc
     }, {} as Record<string, number>) || {}
 

@@ -11,6 +11,8 @@ import { Skeleton } from '@/shared/ui/skeleton'
 import { useToast } from '@/shared/ui/toast'
 import { useDashboardScope, applyExpenseScope } from '@/features/dashboard/scope'
 import { formatMoney } from '@/shared/lib/currency'
+import { sumInBaseCurrency } from '@/entities/expense/totals'
+import { fetchBaseRates } from '@/entities/exchange-rate/base-rates'
 import { generateCSV, downloadCSV } from '@/shared/lib/csv-export'
 import { generatePDF } from '@/shared/lib/pdf-export'
 import {
@@ -110,12 +112,13 @@ export default function ReportsPage() {
     queryFn: async () => {
       if (!scope) throw new Error('No scope resolved')
       const now = new Date().toISOString()
-      const [current, previous, monthly] = await Promise.all([
+      const [current, previous, monthly, rates] = await Promise.all([
         fetchWindow(fromIso, now),
         fetchWindow(prevFromIso, fromIso),
         fetchWindow(new Date(new Date().setMonth(new Date().getMonth() - 6)).toISOString(), now),
+        fetchBaseRates(supabase, scope.baseCurrency),
       ])
-      return { current, previous, monthly }
+      return { current, previous, monthly, rates }
     },
     enabled: !!scope,
   })
@@ -123,9 +126,10 @@ export default function ReportsPage() {
   const stats = (() => {
     const current = data?.current || []
     const previous = data?.previous || []
+    const rates = data?.rates || {}
 
-    const total = current.reduce((a, e) => a + e.amount_cents, 0)
-    const prevTotal = previous.reduce((a, e) => a + e.amount_cents, 0)
+    const total = sumInBaseCurrency(current, scope?.baseCurrency || 'USD', rates)
+    const prevTotal = sumInBaseCurrency(previous, scope?.baseCurrency || 'USD', rates)
     const count = current.length
 
     const start = rangeStart(range).getTime()
@@ -146,31 +150,36 @@ export default function ReportsPage() {
 
   const monthlyBuckets = (() => {
     const rows = data?.monthly || []
+    const rates = data?.rates || {}
+    const base = scope?.baseCurrency || 'USD'
     const buckets: { key: string; label: string; total: number }[] = []
     for (let i = 5; i >= 0; i--) {
       const d = new Date()
       d.setMonth(d.getMonth() - i)
       const key = `${d.getFullYear()}-${d.getMonth()}`
       const label = d.toLocaleDateString('en-US', { month: 'short' })
-      const total = rows
-        .filter((e) => {
-          const ed = new Date(e.date)
-          return `${ed.getFullYear()}-${ed.getMonth()}` === key
-        })
-        .reduce((a, e) => a + e.amount_cents, 0)
-      buckets.push({ key, label, total })
+      const bucketRows = rows.filter((e) => {
+        const ed = new Date(e.date)
+        return `${ed.getFullYear()}-${ed.getMonth()}` === key
+      })
+      buckets.push({ key, label, total: sumInBaseCurrency(bucketRows, base, rates) })
     }
     return buckets
   })()
 
   const topCategories = (() => {
     const rows = data?.current || []
+    const rates = data?.rates || {}
+    const base = scope?.baseCurrency || 'USD'
     const byCat = new Map<string, { name: string; total: number; color: string | null }>()
     for (const e of rows) {
       const key = e.category_id || 'none'
+      const converted = e.currency === base
+        ? e.amount_cents
+        : (rates[e.currency] ? Math.round(e.amount_cents / rates[e.currency]) : 0)
       const prev = byCat.get(key)
-      if (prev) prev.total += e.amount_cents
-      else byCat.set(key, { name: e.category_name, total: e.amount_cents, color: e.category_color })
+      if (prev) prev.total += converted
+      else byCat.set(key, { name: e.category_name, total: converted, color: e.category_color })
     }
     const list = [...byCat.values()].sort((a, b) => b.total - a.total).slice(0, 6)
     const max = list.length > 0 ? list[0].total : 0
@@ -242,7 +251,7 @@ export default function ReportsPage() {
   }
 
   const maxBucket = Math.max(...monthlyBuckets.map((b) => b.total), 1)
-  const rangeTotal = (data?.current || []).reduce((a, e) => a + e.amount_cents, 0)
+  const rangeTotal = sumInBaseCurrency(data?.current || [], scope?.baseCurrency || 'USD', data?.rates || {})
 
   const summaryCards = [
     {
@@ -276,7 +285,7 @@ export default function ReportsPage() {
   ]
 
   function previousTotal() {
-    return data?.previous?.reduce((a, e) => a + e.amount_cents, 0) || 0
+    return sumInBaseCurrency(data?.previous || [], scope?.baseCurrency || 'USD', data?.rates || {})
   }
 
   if (rangeTotal === 0) {

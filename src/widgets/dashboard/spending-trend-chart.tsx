@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/shared/lib/supabase/client'
 import { applyExpenseScope, type DashboardScope } from '@/features/dashboard/scope'
 import { formatMoney } from '@/shared/lib/currency'
+import { sumInBaseCurrency } from '@/entities/expense/totals'
+import { fetchBaseRates } from '@/entities/exchange-rate/base-rates'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
@@ -43,7 +45,7 @@ export function SpendingTrendChart({ scope }: { scope: DashboardScope }) {
 
     let query = supabase
       .from('expenses')
-      .select('amount_cents, date')
+      .select('amount_cents, currency, date')
       .eq('is_deleted', false)
       .eq('entry_type', 'expense')
       .gte('date', sixMonthsAgo.toISOString())
@@ -53,6 +55,8 @@ export function SpendingTrendChart({ scope }: { scope: DashboardScope }) {
 
     if (error) throw error
 
+    const rates = await fetchBaseRates(supabase, scope.baseCurrency)
+
     const monthlyTotals: Record<string, number> = {}
     for (let i = 5; i >= 0; i--) {
       const monthDate = subMonths(now, i)
@@ -60,11 +64,16 @@ export function SpendingTrendChart({ scope }: { scope: DashboardScope }) {
       monthlyTotals[key] = 0
     }
 
+    const byMonth: Record<string, Array<{ amount_cents: number; currency: string }>> = {}
     for (const expense of data || []) {
       const key = format(new Date(expense.date), 'yyyy-MM')
-      if (key in monthlyTotals) {
-        monthlyTotals[key] += expense.amount_cents
-      }
+      if (!(key in monthlyTotals)) continue
+      if (!byMonth[key]) byMonth[key] = []
+      byMonth[key].push({ amount_cents: expense.amount_cents, currency: expense.currency })
+    }
+
+    for (const key of Object.keys(monthlyTotals)) {
+      monthlyTotals[key] = sumInBaseCurrency(byMonth[key] || [], scope.baseCurrency, rates)
     }
 
     return Object.entries(monthlyTotals).map(([key, total]) => {

@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/shared/lib/supabase/client'
 import { applyExpenseScope, applyBudgetScope, type DashboardScope } from '@/features/dashboard/scope'
 import { formatMoney } from '@/shared/lib/currency'
+import { sumInBaseCurrency } from '@/entities/expense/totals'
+import { fetchBaseRates } from '@/entities/exchange-rate/base-rates'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Card, CardContent } from '@/shared/ui/card'
 import { ArrowUpRight, ArrowDownRight, Wallet, BarChart3, PiggyBank, Target } from 'lucide-react'
@@ -19,7 +21,7 @@ export function KpiCards({ scope }: { scope: DashboardScope }) {
 
     let currentQuery = supabase
       .from('expenses')
-      .select('amount_cents, category_id')
+      .select('amount_cents, currency, category_id')
       .eq('is_deleted', false)
       .eq('entry_type', 'expense')
       .gte('date', startOfMonth.toISOString())
@@ -29,7 +31,7 @@ export function KpiCards({ scope }: { scope: DashboardScope }) {
 
     let lastQuery = supabase
       .from('expenses')
-      .select('amount_cents')
+      .select('amount_cents, currency')
       .eq('is_deleted', false)
       .eq('entry_type', 'expense')
       .gte('date', startOfLastMonth.toISOString())
@@ -43,10 +45,14 @@ export function KpiCards({ scope }: { scope: DashboardScope }) {
     )
     const { data: budgets, error: budgetError } = await budgetQuery
 
+    // Currency-aware aggregation: totals convert each row to the scope's base
+    // currency and only when a cached rate actually exists.
+    const rates = await fetchBaseRates(supabase, scope.baseCurrency)
+
     if (currentError || lastError || budgetError) throw new Error('Failed to fetch KPIs')
 
-    const currentTotal = currentMonth?.reduce((sum, e) => sum + e.amount_cents, 0) || 0
-    const lastTotal = lastMonth?.reduce((sum, e) => sum + e.amount_cents, 0) || 0
+    const currentTotal = sumInBaseCurrency(currentMonth || [], scope.baseCurrency, rates)
+    const lastTotal = sumInBaseCurrency(lastMonth || [], scope.baseCurrency, rates)
     const transactionCount = currentMonth?.length || 0
     const avgTransaction = transactionCount > 0 ? currentTotal / transactionCount : 0
     const spendChange = lastTotal > 0 ? ((currentTotal - lastTotal) / lastTotal) * 100 : 0
@@ -55,7 +61,10 @@ export function KpiCards({ scope }: { scope: DashboardScope }) {
     const spentByCategory = currentMonth?.reduce((acc, e) => {
       const catId = e.category_id
       if (!catId) return acc
-      acc[catId] = (acc[catId] || 0) + e.amount_cents
+      const converted = e.currency === scope.baseCurrency
+        ? e.amount_cents
+        : (rates[e.currency] ? Math.round(e.amount_cents / rates[e.currency]) : 0)
+      acc[catId] = (acc[catId] || 0) + converted
       return acc
     }, {} as Record<string, number>) || {}
 

@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/shared/lib/supabase/client'
 import { applyExpenseScope, type DashboardScope } from '@/features/dashboard/scope'
 import { formatMoney } from '@/shared/lib/currency'
+import { fetchBaseRates } from '@/entities/exchange-rate/base-rates'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { startOfMonth, endOfMonth } from 'date-fns'
@@ -26,7 +27,7 @@ export function TeamSpendLeaderboard({ scope }: { scope: DashboardScope }) {
 
     let expenseQuery = supabase
       .from('expenses')
-      .select('amount_cents, user_id')
+      .select('amount_cents, currency, user_id')
       .eq('is_deleted', false)
       .eq('entry_type', 'expense')
       .gte('date', start.toISOString())
@@ -35,11 +36,15 @@ export function TeamSpendLeaderboard({ scope }: { scope: DashboardScope }) {
     const { data: expenses, error: expenseError } = await expenseQuery
     if (expenseError) throw expenseError
 
+    const rates = await fetchBaseRates(supabase, scope.baseCurrency)
+
     const byUser = expenses?.reduce((acc, e) => {
       if (!acc[e.user_id]) {
         acc[e.user_id] = { userId: e.user_id, name: 'Team member', total: 0, count: 0 }
       }
-      acc[e.user_id].total += e.amount_cents
+      acc[e.user_id].total += e.currency === scope.baseCurrency
+        ? e.amount_cents
+        : (rates[e.currency] ? Math.round(e.amount_cents / rates[e.currency]) : 0)
       acc[e.user_id].count += 1
       return acc
     }, {} as Record<string, MemberSpend>) || {}

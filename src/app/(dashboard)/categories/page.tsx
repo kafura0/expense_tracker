@@ -11,6 +11,7 @@ import { Skeleton } from '@/shared/ui/skeleton'
 import { Input } from '@/shared/ui/input'
 import { useToast } from '@/shared/ui/toast'
 import { useDashboardScope, applyCategoryScope, applyBudgetScope, applyExpenseScope } from '@/features/dashboard/scope'
+import { fetchBaseRates } from '@/entities/exchange-rate/base-rates'
 import { getCategoryIcon } from '@/shared/lib/category-icons'
 import { formatMoney } from '@/shared/lib/currency'
 import { saveBudget, removeBudget } from '@/features/budgets/actions'
@@ -74,7 +75,7 @@ export default function CategoriesPage() {
 
       let expQuery = supabase
         .from('expenses')
-        .select('category_id, amount_cents')
+        .select('category_id, amount_cents, currency')
         .eq('is_deleted', false)
         .eq('entry_type', 'expense')
         .gte('date', monthStart)
@@ -82,13 +83,18 @@ export default function CategoriesPage() {
       const { data: expenses, error: expError } = await expQuery
       if (expError) throw expError
 
+      const rates = await fetchBaseRates(supabase, scope.baseCurrency)
+
       const budgetByCat = new Map<string, { id: string; amount_cents: number }>()
       for (const b of budgets || []) budgetByCat.set(b.category_id, { id: b.id, amount_cents: b.amount_cents })
 
       const spentByCat = new Map<string, number>()
       for (const e of expenses || []) {
         if (!e.category_id) continue
-        spentByCat.set(e.category_id, (spentByCat.get(e.category_id) || 0) + e.amount_cents)
+        const converted = e.currency === scope.baseCurrency
+          ? e.amount_cents
+          : (rates[e.currency] ? Math.round(e.amount_cents / rates[e.currency]) : 0)
+        spentByCat.set(e.category_id, (spentByCat.get(e.category_id) || 0) + converted)
       }
 
       return (categories || []).map((c) => ({

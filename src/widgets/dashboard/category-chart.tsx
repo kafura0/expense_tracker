@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/shared/lib/supabase/client'
 import { applyExpenseScope, applyCategoryScope, type DashboardScope } from '@/features/dashboard/scope'
 import { formatMoney } from '@/shared/lib/currency'
+import { fetchBaseRates } from '@/entities/exchange-rate/base-rates'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card'
 import { CategoryIconTile } from '@/shared/ui/category-icon'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -64,7 +65,7 @@ export function CategoryChart({ scope }: { scope: DashboardScope }) {
 
     let expenseQuery = supabase
       .from('expenses')
-      .select('amount_cents, category_id')
+      .select('amount_cents, currency, category_id')
       .eq('is_deleted', false)
       .eq('entry_type', 'expense')
       .gte('date', start.toISOString())
@@ -82,11 +83,15 @@ export function CategoryChart({ scope }: { scope: DashboardScope }) {
 
     if (categoriesError) throw categoriesError
 
+    const rates = await fetchBaseRates(supabase, scope.baseCurrency)
+
     const categoryTotals = expenses?.reduce((acc, expense) => {
       const catId = expense.category_id
       if (!catId) return acc
       if (!acc[catId]) acc[catId] = 0
-      acc[catId] += expense.amount_cents
+      acc[catId] += expense.currency === scope.baseCurrency
+        ? expense.amount_cents
+        : (rates[expense.currency] ? Math.round(expense.amount_cents / rates[expense.currency]) : 0)
       return acc
     }, {} as Record<string, number>) || {}
 

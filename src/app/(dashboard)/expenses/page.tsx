@@ -4,6 +4,8 @@ import { useState, useCallback, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/shared/lib/supabase/client'
 import { useDashboardScope, applyExpenseScope } from '@/features/dashboard/scope'
+import { sumInBaseCurrency } from '@/entities/expense/totals'
+import { fetchBaseRates } from '@/entities/exchange-rate/base-rates'
 import { ExpenseTable, TableSkeleton } from '@/features/expenses/expense-table'
 import { ExpenseFilters } from '@/features/expenses/expense-filters'
 import { Button } from '@/shared/ui/button'
@@ -69,7 +71,7 @@ export default function ExpensesPage() {
     const pageQuery = query.order(params.sort?.field || 'date', {
       ascending: params.sort?.direction === 'asc'
     }).range(from, to)
-    const totalsQuery = query.select('amount_cents, entry_type')
+    const totalsQuery = query.select('amount_cents, currency, entry_type')
 
     const [pageResult, totalsResult] = await Promise.all([pageQuery, totalsQuery])
     const { data, error, count } = pageResult
@@ -78,12 +80,19 @@ export default function ExpensesPage() {
     if (error) throw error
     if (totalsError) throw totalsError
 
-    const expenseTotal = (totals || [])
-      .filter(t => t.entry_type === 'expense')
-      .reduce((sum, t) => sum + t.amount_cents, 0)
-    const incomeTotal = (totals || [])
-      .filter(t => t.entry_type === 'income')
-      .reduce((sum, t) => sum + t.amount_cents, 0)
+    const base = scope?.baseCurrency || 'USD'
+    const rates = await fetchBaseRates(supabase, base)
+
+    const expenseTotal = sumInBaseCurrency(
+      (totals || []).filter(t => t.entry_type === 'expense'),
+      base,
+      rates
+    )
+    const incomeTotal = sumInBaseCurrency(
+      (totals || []).filter(t => t.entry_type === 'income'),
+      base,
+      rates
+    )
 
     return {
       data: data || [],
