@@ -1,7 +1,4 @@
-'use client'
-
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
 import {
   Globe,
   Receipt,
@@ -20,6 +17,7 @@ import {
   BarChart3,
   Shield,
 } from 'lucide-react'
+import { LandingNav } from '@/widgets/landing/landing-nav'
 
 const FEATURES = [
   {
@@ -148,32 +146,7 @@ const PRICING_PLANS = [
 ]
 
 export default function LandingPage() {
-  const [currentYear] = useState(new Date().getFullYear())
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const sections = document.querySelectorAll('section')
-      const navLinks = document.querySelectorAll('header nav a')
-      let current = ''
-      sections.forEach((section) => {
-        if (window.scrollY >= section.offsetTop - 100) {
-          current = section.getAttribute('id') || ''
-        }
-      })
-      navLinks.forEach((link) => {
-        const href = link.getAttribute('href') || ''
-        if (href === `#${current}`) {
-          link.classList.add('text-primary', 'font-bold')
-          link.classList.remove('text-muted-foreground')
-        } else {
-          link.classList.remove('text-primary', 'font-bold')
-          link.classList.add('text-muted-foreground')
-        }
-      })
-    }
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+  const currentYear = new Date().getFullYear()
 
   return (
     <div className="bg-background text-foreground antialiased selection:bg-primary/30 selection:text-primary-foreground text-center">
@@ -182,17 +155,7 @@ export default function LandingPage() {
         <Link href="/" className="font-headline text-lg md:text-headline-md font-bold text-foreground tracking-tight">
           Ledgerly
         </Link>
-        <nav className="hidden md:flex gap-6 items-center">
-          <a href="#" className="text-primary font-bold border-b-2 border-primary pb-1 font-label-sm text-label-sm">
-            Home
-          </a>
-          <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors duration-150 px-3 py-1 rounded font-label-sm text-label-sm">
-            Features
-          </a>
-          <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors duration-150 px-3 py-1 rounded font-label-sm text-label-sm">
-            Pricing
-          </a>
-        </nav>
+        <LandingNav />
         <div className="flex items-center gap-2">
           <Link href="/login" className="text-muted-foreground hover:text-primary transition-colors font-medium text-sm hidden sm:inline">
             Sign In
