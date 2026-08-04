@@ -44,3 +44,11 @@ next-env.d.ts
 # supabase
 supabase/.temp
 
+# agent tooling
+.claude/
+_bmad/
+_bmad-output/
+.opencode/
+playwright-report/
+test-results/
+

@@ -11,9 +11,12 @@
     "test": "vitest run",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "test:e2e": "playwright test",
+    "test:e2e:install": "playwright install chromium"
   },
   "dependencies": {
+    "@fontsource/material-symbols-outlined": "^5.3.2",
     "@hookform/resolvers": "^3.9.1",
     "@radix-ui/react-avatar": "^1.2.2",
     "@radix-ui/react-dialog": "^1.1.19",
@@ -22,10 +25,12 @@
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.1",
     "@tanstack/react-query": "^5.64.1",
+    "@upstash/redis": "^1.38.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "framer-motion": "^11.18.0",
+    "geist": "^1.7.2",
     "jspdf": "^2.5.2",
     "jspdf-autotable": "^3.8.4",
     "lucide-react": "^0.469.0",
@@ -41,6 +46,7 @@
   },
   "devDependencies": {
     "@babel/preset-typescript": "^7.29.7",
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",
@@ -48,6 +54,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.4",
+    "@vitest/coverage-v8": "^4.1.10",
     "dotenv": "^16.4.7",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",

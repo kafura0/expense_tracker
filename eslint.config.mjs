@@ -12,6 +12,14 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated tooling / agent artifacts
+    "coverage/**",
+    ".claude/**",
+    "_bmad/**",
+    "_bmad-output/**",
+    ".opencode/**",
+    "playwright-report/**",
+    "test-results/**",
   ]),
   // Test file overrides - allow any types in test mocks
   {
