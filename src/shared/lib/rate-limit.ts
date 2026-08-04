@@ -1,8 +1,86 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { Redis } from '@upstash/redis'
 
-// In-memory store for rate limiting (production should use Redis)
-const rateLimitStore = new Map<string, { count: number; resetTime: number }>()
+// ─────────────────────────────────────────────────────────────────────────────
+// Pluggable rate-limit store.
+//
+// Ledgerly uses a `RateLimitStore` so the enforcement layer does not care where
+// counters live. The default is an in-process map, which is correct for single
+// instances but is per-instance on horizontally scaled deployments. When
+// `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` are present, a shared
+// Upstash Redis store is used instead (HTTP-based, no server to run).
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface RateLimitRecord {
+  count: number
+  resetTime: number
+}
+
+export interface RateLimitStore {
+  get(key: string): Promise<RateLimitRecord | null> | RateLimitRecord | null
+  set(key: string, record: RateLimitRecord): Promise<void> | void
+  /** Best-effort cleanup of expired keys (memory stores). */
+  cleanup?(): void
+}
+
+/** In-process store. Works everywhere; not shared between instances. */
+export class MemoryRateLimitStore implements RateLimitStore {
+  private store = new Map<string, RateLimitRecord>()
+
+  get(key: string): RateLimitRecord | null {
+    return this.store.get(key) ?? null
+  }
+
+  set(key: string, record: RateLimitRecord): void {
+    this.store.set(key, record)
+  }
+
+  cleanup(): void {
+    const now = Date.now()
+    for (const [key, record] of this.store.entries()) {
+      if (now > record.resetTime) {
+        this.store.delete(key)
+      }
+    }
+  }
+}
+
+/** Distributed store backed by Upstash Redis REST (used in production). */
+export class UpstashRedisRateLimitStore implements RateLimitStore {
+  private redis: Redis
+
+  constructor(url?: string, token?: string) {
+    if (!url || !token) {
+      throw new Error('UpstashRedisRateLimitStore requires UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN')
+    }
+    this.redis = new Redis({ url, token })
+  }
+
+  async get(key: string): Promise<RateLimitRecord | null> {
+    return this.redis.get<RateLimitRecord>(key)
+  }
+
+  async set(key: string, record: RateLimitRecord): Promise<void> {
+    // Expire the key shortly after the window closes so the store stays lean.
+    const ttlSeconds = Math.max(1, Math.ceil((record.resetTime - Date.now()) / 1000))
+    await this.redis.set(key, record, { ex: ttlSeconds })
+  }
+}
+
+let cachedStore: RateLimitStore | null = null
+
+/** Resolve the configured store once per instance. */
+export function getRateLimitStore(): RateLimitStore {
+  if (cachedStore) return cachedStore
+
+  const url = process.env.UPSTASH_REDIS_REST_URL
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN
+  cachedStore = url && token
+    ? new UpstashRedisRateLimitStore(url, token)
+    : new MemoryRateLimitStore()
+  return cachedStore
+}
 
 // Rate limit configurations
 const RATE_LIMITS = {
@@ -23,29 +101,28 @@ const RATE_LIMITS = {
   },
 } as const
 
-type RateLimitType = keyof typeof RATE_LIMITS
+export type RateLimitType = keyof typeof RATE_LIMITS
 
 function getRateLimitKey(ip: string, type: RateLimitType): string {
-  return `${type}:${ip}`
+  return `rate:${type}:${ip}`
 }
 
-function checkRateLimit(
+async function checkRateLimit(
+  store: RateLimitStore,
   key: string,
   config: { windowMs: number; maxRequests: number }
-): { allowed: boolean; remaining: number; resetTime: number } {
+): Promise<{ allowed: boolean; remaining: number; resetTime: number }> {
   const now = Date.now()
-  const record = rateLimitStore.get(key)
+  const record = await store.get(key)
 
   if (!record || now > record.resetTime) {
     // First request or window expired
-    rateLimitStore.set(key, {
-      count: 1,
-      resetTime: now + config.windowMs,
-    })
+    const fresh: RateLimitRecord = { count: 1, resetTime: now + config.windowMs }
+    await store.set(key, fresh)
     return {
       allowed: true,
       remaining: config.maxRequests - 1,
-      resetTime: now + config.windowMs,
+      resetTime: fresh.resetTime,
     }
   }
 
@@ -58,6 +135,7 @@ function checkRateLimit(
   }
 
   record.count++
+  await store.set(key, record)
   return {
     allowed: true,
     remaining: config.maxRequests - record.count,
@@ -94,17 +172,18 @@ function getRateLimitType(pathname: string): RateLimitType {
   return 'general'
 }
 
-export function rateLimit(request: NextRequest): NextResponse | null {
+export async function rateLimit(request: NextRequest): Promise<NextResponse | null> {
   const ip = getClientIP(request)
   const type = getRateLimitType(request.nextUrl.pathname)
   const config = RATE_LIMITS[type]
   const key = getRateLimitKey(ip, type)
+  const store = getRateLimitStore()
 
-  const { allowed, resetTime } = checkRateLimit(key, config)
+  const { allowed, resetTime } = await checkRateLimit(store, key, config)
 
   if (!allowed) {
     const retryAfter = Math.ceil((resetTime - Date.now()) / 1000)
-    
+
     return NextResponse.json(
       { error: 'Too many requests. Please try again later.' },
       {
@@ -119,19 +198,20 @@ export function rateLimit(request: NextRequest): NextResponse | null {
     )
   }
 
-  // Add rate limit headers to successful responses
-  return null // Continue to next middleware/handler
+  // Continue to next middleware/handler
+  return null
 }
 
-export function addRateLimitHeaders(
+export async function addRateLimitHeaders(
   response: NextResponse,
   request: NextRequest
-): NextResponse {
+): Promise<NextResponse> {
   const ip = getClientIP(request)
   const type = getRateLimitType(request.nextUrl.pathname)
   const config = RATE_LIMITS[type]
   const key = getRateLimitKey(ip, type)
-  const record = rateLimitStore.get(key)
+  const store = getRateLimitStore()
+  const record = await store.get(key)
 
   if (record) {
     response.headers.set('X-RateLimit-Limit', config.maxRequests.toString())
@@ -148,14 +228,10 @@ export function addRateLimitHeaders(
   return response
 }
 
-// Cleanup old entries periodically (every 5 minutes)
+// Cleanup old entries periodically for the in-memory store (every 5 minutes).
 if (typeof setInterval !== 'undefined') {
   setInterval(() => {
-    const now = Date.now()
-    for (const [key, record] of rateLimitStore.entries()) {
-      if (now > record.resetTime) {
-        rateLimitStore.delete(key)
-      }
-    }
+    const store = getRateLimitStore()
+    store.cleanup?.()
   }, 5 * 60 * 1000)
 }

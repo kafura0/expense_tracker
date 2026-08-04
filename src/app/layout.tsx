@@ -1,26 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { headers } from "next/headers";
+import { GeistSans, GeistMono } from "geist/font";
 import "./globals.css";
 import { ThemeProvider } from "@/shared/ui/theme-provider";
 import { ToastProvider } from "@/shared/ui/toast";
-import { Providers } from "./providers";
 import { InstallPrompt } from "@/features/pwa/install-prompt";
 import { ServiceWorkerRegistration } from "@/features/pwa/service-worker-registration";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-});
+// Fonts are self-hosted via the `geist` package (next/font/local), so builds
+// never require network access to Google Fonts at compile time.
 
 export const viewport: Viewport = {
   themeColor: "#34d399",
@@ -34,27 +22,30 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Reading the request headers opts every route into dynamic rendering, which
+  // is required for per-request CSP nonces (a prerendered page has no request
+  // and therefore no nonce to attach to its inline scripts).
+  await headers();
+
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} h-full antialiased`}
+      className={`${GeistSans.variable} ${GeistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
-        <Providers>
-          <ThemeProvider defaultTheme="dark" storageKey="ledgerly-theme">
-            <ToastProvider>
-              {children}
-              <InstallPrompt />
-              <ServiceWorkerRegistration />
-            </ToastProvider>
-          </ThemeProvider>
-        </Providers>
+        <ThemeProvider defaultTheme="dark" storageKey="ledgerly-theme">
+          <ToastProvider>
+            {children}
+            <InstallPrompt />
+            <ServiceWorkerRegistration />
+          </ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
