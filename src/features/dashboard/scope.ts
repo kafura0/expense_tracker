@@ -21,9 +21,8 @@
  * authoritative boundary.
  */
 
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
 import type { PostgrestFilterBuilder } from '@supabase/supabase-js'
-import { createClient } from '@/shared/lib/supabase/client'
 import { useOrg } from '@/shared/lib/org-provider'
 
 export type DashboardPersona = 'platform-admin' | 'org' | 'solo'
@@ -94,99 +93,38 @@ export function applyBudgetScope<B extends AnyFilterBuilder>(query: B, scope: Da
 /**
  * Resolve the current user's dashboard scope.
  *
- * Combines the org context from `useOrg` with the authenticated user id and the
- * user's base currency preference from settings.
+ * Derives the scope synchronously from the org context, which the provider
+ * bootstraps in a single server-action round trip (user id, memberships, active
+ * org, and the effective base currency + VAT rate). No additional network calls.
  *
  * Returns `{ scope, loading }`. While loading, `scope` is null — callers should
- * render skeletons. Once resolved the scope object is memoized per session.
+ * render skeletons.
  */
 export function useDashboardScope(): ResolvedScopeState {
-  const { activeOrg, isSolo, loading: orgLoading } = useOrg()
-  const [state, setState] = useState<ResolvedScopeState>({ scope: null, loading: true })
+  const { activeOrg, isSolo, loading, userId, baseCurrency, vatRate } = useOrg()
 
-  useEffect(() => {
-    let cancelled = false
+  const scope = useMemo<DashboardScope | null>(() => {
+    if (!userId) return null
 
-    const resolve = async () => {
-      if (orgLoading) return
-
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        if (!cancelled) setState({ scope: null, loading: false })
-        return
-      }
-
-      let orgId: string | null = null
-      let persona: DashboardPersona = 'solo'
-      let baseCurrency = 'USD'
-      let vatRate = 16
-
-      const applyPersonalSettings = (settings: { base_currency?: string | null; vat_rate?: number | null }) => {
-        if (settings.base_currency) baseCurrency = settings.base_currency
-        if (settings.vat_rate != null) vatRate = Number(settings.vat_rate)
-      }
-
-      if (!isSolo && activeOrg) {
-        orgId = activeOrg.org_id
-        const role = activeOrg.role
-
-        if (role === 'super_admin') {
-          persona = 'platform-admin'
-        } else {
-          // Every org member sees the same org-wide view — manager/client
-          // roles are no longer differentiated at the persona level.
-          persona = 'org'
-        }
-
-        const [{ data: settings }, { data: org }] = await Promise.all([
-          supabase
-            .from('settings')
-            .select('base_currency, vat_rate')
-            .eq('user_id', user.id)
-            .eq('org_id', orgId)
-            .maybeSingle(),
-          supabase
-            .from('organizations')
-            .select('default_currency, default_vat_rate')
-            .eq('id', orgId)
-            .maybeSingle(),
-        ])
-
-        // Effective values: personal override → org default → fallback.
-        baseCurrency = settings?.base_currency || org?.default_currency || 'USD'
-        vatRate =
-          settings?.vat_rate != null
-            ? Number(settings.vat_rate)
-            : org?.default_vat_rate != null
-              ? Number(org.default_vat_rate)
-              : 16
-      } else {
-        const { data: settings } = await supabase
-          .from('settings')
-          .select('base_currency, vat_rate')
-          .eq('user_id', user.id)
-          .is('org_id', null)
-          .maybeSingle()
-
-        applyPersonalSettings(settings ?? {})
-      }
-
-      if (!cancelled) {
-        setState({
-          scope: { orgId, userId: user.id, persona, baseCurrency, vatRate },
-          loading: false,
-        })
-      }
+    let persona: DashboardPersona
+    if (isSolo) {
+      persona = 'solo'
+    } else if (activeOrg?.role === 'super_admin') {
+      persona = 'platform-admin'
+    } else {
+      // Every org member sees the same org-wide view — manager/client
+      // roles are no longer differentiated at the persona level.
+      persona = 'org'
     }
 
-    void resolve()
-
-    return () => {
-      cancelled = true
+    return {
+      orgId: activeOrg?.org_id ?? null,
+      userId,
+      persona,
+      baseCurrency,
+      vatRate,
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeOrg?.org_id, orgLoading, isSolo])
+  }, [activeOrg, isSolo, userId, baseCurrency, vatRate])
 
-  return state
+  return { scope, loading }
 }

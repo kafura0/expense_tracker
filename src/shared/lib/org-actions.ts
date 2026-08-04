@@ -48,6 +48,122 @@ export async function getActiveOrgIdAction(): Promise<string | null> {
   return getActiveOrgId()
 }
 
+/**
+ * Server action: bootstrap the entire authenticated app context in a single
+ * round trip.
+ *
+ * Returns everything the dashboard shell and data-scoping layer need:
+ *   - the authenticated user's id + display info
+ *   - all org memberships (org switcher)
+ *   - the resolved active org id (repinning the httpOnly cookie when stale,
+ *     matching the resolution order previously spread across the client
+ *     provider + `ensureActiveOrg`)
+ *   - the effective base currency + VAT rate for the active org (or the
+ *     user's personal settings when solo)
+ *
+ * WHY THIS MATTERS:
+ * Previously the client fired up to six sequential network calls to reach the
+ * same state: `auth.getUser()`, an RLS memberships query, `getActiveOrgIdAction`,
+ * possibly `ensureActiveOrg` (a second round trip + duplicate DB query), and
+ * then two more queries in `useDashboardScope` (settings + org defaults).
+ * Collapsing all of that into one action removes the boot waterfall on every
+ * dashboard route.
+ */
+export async function getAppContext(): Promise<{
+  user_id: string
+  full_name: string | null
+  email: string | null
+  orgs: Array<{
+    org_id: string
+    org_name: string
+    org_slug: string
+    role: string
+    status: string
+  }>
+  active_org_id: string | null
+  base_currency: string
+  vat_rate: number
+} | null> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return null
+
+  const { data: memberships } = await supabase
+    .from('org_members')
+    .select('org_id, role, created_at, organizations!inner(id, name, slug, status)')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: true })
+
+  const orgs = (memberships || []).map((m) => ({
+    org_id: m.org_id,
+    org_name: (m.organizations as unknown as { name: string }).name,
+    org_slug: (m.organizations as unknown as { slug: string }).slug,
+    role: m.role,
+    status: (m.organizations as unknown as { status: string }).status,
+  }))
+
+  let activeOrgId = await getActiveOrgId()
+  if (activeOrgId && !orgs.some((o) => o.org_id === activeOrgId)) activeOrgId = null
+  if (!activeOrgId && orgs.length > 0) {
+    const active = orgs.find((o) => o.status === 'active')
+    const target = (active || orgs[0]).org_id
+    activeOrgId = target
+    await setActiveOrgCookie(target)
+  }
+
+  const activeOrg = orgs.find((o) => o.org_id === activeOrgId) || null
+  const resolvedOrgId = activeOrg?.org_id ?? null
+
+  let baseCurrency = 'USD'
+  let vatRate = 16
+
+  if (activeOrg && resolvedOrgId) {
+    const [{ data: settings }, { data: org }] = await Promise.all([
+      supabase
+        .from('settings')
+        .select('base_currency, vat_rate')
+        .eq('user_id', user.id)
+        .eq('org_id', resolvedOrgId)
+        .maybeSingle(),
+      supabase
+        .from('organizations')
+        .select('default_currency, default_vat_rate')
+        .eq('id', resolvedOrgId)
+        .maybeSingle(),
+    ])
+
+    baseCurrency = settings?.base_currency || org?.default_currency || 'USD'
+    vatRate =
+      settings?.vat_rate != null
+        ? Number(settings.vat_rate)
+        : org?.default_vat_rate != null
+          ? Number(org.default_vat_rate)
+          : 16
+  } else {
+    const { data: settings } = await supabase
+      .from('settings')
+      .select('base_currency, vat_rate')
+      .eq('user_id', user.id)
+      .is('org_id', null)
+      .maybeSingle()
+
+    if (settings?.base_currency) baseCurrency = settings.base_currency
+    if (settings?.vat_rate != null) vatRate = Number(settings.vat_rate)
+  }
+
+  return {
+    user_id: user.id,
+    full_name: (user.user_metadata?.full_name as string | undefined) ?? null,
+    email: user.email ?? null,
+    orgs,
+    active_org_id: activeOrgId,
+    base_currency: baseCurrency,
+    vat_rate: vatRate,
+  }
+}
+
 function setActiveOrgCookie(orgId: string) {
   return cookies().then((cookieStore) =>
     cookieStore.set(ACTIVE_ORG_COOKIE, orgId, {

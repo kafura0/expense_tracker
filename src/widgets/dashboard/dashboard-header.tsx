@@ -1,7 +1,5 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
-import { createClient } from '@/shared/lib/supabase/client'
 import { useOrg } from '@/shared/lib/org-provider'
 import { format } from 'date-fns'
 import { Sparkles, CalendarDays, User, Users, ShieldCheck } from 'lucide-react'
@@ -11,18 +9,8 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({ subtitle }: DashboardHeaderProps) {
-  const supabase = createClient()
-  const { activeOrg, isSolo } = useOrg()
-
-  const fetchName = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    return user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'there'
-  }
-
-  const { data: name } = useQuery({
-    queryKey: ['dashboard-greeting'],
-    queryFn: fetchName,
-  })
+  const { activeOrg, isSolo, userName } = useOrg()
+  const name = userName || 'there'
 
   const roleLabel = activeOrg?.role === 'super_admin'
     ? 'Super Admin'

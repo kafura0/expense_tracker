@@ -6,15 +6,17 @@
  * Client-side organization context provider for Ledgerly's multi-tenant architecture.
  *
  * ROLE IN THE ARCHITECTURE:
- * This provider sits at the top of the component tree and:
- * 1. Fetches all org memberships for the current user on mount
- * 2. Determines the active org from the server-side httpOnly cookie (via server action)
- * 3. Provides org data + switchOrg function to all child components
- * 4. Syncs the active org between server and client state
+ * This provider sits at the top of the dashboard component tree and:
+ * 1. Bootstraps the full authenticated app context in ONE server-action round trip
+ *    (`getAppContext`) — user id, display info, all org memberships, the resolved
+ *    active org (repinning the httpOnly cookie when stale), and the effective
+ *    base currency + VAT rate
+ * 2. Provides org data + switchOrg function to all child components
+ * 3. Syncs the active org between server and client state
  *
  * COOKIE SYNC:
  * - The active org lives ONLY in a server-set httpOnly cookie (not readable by JS)
- * - This provider reads it via server action (authenticated, server-side)
+ * - This provider reads it via the `getAppContext` server action (authenticated, server-side)
  * - When the user switches org, this provider calls the switchOrg() server action
  * - The server action validates membership and sets the new httpOnly cookie, then
  *   we reload to refetch all data
@@ -29,12 +31,7 @@
  */
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { createClient } from '@/shared/lib/supabase/client'
-import {
-  getActiveOrgIdAction,
-  switchOrg as switchOrgAction,
-  ensureActiveOrg,
-} from '@/shared/lib/org-actions'
+import { getAppContext, switchOrg as switchOrgAction } from '@/shared/lib/org-actions'
 
 /**
  * Represents an organization the user belongs to.
@@ -47,7 +44,7 @@ interface OrgInfo {
   org_name: string
   /** URL-safe slug for potential routing. */
   org_slug: string
-  /** User's role in this org: super_admin, manager, or client. */
+  /** User's role in this org: super_admin, org_admin, or member. */
   role: string
   /** Org status: pending, active, suspended, or cancelled. */
   status: string
@@ -61,13 +58,23 @@ interface OrgContextType {
   orgs: OrgInfo[]
   /** The currently active org — drives all data queries. */
   activeOrg: OrgInfo | null
-  /** True while org memberships are being fetched from Supabase. */
+  /** True while the app context is being bootstrapped server-side. */
   loading: boolean
   /** Switch to a different org. Calls server action, validates access, reloads page. */
   switchOrg: (orgId: string) => Promise<void>
   /** Manually refetch org memberships (e.g., after admin adds user to a new org). */
   refreshOrgs: () => Promise<void>
   isSolo: boolean
+  /** The authenticated user's id (null while loading / when signed out). */
+  userId: string | null
+  /** Effective base currency for the active org (or the user's solo preference). */
+  baseCurrency: string
+  /** Effective VAT rate for the active org (or the user's solo preference). */
+  vatRate: number
+  /** Display name for the sidebar/header. */
+  userName: string
+  /** Email address for the sidebar/header. */
+  userEmail: string
 }
 
 /**
@@ -82,6 +89,11 @@ const OrgContext = createContext<OrgContextType>({
   switchOrg: async () => {},
   refreshOrgs: async () => {},
   isSolo: false,
+  userId: null,
+  baseCurrency: 'USD',
+  vatRate: 16,
+  userName: '',
+  userEmail: '',
 })
 
 /**
@@ -103,13 +115,14 @@ export function useOrg() {
  * Provider component that manages organization state for the entire dashboard.
  *
  * INITIALIZATION FLOW:
- * 1. On mount, fetches user's org memberships from Supabase
- * 2. Reads active org_id from server action (which reads the httpOnly cookie)
- * 3. Sets the activeOrg state — components can now render with org context
- * 4. If no org_id in cookie, auto-selects the first available org
+ * 1. On mount, calls the `getAppContext` server action once — it authenticates
+ *    the user, reads/repins the httpOnly active-org cookie, fetches memberships,
+ *    and resolves the effective currency/VAT settings in a single round trip
+ * 2. Populates orgs + activeOrg + user/currency state
+ * 3. If the user has no orgs at all, leaves active org null (solo/no-access)
  *
  * SECURITY:
- * - All Supabase queries use the authenticated user's session (RLS enforced)
+ * - All Supabase queries run server-side in the action under RLS
  * - The server action validates the cookie exists and is valid
  * - Users can only see orgs they are members of (org_members RLS policy)
  */
@@ -117,70 +130,31 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
   const [orgs, setOrgs] = useState<OrgInfo[]>([])
   const [activeOrg, setActiveOrg] = useState<OrgInfo | null>(null)
   const [loading, setLoading] = useState(true)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [baseCurrency, setBaseCurrency] = useState('USD')
+  const [vatRate, setVatRate] = useState(16)
+  const [userName, setUserName] = useState('')
+  const [userEmail, setUserEmail] = useState('')
 
   /**
-   * Fetch all organizations the current user belongs to.
-   * This populates the org switcher dropdown and determines available roles.
+   * Bootstrap the whole app context in a single server-action round trip.
+   * The server-side action (getAppContext) resolves the active org cookie,
+   * memberships, and effective currency/VAT settings atomically.
    */
   const fetchOrgs = useCallback(async () => {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
+    const ctx = await getAppContext()
+    if (!ctx) {
       setLoading(false)
       return
     }
 
-    /**
-     * Query org_members with inner join to organizations.
-     * The `!inner` ensures we skip deleted orgs (ON DELETE CASCADE).
-     * RLS on org_members ensures we only see this user's memberships.
-     */
-    const { data: memberships } = await supabase
-      .from('org_members')
-      .select(`
-        org_id,
-        role,
-        organizations!inner(id, name, slug, status)
-      `)
-      .eq('user_id', user.id)
-
-    /**
-     * Flatten the nested Supabase response into a clean OrgInfo array.
-     * The join returns { org_id, role, organizations: { id, name, slug, status } }
-     * and we map it to a flat structure for easier consumption.
-     */
-    const orgList = (memberships || []).map((m) => ({
-      org_id: m.org_id,
-      org_name: (m.organizations as unknown as { name: string }).name,
-      org_slug: (m.organizations as unknown as { slug: string }).slug,
-      role: m.role,
-      status: (m.organizations as unknown as { status: string }).status,
-    }))
-
-    setOrgs(orgList)
-
-    /**
-     * Resolve the active org:
-     * 1. Try reading from the server action (which reads the httpOnly cookie)
-     * 2. If the cookie is absent or invalid but the user has memberships,
-     *    call `ensureActiveOrg` so the server repins to the earliest
-     *    membership and writes the cookie server-side (FR-2, AD-3).
-     * 3. If the user has no orgs at all, leave active org null (solo/no-access).
-     */
-    const activeOrgId = await getActiveOrgIdAction()
-
-    let active = activeOrgId
-      ? orgList.find(o => o.org_id === activeOrgId)
-      : null
-
-    if (!active && orgList.length > 0) {
-      const resolved = await ensureActiveOrg()
-      active = resolved.org_id
-        ? orgList.find(o => o.org_id === resolved.org_id) || null
-        : null
-    }
-
-    setActiveOrg(active || null)
+    setOrgs(ctx.orgs)
+    setActiveOrg(ctx.orgs.find((o) => o.org_id === ctx.active_org_id) || null)
+    setUserId(ctx.user_id)
+    setBaseCurrency(ctx.base_currency)
+    setVatRate(ctx.vat_rate)
+    setUserName(ctx.full_name || ctx.email?.split('@')[0] || '')
+    setUserEmail(ctx.email || '')
     setLoading(false)
   }, [])
 
@@ -220,7 +194,9 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
   const isSolo = !loading && orgs.length === 0
 
   return (
-    <OrgContext.Provider value={{ orgs, activeOrg, loading, switchOrg, refreshOrgs, isSolo }}>
+    <OrgContext.Provider
+      value={{ orgs, activeOrg, loading, switchOrg, refreshOrgs, isSolo, userId, baseCurrency, vatRate, userName, userEmail }}
+    >
       {children}
     </OrgContext.Provider>
   )
