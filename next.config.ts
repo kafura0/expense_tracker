@@ -1,5 +1,10 @@
 import type { NextConfig } from "next";
 
+// NOTE: There is intentionally NO `Content-Security-Policy` here. The strict
+// nonce + hash CSP is generated per-request in `src/proxy.ts` (see
+// `src/shared/lib/security-headers.ts`). A static CSP header here would be
+// overridden by the proxy and a static `'unsafe-inline'` script-src would
+// silently weaken it.
 const securityHeaders = [
   {
     key: 'X-DNS-Prefetch-Control',
@@ -29,21 +34,15 @@ const securityHeaders = [
     key: 'Permissions-Policy',
     value: 'camera=(), microphone=(), geolocation=()',
   },
-  {
-    key: 'Content-Security-Policy',
-    value: [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' blob: data: https://*.supabase.co",
-      "font-src 'self'",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
-      "frame-ancestors 'self'",
-    ].join('; '),
-  },
 ]
 
+// A constant build ID keeps the prerendered HTML byte-for-byte deterministic
+// across rebuilds. The RSC payload embeds the build ID (`"b"` field); with the
+// default random ID every build produced different inline script content,
+// which broke build-time CSP hash generation (see scripts/generate-csp-hashes.mjs).
+// Chunk filenames are content-hashed, so a constant ID cannot collide.
 const nextConfig: NextConfig = {
+  generateBuildId: async () => 'ledgerly',
   async headers() {
     return [
       {

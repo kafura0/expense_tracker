@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { headers } from "next/headers";
 import { GeistSans, GeistMono } from "geist/font";
 import "./globals.css";
 import { ThemeProvider } from "@/shared/ui/theme-provider";
@@ -27,11 +26,11 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Reading the request headers opts every route into dynamic rendering, which
-  // is required for per-request CSP nonces (a prerendered page has no request
-  // and therefore no nonce to attach to its inline scripts).
-  await headers();
-
+  // Per-request CSP nonces are handled by the proxy: Next.js 16 reads the
+  // `Content-Security-Policy` request header injected by `src/proxy.ts` and
+  // automatically applies the nonce to its inline scripts during SSR. No
+  // server-side headers() read is required here, which lets public pages
+  // (landing, auth) prerender as static HTML.
   return (
     <html
       lang="en"

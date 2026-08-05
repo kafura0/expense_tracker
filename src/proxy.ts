@@ -21,7 +21,10 @@ import {
  *
  * The nonce is injected into the request headers (`x-nonce` + a
  * `Content-Security-Policy` carrying it) so Next.js attaches it to its own
- * scripts during SSR, and the root layout can read it via `headers()`.
+ * scripts during dynamic SSR. Statically prerendered pages carry inline
+ * scripts that have no request-time nonce; their SHA-256 hashes (generated at
+ * build time by `scripts/generate-csp-hashes.mjs`) are included in the policy
+ * instead. The root layout therefore never reads `headers()` directly.
  */
 export async function proxy(request: NextRequest) {
   const isDev = process.env.NODE_ENV === 'development'

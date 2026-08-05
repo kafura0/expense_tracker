@@ -1,10 +1,19 @@
 import { describe, it, expect } from 'vitest'
 import { NextResponse } from 'next/server'
 import { buildCsp, addSecurityHeaders } from '@/shared/lib/security-headers'
+import { CSP_SCRIPT_HASHES } from '@/shared/lib/csp-hashes.generated'
 
 describe('buildCsp', () => {
   it('includes the nonce in script-src', () => {
-    expect(buildCsp('abc123', false)).toContain("script-src 'self' 'nonce-abc123' 'strict-dynamic'")
+    expect(buildCsp('abc123', false)).toContain("script-src 'self' 'nonce-abc123'")
+  })
+
+  it('includes build-time script hashes so static pages work', () => {
+    const csp = buildCsp('abc123', false)
+    expect(CSP_SCRIPT_HASHES.length).toBeGreaterThan(0)
+    for (const hash of CSP_SCRIPT_HASHES.slice(0, 3)) {
+      expect(csp).toContain(`'sha256-${hash}'`)
+    }
   })
 
   it('adds unsafe-eval only in development', () => {
