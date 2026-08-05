@@ -1,88 +1,60 @@
 # Ledgerly — Deferred Work
 
 **Source:** Adversarial code review of the deployed core (2026-08-02).
-**Status:** Deferred by agreement — non-blocking for the security-hardening release (migration 012 + `5129ccd`).
-**Owners:** To be scheduled alongside the org-features PRD (budgets, member management, approvals).
+**Status:** All items closed as of the org-admin release (migration 013 + 014, proxy migration). Two notes remain open and are tracked at the bottom.
 
 ---
 
-## Deferred Findings
+## Findings
 
 ### D-01 — Invite Email Delivery
-**Severity:** High · **Deferred by agreement**
+**Severity:** High · **Resolved**
 
-The invite flow works end-to-end (token generation, `accept_invite` RPC, membership + data reassignment), but the invitation email is never actually sent — only the invite link is surfaced. There is no transactional email integration (Resend/SendGrid/etc.) wired up yet.
-
-**Work needed:**
-- Add a transactional email provider + key to env vars.
-- Send the invitation email on `inviteUserByEmail` with the accept link (`/invite?token=...`).
-- Handle provider failures gracefully (retry/queue, surface to admin).
+Invites now go through `src/shared/lib/mailer.ts` (Resend-backed when `RESEND_API_KEY` is set, dev-email-log fallback otherwise). `src/features/invites/actions.ts` calls `sendInviteEmail` on create and resend with the `/invite?token=...` accept link, and records `send_id` / `last_sent_at` on the invite row plus `invite.send` / `invite.resend` audit events.
 
 ### D-02 — Client-Side Org Cookie Shadowing
-**Severity:** Medium · **Deferred by agreement**
+**Severity:** Medium · **Resolved**
 
-`src/shared/lib/org-provider.tsx` still mirrors `ledgerly_active_org` to a client-side cookie (`document.cookie`) that is neither `HttpOnly` nor `Secure`. The server cookie (httpOnly + secure in prod) remains authoritative, but the shadow cookie is redundant and can drift, plus it is readable via XSS.
-
-**Work needed:**
-- Remove the client cookie entirely; rely on the server action return value for client state.
-- If a client cache is required, use `localStorage` (documented XSS exposure) or React state.
+The client-side `document.cookie` shadow of the active org was removed. `src/shared/lib/org-provider.tsx` now bootstraps everything from the `getAppContext` server action; the active-org cookie is written only by server code (see the comment in `src/shared/lib/org-actions.ts`). No `document.cookie` writes remain in client code.
 
 ### D-03 — Org Cookie Trust Rework
-**Severity:** Medium · **Deferred by agreement**
+**Severity:** Medium · **Resolved**
 
-The current cookie model double-stores the active org in a `ledgerly_active_org` cookie (client + server, separate lifetimes). The server cookie is correct, but the architecture invites confusion and shadowing (see D-02).
-
-**Work needed:**
-- Single source of truth for the active org (server-only cookie or JWT claim).
-- Migration path so existing sessions keep working.
+The active org now has a single source of truth: a server-set, httpOnly cookie resolved by `getAppContext` / `ensureActiveOrg` (repinned server-side when stale). The client renders from the action return value only.
 
 ### D-04 — Category Deduplication
-**Severity:** Medium · **Deferred by agreement**
+**Severity:** Medium · **Resolved**
 
-Expense categories are stored per-expense; there is no canonical category table per org. Renaming/merging categories requires touching every expense row, and a typo can silently create a duplicate category.
-
-**Work needed:**
-- A `categories` table per org (seed with system categories on org creation).
-- Expenses reference category by id; UI reads the catalog.
-- Migration of existing expense rows.
+A canonical `categories` table per org exists (system categories seeded on org creation, org-scoped RLS via `applyCategoryScope`). Expenses reference categories by id; the UI reads the catalog. See `src/shared/lib/category-icons.ts`, `src/features/dashboard/scope.ts`, and the seed (`scripts/seed-test-users.mjs`).
 
 ### D-05 — Middleware Fail-Open
-**Severity:** Medium · **Deferred by agreement**
+**Severity:** Medium · **Superseded**
 
-`src/shared/lib/supabase/middleware.ts` treats a cookie-parse/DB error as pass-through (fail-open) to avoid bricking auth. This is the right default for availability, but it means a transient Supabase outage relaxes org-status enforcement.
-
-**Work needed:**
-- Configurable fail-closed mode for the org-suspension check on admin-only routes.
-- Observability (log when middleware downgrades to fail-open).
+The middleware entry point was replaced by `src/proxy.ts` (Next.js 16 Proxy). The session/auth logic lives in `src/shared/lib/supabase/middleware.ts` (`updateSession`), which still fails open on org-status lookups by design (availability over strictness). The configurable fail-closed mode for admin-only routes remains an optional future enhancement — see Open items.
 
 ### D-06 — Admin Invites Lack Org Context
-**Severity:** Medium · **Deferred by agreement**
+**Severity:** Medium · **Resolved**
 
-The super-admin invite UI can invite a user into a specific org, but the form doesn't always surface the target org's context, and invite tokens are not yet one-time-URL scoped (they are single-use but reusable until accepted).
-
-**Work needed:**
-- Invite tokens with expiry (e.g. 72h) and optional org preset.
-- UI polish for choosing/confirming the target org.
+Invites carry an `expires_at` (single-use token) and full org context. `accept_invite` (migration 014) now persists the `expired` status flip instead of raising, which previously rolled the UPDATE back and left stale `pending` rows. The members UI surfaces expired invites ("Expired — ask to resend") with a resend path.
 
 ### D-07 — Mixed-Currency Totals & Date-Boundary Labels
-**Severity:** Medium · **Deferred by agreement**
+**Severity:** Medium · **Resolved**
 
-Totals that mix currencies sum cents without converting (previously silently converted at 1:1 — the silent 1:1 path is now removed, so these now refuse to convert). Date-group boundaries in the expense list group by local midnight using `toISOString()`, which can shift grouping across UTC offsets.
-
-**Work needed:**
-- Currency-aware totals using exchange rates only when a rate actually exists.
-- Locale-aware date boundary handling in the expense list grouping.
+Totals are currency-aware: every aggregate selects `currency` and converts through `sumInBaseCurrency` / `fetchBaseRates` (cached `exchange_rates`, only when a rate exists) — see `src/entities/expense/totals.ts` and `src/entities/exchange-rate/base-rates.ts`. The expense list no longer groups by `toISOString()` local-midnight boundaries (date-fns `format` is used in `src/features/expenses/expense-table.tsx`).
 
 ---
 
 ## Tracking
 
-- [ ] D-01 invite email delivery (with PRD feature: member management)
-- [ ] D-02 client org cookie removal
-- [ ] D-03 org cookie trust rework
-- [ ] D-04 category catalog per org
-- [ ] D-05 middleware fail-open option
-- [ ] D-06 invite token expiry + org context
-- [ ] D-07 currency-aware totals + date boundaries
+- [x] D-01 invite email delivery (Resend mailer + audit)
+- [x] D-02 client org cookie removal
+- [x] D-03 org cookie trust rework (single httpOnly server cookie)
+- [x] D-04 category catalog per org
+- [x] D-05 proxy migration (fail-open retained by design)
+- [x] D-06 invite token expiry + org context + expired persistence
+- [x] D-07 currency-aware totals + date-boundary cleanup
 
-*Deferred items are explicitly out of scope for the security-hardening release and will be picked up with the org-features PRD.*
+## Open Items
+
+- **D-05 remainder:** configurable fail-closed org-suspension enforcement + fail-open observability on admin-only routes.
+- **Invite expiry window:** tokens expire after 7 days (see smoke suite); tune the window if a shorter (e.g. 72h) expiry is preferred.

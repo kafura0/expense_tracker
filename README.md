@@ -40,11 +40,10 @@ Premium multi-tenant SaaS expense tracking platform — built with **Next.js 16*
 - CSV and PDF export with date-range and category filtering
 
 **Role-aware experience**
-- Persona-tailored dashboards — every role gets a distinct layout (Solo, Client, Manager, Org Admin, Platform Admin)
-- Org-aware widgets that scope to the active org (or to the user's own data when solo)
+- Persona-tailored dashboards (Solo, Org Member, Org Admin, Super Admin) scoped to the active org — or the user's own data when solo
 - Budget-vs-actual tracking, team spend leaderboard, org health card, and announcements
 - Organization (org) management with member roles, a role badge, and a multi-org switcher
-- Invite-based onboarding (`manager` / `client`), access-request flow, and OTP email verification
+- Invite-based onboarding (token + email via Resend), access-request flow, and OTP email verification
 
 **Analytics & insights**
 - KPI cards (total spend, transactions, average expense), 6-month spending trend, category breakdown (Recharts)
@@ -58,8 +57,8 @@ Premium multi-tenant SaaS expense tracking platform — built with **Next.js 16*
 
 **Security & quality**
 - Row Level Security (RLS) on every table with granular helper functions
-- Middleware with session management, rate limiting, and security headers
-- Audit logging, 59 unit/integration tests, zero-lint baseline
+- Proxy (Next.js 16) with session management, rate limiting, and nonce-based CSP security headers
+- Audit logging, 201 unit/component tests, zero-lint baseline
 
 **Polish**
 - PWA installable on mobile and desktop (manifest + service worker)
@@ -215,7 +214,7 @@ Seven migrations manage the schema (run in order). **Supabase project ref:** `we
 | `exchange_rates` | Cached FX rates |
 | `plans` | Subscription tiers (Free / Pro / Enterprise) |
 | `organizations` | Tenants (status: pending / active / suspended / cancelled) |
-| `org_members` | User ↔ org mapping with role (`super_admin` / `manager` / `client`) |
+| `org_members` | User ↔ org mapping with role (`super_admin` / `org_admin` / `member`) |
 | `client_requests` | Access-request form submissions |
 | `subscriptions` | Per-org billing state |
 | `audit_logs` | Sensitive action audit trail |
@@ -233,14 +232,14 @@ Seven migrations manage the schema (run in order). **Supabase project ref:** `we
 |--------|------------|
 | `is_super_admin()` | User holds `super_admin` role in any org |
 | `is_org_member(org_id)` | User belongs to the given org |
-| `can_write_in_org(org_id)` | User is `super_admin` or `manager` in the org |
+| `can_write_in_org(org_id)` | User is a member of the given org (all members write) |
 | `get_org_role(org_id)` | Returns the user's role in an org |
 | `user_org_ids()` | All org IDs the user belongs to |
 | `is_solo_user()` | User has no org memberships |
 | `is_row_owner(user_id)` | Row belongs to the authenticated user |
 
 **Additional controls**
-- **Middleware** (`src/middleware.ts`) runs on all non-static routes: session refresh, in-memory rate limiting, and security headers
+- **Proxy** (`src/proxy.ts`) runs on all non-static routes: session refresh, rate limiting (in-memory or Upstash Redis), and nonce-based security headers
 - **`httpOnly` active-org cookie** — org context is resolved server-side via server actions (XSS-safe)
 - **Service-role key is server-only**; the browser only ever holds the anon key (RLS-restricted)
 - **Soft deletes** on expenses (`is_deleted` + `deleted_at`)
