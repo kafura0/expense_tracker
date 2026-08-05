@@ -35,53 +35,65 @@ export default function ExpensesPage() {
   const fetchExpenses = async (params: ExpenseListParams) => {
     if (!scope) throw new Error('No active scope')
 
-    let query = supabase
-      .from('expenses')
-      .select('*, categories(id, name, icon, color)', { count: 'exact' })
-      .eq('is_deleted', false)
+    const buildQuery = (columns: string, opts?: { count?: 'exact' }) => {
+      let query = supabase.from('expenses').select(columns, opts).eq('is_deleted', false)
 
-    query = applyExpenseScope(query, scope)
+      query = applyExpenseScope(query, scope)
 
-    if (params.filters?.search) {
-      const escaped = escapeLikePattern(params.filters.search)
-      query = query.or(`notes.ilike.%${escaped}%,title.ilike.%${escaped}%`)
-    }
-    if (params.filters?.entry_type) {
-      query = query.eq('entry_type', params.filters.entry_type)
-    }
-    if (params.filters?.category_id) {
-      query = query.eq('category_id', params.filters.category_id)
-    }
-    if (params.filters?.currency) {
-      query = query.eq('currency', params.filters.currency)
-    }
-    if (params.filters?.tax_applicable !== undefined) {
-      query = query.eq('tax_applicable', params.filters.tax_applicable)
-    }
-    if (params.filters?.date_from) {
-      query = query.gte('date', params.filters.date_from)
-    }
-    if (params.filters?.date_to) {
-      query = query.lte('date', params.filters.date_to)
+      if (params.filters?.search) {
+        const escaped = escapeLikePattern(params.filters.search)
+        query = query.or(`notes.ilike.%${escaped}%,title.ilike.%${escaped}%`)
+      }
+      if (params.filters?.entry_type) {
+        query = query.eq('entry_type', params.filters.entry_type)
+      }
+      if (params.filters?.category_id) {
+        query = query.eq('category_id', params.filters.category_id)
+      }
+      if (params.filters?.currency) {
+        query = query.eq('currency', params.filters.currency)
+      }
+      if (params.filters?.tax_applicable !== undefined) {
+        query = query.eq('tax_applicable', params.filters.tax_applicable)
+      }
+      if (params.filters?.date_from) {
+        query = query.gte('date', params.filters.date_from)
+      }
+      if (params.filters?.date_to) {
+        query = query.lte('date', params.filters.date_to)
+      }
+
+      return query
     }
 
     const from = ((params.pagination?.page || 1) - 1) * (params.pagination?.page_size || 20)
     const to = from + (params.pagination?.page_size || 20) - 1
 
-    const pageQuery = query.order(params.sort?.field || 'date', {
-      ascending: params.sort?.direction === 'asc'
-    }).range(from, to)
-    const totalsQuery = query.select('amount_cents, currency, entry_type')
+    const pageQuery = buildQuery('*, categories(id, name, icon, color)', { count: 'exact' })
+      .order(params.sort?.field || 'date', {
+        ascending: params.sort?.direction === 'asc'
+      })
+      .range(from, to)
+    const totalsQuery = buildQuery('amount_cents, currency, entry_type')
 
-    const [pageResult, totalsResult] = await Promise.all([pageQuery, totalsQuery])
-    const { data, error, count } = pageResult
-    const { data: totals, error: totalsError } = totalsResult
+    const base = scope?.baseCurrency || 'USD'
+    const [pageResult, totalsResult, rates] = await Promise.all([
+      pageQuery,
+      totalsQuery,
+      fetchBaseRates(supabase, base),
+    ])
+    const { data, error, count } = pageResult as {
+      data: ExpenseWithCategory[] | null
+      error: unknown
+      count: number | null
+    }
+    const { data: totals, error: totalsError } = totalsResult as {
+      data: Array<{ amount_cents: number; currency: string; entry_type: string }> | null
+      error: unknown
+    }
 
     if (error) throw error
     if (totalsError) throw totalsError
-
-    const base = scope?.baseCurrency || 'USD'
-    const rates = await fetchBaseRates(supabase, base)
 
     const expenseTotal = sumInBaseCurrency(
       (totals || []).filter(t => t.entry_type === 'expense'),

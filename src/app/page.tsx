@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Logo } from '@/shared/ui/logo'
 import {
   Globe,
   Receipt,
@@ -152,8 +153,8 @@ export default function LandingPage() {
     <div className="bg-background text-foreground antialiased selection:bg-primary/30 selection:text-primary-foreground text-center">
       {/* Header */}
       <header className="flex justify-between items-center w-full px-2 md:px-10 h-14 md:h-16 sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border text-left">
-        <Link href="/" className="font-headline text-lg md:text-headline-md font-bold text-foreground tracking-tight">
-          Ledgerly
+        <Link href="/" className="inline-flex items-center gap-2.5">
+          <Logo size={36} priority />
         </Link>
         <LandingNav />
         <div className="flex items-center gap-2">
@@ -489,9 +490,7 @@ export default function LandingPage() {
       <footer className="bg-card/50 border-t border-border pt-10 md:pt-16 pb-6 md:pb-10 px-2 md:px-10 flex flex-col items-center">
         <div className="max-w-container-max w-full flex flex-col md:flex-row md:flex-wrap justify-center items-start gap-10 md:gap-16 mb-10 md:mb-16">
           <div className="flex flex-col w-full md:w-auto md:min-w-[200px]">
-            <span className="font-headline text-lg md:text-headline-md font-bold text-foreground block mb-2 md:mb-4 tracking-tight">
-              Ledgerly
-            </span>
+            <Logo size={40} />
             <p className="text-muted-foreground font-body-md text-sm md:text-body-md leading-relaxed mb-6 md:mb-10 max-w-xs">
               The premium operating system for modern financial management.
             </p>

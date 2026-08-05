@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/shared/lib/supabase/client'
 import Link from 'next/link'
+import { Logo } from '@/shared/ui/logo'
 import { Button } from '@/shared/ui/button'
 import { Ban, LogOut, MailQuestion } from 'lucide-react'
 
@@ -26,9 +27,7 @@ export default function SuspendedPage() {
       <div className="max-w-md w-full space-y-6 md:space-y-8 relative z-10 animate-fade-in">
         <div className="text-center space-y-2">
           <Link href="/" className="inline-block mb-4">
-            <span className="text-xl md:text-2xl font-bold text-foreground tracking-tight">
-              Ledgerly
-            </span>
+            <Logo size={48} />
           </Link>
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-red-500/10">
             <Ban className="h-8 w-8 text-red-400" />

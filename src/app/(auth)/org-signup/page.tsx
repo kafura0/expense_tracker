@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Logo } from '@/shared/ui/logo'
 import { orgSignup } from './actions'
 import { Input } from '@/shared/ui/input'
 import { Button } from '@/shared/ui/button'
@@ -46,9 +47,7 @@ export default function OrgSignupPage() {
       <div className="max-w-md w-full space-y-6 md:space-y-8 relative z-10 animate-fade-in">
         <div className="text-center space-y-2">
           <Link href="/" className="inline-block mb-4">
-            <span className="text-xl md:text-2xl font-bold text-foreground tracking-tight">
-              Ledgerly
-            </span>
+            <Logo size={48} />
           </Link>
           <h2 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
             Create your organization

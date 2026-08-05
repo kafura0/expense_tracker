@@ -18,6 +18,11 @@ import { format } from 'date-fns'
 import { cn } from '@/shared/lib/utils'
 import type { ExpenseWithCategory } from '@/entities/expense/types'
 
+function formatDate(date: string | Date | null | undefined, pattern: string): string {
+  const parsed = typeof date === 'string' || typeof date === 'undefined' || date === null ? (date ? new Date(date) : null) : date
+  return parsed && !Number.isNaN(parsed.getTime()) ? format(parsed, pattern) : '—'
+}
+
 interface ExpenseTableProps {
   data: ExpenseWithCategory[]
   total: number
@@ -204,10 +209,10 @@ export function ExpenseTable({
                   </TableCell>
                   <TableCell className="py-3.5">
                     <span className="text-sm font-medium text-foreground">
-                      {format(new Date(expense.date), 'MMM d, yyyy')}
+                      {formatDate(expense.date, 'MMM d, yyyy')}
                     </span>
                     <span className="block text-xs text-muted-foreground mt-0.5">
-                      {format(new Date(expense.date), 'h:mm a')}
+                      {formatDate(expense.date, 'h:mm a')}
                     </span>
                   </TableCell>
                   <TableCell className="py-3.5 text-right">
@@ -357,7 +362,7 @@ export function ExpenseTable({
               <div className="flex justify-between items-center p-4 bg-muted/50 rounded-xl border border-border">
                 <div>
                   <p className="font-semibold text-foreground">
-                    {format(new Date(expenseToDelete.date), 'MMM d, yyyy')}
+                    {formatDate(expenseToDelete.date, 'MMM d, yyyy')}
                   </p>
                   <p className="text-sm text-muted-foreground mt-0.5">
                     {expenseToDelete.categories?.name || 'Uncategorized'}

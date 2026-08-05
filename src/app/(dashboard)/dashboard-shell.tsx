@@ -9,6 +9,7 @@ import { logout } from '@/features/auth/actions'
 import { cn } from '@/shared/lib/utils'
 import { useOrg } from '@/shared/lib/org-provider'
 import { OrgSwitcher } from '@/features/org/org-switcher'
+import { Logo } from '@/shared/ui/logo'
 
 interface NavItem {
   href: string
@@ -137,13 +138,8 @@ export function DashboardShell({
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex w-64 flex-col border-r border-sidebar-border bg-sidebar">
-        <div className="flex items-center gap-3 px-5 py-5 border-b border-sidebar-border">
-          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-sidebar-primary to-emerald-400 flex items-center justify-center shadow-glow">
-            <span className="text-sm font-bold text-sidebar-primary-foreground">L</span>
-          </div>
-          <span className="font-headline text-lg font-bold text-sidebar-foreground tracking-tight">
-            Ledgerly
-          </span>
+        <div className="flex items-center px-5 py-4 border-b border-sidebar-border">
+          <Logo size={40} />
         </div>
 
         {activeOrg && (
@@ -204,13 +200,8 @@ export function DashboardShell({
           />
           <aside className="absolute inset-y-0 left-0 w-72 flex flex-col bg-sidebar border-r border-sidebar-border shadow-2xl animate-[slide-in-left_0.3s_ease-out]">
             <div className="flex items-center justify-between px-5 py-5 border-b border-sidebar-border">
-              <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-sidebar-primary to-emerald-400 flex items-center justify-center shadow-glow">
-                  <span className="text-sm font-bold text-sidebar-primary-foreground">L</span>
-                </div>
-                <span className="font-headline text-lg font-bold text-sidebar-foreground tracking-tight">
-                  Ledgerly
-                </span>
+              <div className="flex items-center px-4 border-b border-sidebar-border">
+                <Logo size={40} />
               </div>
               <button
                 onClick={() => setMobileOpen(false)}
@@ -281,12 +272,7 @@ export function DashboardShell({
               <Menu className="h-5 w-5" />
             </button>
             <div className="flex items-center gap-2.5">
-              <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-primary to-emerald-400 flex items-center justify-center shadow-glow">
-                <span className="text-[10px] font-bold text-primary-foreground">L</span>
-              </div>
-              <span className="font-headline text-base font-bold text-foreground tracking-tight">
-                Ledgerly
-              </span>
+              <Logo size={30} />
             </div>
           </div>
           <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 ring-1 ring-primary/20 flex items-center justify-center">

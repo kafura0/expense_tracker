@@ -3,16 +3,15 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { expenseFormSchema, type ExpenseInsert } from '@/entities/expense/schema'
 import type { ExpenseWithCategory } from '@/entities/expense/types'
-import { categoryCatalogByKind, findCatalogCategory, findCatalogCategoryByName, type CategoryOption } from '@/entities/category/catalog'
 import { createExpense, updateExpense } from './actions'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { useToast } from '@/shared/ui/toast'
 import { createClient } from '@/shared/lib/supabase/client'
-import { useDashboardScope } from '@/features/dashboard/scope'
+import { useDashboardScope, applyCategoryScope } from '@/features/dashboard/scope'
 import { toLocalDateTimeLocal } from '@/shared/lib/datetime'
 import { currencySymbol } from '@/shared/lib/currency'
 import { convertAmount } from '@/entities/exchange-rate/utils'
@@ -40,13 +39,14 @@ const CURRENCIES = ['KES', 'USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY']
 const BASE_CURRENCY = 'USD'
 const EXISTING_CATEGORY_VALUE = '__existing'
 
+interface CategoryOption {
+  id: string
+  name: string
+  icon: string | null
+  color: string | null
+}
+
 export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) {
-  const [categoryKey, setCategoryKey] = useState<string>(() => {
-    if (expense?.categories?.name) {
-      return findCatalogCategoryByName(expense.categories.name)?.key ?? EXISTING_CATEGORY_VALUE
-    }
-    return ''
-  })
   const [categoryId, setCategoryId] = useState<string | null>(expense?.category_id ?? null)
   const [rates, setRates] = useState<Record<string, number>>({})
   const [convertedAmount, setConvertedAmount] = useState<number | null>(null)
@@ -96,60 +96,34 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
   const watchedType = watch('entry_type') || 'expense'
   /* eslint-enable react-hooks/incompatible-library */
 
-  const categoryOptions = categoryCatalogByKind(watchedType)
-  const selectedCategory: CategoryOption | undefined = categoryKey
-    ? categoryKey === EXISTING_CATEGORY_VALUE
-      ? undefined
-      : findCatalogCategory(categoryKey)
-    : undefined
+  const { data: categories, isLoading: categoriesLoading } = useQuery({
+    queryKey: ['categories', scope?.orgId, scope?.persona, scope?.userId],
+    queryFn: async () => {
+      if (!scope) throw new Error('No scope resolved')
+      let query = supabase.from('categories').select('id, name, icon, color')
+      query = applyCategoryScope(query, scope)
+      const { data, error } = await query.order('name')
+      if (error) throw error
+      return (data ?? []) as CategoryOption[]
+    },
+    enabled: !!scope,
+  })
+
+  const editingCategoryMissing =
+    isEditing && !!expense?.category_id && !categories?.some((c) => c.id === expense.category_id)
+  const selectedCategory = categories?.find((c) => c.id === categoryId)
 
   const handleTypeChange = (type: 'expense' | 'income') => {
     setValue('entry_type', type, { shouldDirty: true })
-    // Switching income/expense invalidates a category from the other set
-    if (categoryKey && categoryKey !== EXISTING_CATEGORY_VALUE) {
-      const current = findCatalogCategory(categoryKey)
-      if (current && current.kind !== type) {
-        setCategoryKey('')
-        setCategoryId(null)
-      }
-    }
   }
 
-  const handleCategoryChange = (key: string) => {
-    setCategoryKey(key)
-    setCategoryId(key === EXISTING_CATEGORY_VALUE ? expense?.category_id ?? null : null)
-  }
-
-  const resolveCategoryId = useCallback(async (key: string): Promise<string | null> => {
-    const option = findCatalogCategory(key)
-    if (!option || !scope) return null
-
-    let query = supabase.from('categories').select('id').eq('name', option.name)
-    query = scope.persona === 'solo'
-      ? query.eq('user_id', scope.userId).is('org_id', null)
-      : query.eq('org_id', scope.orgId)
-
-    const { data: existing } = await query.limit(1).maybeSingle()
-    if (existing?.id) return existing.id
-
-    const { data: inserted, error } = await supabase
-      .from('categories')
-      .insert({
-        name: option.name,
-        icon: option.icon,
-        color: option.color,
-        user_id: scope.userId,
-        org_id: scope.persona === 'solo' ? null : scope.orgId,
-      })
-      .select('id')
-      .single()
-
-    if (error || !inserted?.id) {
-      const { data: retry } = await query.limit(1).maybeSingle()
-      return retry?.id ?? null
+  const handleCategoryChange = (value: string) => {
+    if (value === EXISTING_CATEGORY_VALUE) {
+      setCategoryId(expense?.category_id ?? null)
+    } else {
+      setCategoryId(value || null)
     }
-    return inserted.id
-  }, [scope, supabase])
+  }
 
   const fetchRates = useCallback(async () => {
     try {
@@ -187,13 +161,6 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
 
   const onSubmit = async (data: ExpenseInsert) => {
     try {
-      let resolvedCategoryId: string | null = null
-      if (categoryKey === EXISTING_CATEGORY_VALUE) {
-        resolvedCategoryId = categoryId
-      } else if (categoryKey) {
-        resolvedCategoryId = await resolveCategoryId(categoryKey)
-      }
-
       const needsConversion = data.currency !== effectiveCurrency
       const rate = rates[data.currency]
 
@@ -205,7 +172,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
 
       const submissionData = {
         ...data,
-        category_id: resolvedCategoryId,
+        category_id: categoryId,
         date: new Date(data.date).toISOString(),
         converted_amount_cents: needsConversion ? convertedAmount : undefined,
         converted_currency: effectiveCurrency,
@@ -331,17 +298,17 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
           <div className="relative">
             <select
               id="category_id"
-              value={categoryKey}
+              value={editingCategoryMissing ? EXISTING_CATEGORY_VALUE : (categoryId ?? '')}
               onChange={(e) => handleCategoryChange(e.target.value)}
               className="flex h-10 w-full rounded-lg border border-input bg-muted/50 px-3 py-2 text-sm text-foreground transition-all duration-200 hover:border-muted-foreground/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:border-ring appearance-none"
             >
-              <option value="">Select category</option>
-              {categoryOptions.map((category) => (
-                <option key={category.key} value={category.key}>
+              <option value="">{categoriesLoading ? 'Loading categories…' : 'Select category'}</option>
+              {(categories || []).map((category) => (
+                <option key={category.id} value={category.id}>
                   {category.name}
                 </option>
               ))}
-              {isEditing && categoryKey === EXISTING_CATEGORY_VALUE && (
+              {editingCategoryMissing && (
                 <option value={EXISTING_CATEGORY_VALUE}>
                   {expense?.categories?.name || 'Existing category'}
                 </option>
@@ -350,7 +317,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
           </div>
           {selectedCategory && (
             <p className="text-xs text-muted-foreground leading-relaxed pt-0.5">
-              {selectedCategory.description}
+              {selectedCategory.name}
             </p>
           )}
         </div>

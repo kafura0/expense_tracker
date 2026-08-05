@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { fetchBaseRates } from '@/entities/exchange-rate/base-rates'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { fetchBaseRates, clearBaseRatesCache } from '@/entities/exchange-rate/base-rates'
 
 function mockSupabase(overrides: { error?: unknown; data?: unknown[] }) {
   return {
@@ -15,6 +15,8 @@ function mockSupabase(overrides: { error?: unknown; data?: unknown[] }) {
 }
 
 describe('fetchBaseRates', () => {
+  beforeEach(() => clearBaseRatesCache())
+
   it('maps rate rows into a currency → rate map', async () => {
     const supabase = mockSupabase({
       data: [
@@ -58,5 +60,45 @@ describe('fetchBaseRates', () => {
     const supabase = mockSupabase({ error: { message: 'denied' } })
     const rates = await fetchBaseRates(supabase as never, 'USD')
     expect(rates).toEqual({})
+  })
+
+  it('dedupes concurrent calls to the same base currency into one request', async () => {
+    let calls = 0
+    const supabase = {
+      from: () => ({
+        select: () => ({
+          eq: () => {
+            calls++
+            return new Promise((resolve) =>
+              setTimeout(() => resolve({ data: [{ target_currency: 'KES', rate: 153.5 }], error: null }), 10)
+            )
+          },
+        }),
+      }),
+    }
+    const [a, b] = await Promise.all([
+      fetchBaseRates(supabase as never, 'USD'),
+      fetchBaseRates(supabase as never, 'USD'),
+    ])
+    expect(calls).toBe(1)
+    expect(a).toEqual({ KES: 153.5 })
+    expect(b).toEqual({ KES: 153.5 })
+  })
+
+  it('serves a second call from the cache without querying again', async () => {
+    let calls = 0
+    const supabase = {
+      from: () => ({
+        select: () => ({
+          eq: () => {
+            calls++
+            return Promise.resolve({ data: [{ target_currency: 'KES', rate: 153.5 }], error: null })
+          },
+        }),
+      }),
+    }
+    await fetchBaseRates(supabase as never, 'USD')
+    await fetchBaseRates(supabase as never, 'USD')
+    expect(calls).toBe(1)
   })
 })

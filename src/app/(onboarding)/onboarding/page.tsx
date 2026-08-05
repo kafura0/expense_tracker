@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Logo } from '@/shared/ui/logo'
 import { completeOnboarding } from '@/features/onboarding/actions'
 
 export default function OnboardingPage() {
@@ -19,7 +20,7 @@ export default function OnboardingPage() {
       {/* ─── NAV ─── */}
       <header className="flex justify-between items-center w-full px-2 md:px-10 h-14 md:h-16 sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-4 md:gap-10">
-          <span className="font-headline text-lg md:text-2xl font-bold tracking-tight">Ledgerly</span>
+          <Logo size={32} />
           <nav className="hidden md:flex gap-6 items-center">
             <a className="text-primary font-semibold border-b-2 border-primary pb-1 text-xs uppercase tracking-widest" href="#hero">Home</a>
             <a className="text-muted-foreground hover:text-foreground transition-colors px-3 py-1 rounded text-xs uppercase tracking-widest" href="#features">Features</a>
@@ -358,7 +359,7 @@ export default function OnboardingPage() {
       <footer className="bg-muted/20 border-t border-border pt-16 pb-8 px-6 md:px-10">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-10 mb-12">
           <div className="md:col-span-4">
-            <span className="text-xl font-headline font-bold block mb-4">Ledgerly</span>
+            <Logo size={40} className="block mb-4" />
             <p className="text-muted-foreground text-sm leading-relaxed mb-6">The premium expense intelligence platform for modern finance teams.</p>
             <div className="flex gap-3">
               <a className="w-10 h-10 rounded-full border border-border flex items-center justify-center hover:bg-primary/10 hover:border-primary transition-all" href="#">
