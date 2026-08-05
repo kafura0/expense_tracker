@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/shared/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -123,14 +123,17 @@ export default function ReportsPage() {
     enabled: !!scope,
   })
 
-  const stats = (() => {
-    const current = data?.current || []
-    const previous = data?.previous || []
-    const rates = data?.rates || {}
+  const { current, previous, monthly, rates } = data || {}
+  const baseCurrency = scope?.baseCurrency || 'USD'
 
-    const total = sumInBaseCurrency(current, scope?.baseCurrency || 'USD', rates)
-    const prevTotal = sumInBaseCurrency(previous, scope?.baseCurrency || 'USD', rates)
-    const count = current.length
+  const stats = useMemo(() => {
+    const cur = current || []
+    const prev = previous || []
+    const rt = rates || {}
+
+    const total = sumInBaseCurrency(cur, baseCurrency, rt)
+    const prevTotal = sumInBaseCurrency(prev, baseCurrency, rt)
+    const count = cur.length
 
     const start = rangeStart(range).getTime()
     const now = new Date().getTime()
@@ -146,12 +149,11 @@ export default function ReportsPage() {
       daily: Math.round(total / days),
       change,
     }
-  })()
+  }, [current, previous, rates, baseCurrency, range])
 
-  const monthlyBuckets = (() => {
-    const rows = data?.monthly || []
-    const rates = data?.rates || {}
-    const base = scope?.baseCurrency || 'USD'
+  const monthlyBuckets = useMemo(() => {
+    const rows = monthly || []
+    const rt = rates || {}
     const buckets: { key: string; label: string; total: number }[] = []
     for (let i = 5; i >= 0; i--) {
       const d = new Date()
@@ -162,21 +164,20 @@ export default function ReportsPage() {
         const ed = new Date(e.date)
         return `${ed.getFullYear()}-${ed.getMonth()}` === key
       })
-      buckets.push({ key, label, total: sumInBaseCurrency(bucketRows, base, rates) })
+      buckets.push({ key, label, total: sumInBaseCurrency(bucketRows, baseCurrency, rt) })
     }
     return buckets
-  })()
+  }, [monthly, rates, baseCurrency])
 
-  const topCategories = (() => {
-    const rows = data?.current || []
-    const rates = data?.rates || {}
-    const base = scope?.baseCurrency || 'USD'
+  const topCategories = useMemo(() => {
+    const rows = current || []
+    const rt = rates || {}
     const byCat = new Map<string, { name: string; total: number; color: string | null }>()
     for (const e of rows) {
       const key = e.category_id || 'none'
-      const converted = e.currency === base
+      const converted = e.currency === baseCurrency
         ? e.amount_cents
-        : (rates[e.currency] ? Math.round(e.amount_cents / rates[e.currency]) : 0)
+        : (rt[e.currency] ? Math.round(e.amount_cents / rt[e.currency]) : 0)
       const prev = byCat.get(key)
       if (prev) prev.total += converted
       else byCat.set(key, { name: e.category_name, total: converted, color: e.category_color })
@@ -184,7 +185,7 @@ export default function ReportsPage() {
     const list = [...byCat.values()].sort((a, b) => b.total - a.total).slice(0, 6)
     const max = list.length > 0 ? list[0].total : 0
     return list.map((c) => ({ ...c, percentage: max > 0 ? (c.total / max) * 100 : 0 }))
-  })()
+  }, [current, rates, baseCurrency])
 
   const handleExport = async (type: 'csv' | 'pdf') => {
     if (!scope) return
@@ -251,7 +252,6 @@ export default function ReportsPage() {
   }
 
   const maxBucket = Math.max(...monthlyBuckets.map((b) => b.total), 1)
-  const rangeTotal = sumInBaseCurrency(data?.current || [], scope?.baseCurrency || 'USD', data?.rates || {})
 
   const summaryCards = [
     {
@@ -278,17 +278,13 @@ export default function ReportsPage() {
     {
       label: 'Daily Average',
       value: formatMoney(stats.daily, scope.baseCurrency),
-      change: `vs ${formatMoney(previousTotal(), scope.baseCurrency)}`,
+      change: `vs ${formatMoney(stats.prevTotal, scope.baseCurrency)}`,
       trend: 'up' as const,
       icon: <Calendar className="h-5 w-5 text-indigo-500" />,
     },
   ]
 
-  function previousTotal() {
-    return sumInBaseCurrency(data?.previous || [], scope?.baseCurrency || 'USD', data?.rates || {})
-  }
-
-  if (rangeTotal === 0) {
+  if (stats.total === 0) {
     return (
       <div className="space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
