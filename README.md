@@ -1,16 +1,27 @@
 # Ledgerly
 
-Premium multi-tenant SaaS expense tracking platform — built with **Next.js 16**, **Supabase**, and **Tailwind CSS v4**. Dark-first design, real-time exchange rates, VAT support, role-based dashboards, and rich analytics.
+> Premium multi-tenant SaaS expense tracking platform — **Next.js 16 · Supabase · Tailwind CSS v4**
+
+Dark-first, PWA-enabled expense tracking with real-time exchange rates, VAT support, per-org dashboards, budgets, and bank-grade security (RLS + nonce-based CSP).
 
 **Live:** [expense-tracker-iq7pempv3-joan-kaburas-projects.vercel.app](https://expense-tracker-iq7pempv3-joan-kaburas-projects.vercel.app) · **Alias:** [expense-tracker-ruddy-five-r8k6s4r6zg.vercel.app](https://expense-tracker-ruddy-five-r8k6s4r6zg.vercel.app)
 **Repository:** [github.com/kafura0/expense_tracker](https://github.com/kafura0/expense_tracker)
 
 ---
 
+## Demo
+
+![Ledgerly dashboard demo](public/demo/dashboard-demo.gif)
+
+▶ **Watch the full walkthrough video:** [`dashboard_landing_page demo.mp4`](docs/template/demo_files/dashboard_landing_page%20demo.mp4) · also at [`docs/demo.mp4`](docs/demo.mp4)
+Source media lives in [`docs/template/demo_files/`](docs/template/demo_files/) (GIF, MP4, logo, intro audio).
+
+---
+
 ## Table of Contents
 
 - [Features](#features)
-- [Three-User Model](#three-user-model)
+- [User Model](#user-model)
 - [Tech Stack](#tech-stack)
 - [Architecture](#architecture)
 - [Route Map](#route-map)
@@ -21,6 +32,7 @@ Premium multi-tenant SaaS expense tracking platform — built with **Next.js 16*
 - [Database Setup](#database-setup)
 - [Demo Credentials](#demo-credentials)
 - [Testing](#testing)
+- [CI / CD](#ci--cd)
 - [Available Scripts](#available-scripts)
 - [PWA](#pwa)
 - [Design System](#design-system)
@@ -40,9 +52,9 @@ Premium multi-tenant SaaS expense tracking platform — built with **Next.js 16*
 - CSV and PDF export with date-range and category filtering
 
 **Role-aware experience**
-- Persona-tailored dashboards (Solo, Org Member, Org Admin, Super Admin) scoped to the active org — or the user's own data when solo
+- Persona-tailored dashboards (Solo, Org, Super Admin) scoped to the active org — or the user's own data when solo
 - Budget-vs-actual tracking, team spend leaderboard, org health card, and announcements
-- Organization (org) management with member roles, a role badge, and a multi-org switcher
+- Organization management with member roles, a role badge, and a multi-org switcher
 - Invite-based onboarding (token + email via Resend), access-request flow, and OTP email verification
 
 **Analytics & insights**
@@ -57,37 +69,38 @@ Premium multi-tenant SaaS expense tracking platform — built with **Next.js 16*
 
 **Security & quality**
 - Row Level Security (RLS) on every table with granular helper functions
-- Proxy (Next.js 16) with session management, rate limiting, and nonce-based CSP security headers
-- Audit logging, 201 unit/component tests, zero-lint baseline
+- Next.js 16 Proxy with session management, rate limiting, and nonce-based CSP security headers
+- Audit logging, 200 unit/component tests across 25 files, 21 E2E tests, zero-lint baseline
 
 **Polish**
 - PWA installable on mobile and desktop (manifest + service worker)
 - Dark-first glassmorphic UI with animated charts and skeleton loading states
-- Fully responsive with a mobile drawer navigation
+- Fully responsive with a mobile bottom navigation
 
 ---
 
-## Three-User Model
+## User Model
 
 | Role | Description |
 |------|-------------|
-| **Super Admin** | Full system access — user/org management, announcements, message replies. Has no personal expense scope. |
-| **Solo Client** | Independent user with no org — personal expense tracking only. |
-| **Org — Admin** | Org owner. Full write access + member management + subscription visibility. |
-| **Org — Manager** | Team oversight — manages org expenses, categories, budgets, and invites. |
-| **Org — Client** | Contributor — records and views expenses (org-scoped) and personal budgets. |
+| **Super Admin** | Platform staff (`org_members.role = 'super_admin'`). Full system access — user/org management, announcements, message replies. Home is `/admin` (middleware routes them away from the org dashboards). |
+| **Org Admin** | Org-level administrator (`org_admin`) — roster, invites, and org settings. |
+| **Member** | Any organization member (`member`) — org-wide write access to expenses, categories, and budgets. Manager/client tiers were consolidated into a single member role (migration 011). |
+| **Solo** | Independent user with no org — personal expense tracking only. |
+
+The org persona (`solo | org | platform-admin`) is resolved in `src/features/dashboard/scope.ts`; database roles are `super_admin`, `org_admin`, and `member`.
 
 ### Permission matrix
 
-| Capability | Super Admin | Org Admin | Org Manager | Org Client | Solo |
-|---|---|---|---|---|---|
-| Manage expenses | ✅ (all) | ✅ (org) | ✅ (org) | ➖ (view org + own) | ✅ (own) |
-| Manage categories | ✅ | ✅ | ✅ | ➖ (view) | ✅ (own) |
-| Budgets | ✅ | ✅ | ✅ | ✅ (own) | ✅ (own) |
-| Invite members | ✅ | ✅ | ✅ | ➖ | ➖ |
-| Manage org/subscription | ✅ | ✅ | ➖ | ➖ | ➖ |
-| View org analytics | ✅ | ✅ | ✅ | ✅ (own + org) | ➖ |
-| Admin panel | ✅ | ➖ | ➖ | ➖ | ➖ |
+| Capability | Super Admin | Org Admin | Member | Solo |
+|---|---|---|---|---|
+| Manage expenses | ✅ (all) | ✅ (org) | ✅ (org) | ✅ (own) |
+| Manage categories | ✅ | ✅ | ✅ | ✅ (own) |
+| Budgets | ✅ | ✅ | ✅ | ✅ (own) |
+| Invite members / roster | ✅ | ✅ | ➖ | ➖ |
+| Manage org settings | ✅ | ✅ | ➖ | ➖ |
+| View org analytics | ✅ | ✅ | ✅ | ➖ |
+| Admin panel | ✅ | ➖ | ➖ | ➖ |
 
 ---
 
@@ -97,14 +110,17 @@ Premium multi-tenant SaaS expense tracking platform — built with **Next.js 16*
 |-------|-----------|
 | Framework | Next.js 16.2.10 (App Router, Turbopack) |
 | Language | TypeScript |
-| UI | Tailwind CSS v4, Radix UI primitives, Lucide icons, Framer Motion |
+| UI | Tailwind CSS v4, Radix UI primitives, Lucide icons |
 | Charts | Recharts |
 | State | TanStack React Query, React Hook Form + Zod |
 | Backend | Supabase (PostgreSQL, Auth, RLS, Storage) |
 | Auth | Supabase Auth — email/password + OTP, password reset |
+| Email | Resend (invites, onboarding, OTP) |
 | PDF / CSV | jsPDF + jspdf-autotable, native CSV generation |
 | Exchange Rates | Frankfurter API (ECB data) with local caching |
-| Testing | Vitest, Testing Library, JSDOM |
+| Unit/Integration Tests | Vitest, Testing Library, JSDOM |
+| E2E Tests | Playwright (Chromium, 21 tests) |
+| CI/CD | GitHub Actions (lint → test → e2e → build) |
 | Deployment | Vercel (auto-deploy on push to `main`) |
 | Architecture | Feature-Sliced Design (FSD) |
 
@@ -112,21 +128,64 @@ Premium multi-tenant SaaS expense tracking platform — built with **Next.js 16*
 
 ## Architecture
 
-Ledgerly follows **Feature-Sliced Design (FSD)** — a layered frontend architecture where each layer depends only on the layers beneath it.
+Ledgerly follows **Feature-Sliced Design (FSD)** — a layered architecture where each layer depends only on the layers beneath it. Domain logic lives in `entities`, user-facing features in `features`, composite blocks in `widgets`, and routes/layouts in `app`. Everything reusable sits in `shared`.
 
 ```
 ┌────────────────────────────────────────────┐
-│  app/   — Next.js routes, pages, layouts   │
+│  app/      Next.js routes, pages, layouts  │
 ├────────────────────────────────────────────┤
-│  widgets/ — composable blocks (dashboard)  │
+│  widgets/  composable blocks (dashboard)   │
 ├────────────────────────────────────────────┤
-│  features/ — user-facing feature modules   │
+│  features/ user-facing feature modules     │
 ├────────────────────────────────────────────┤
-│  entities/ — domain models + repositories  │
+│  entities/ domain models + repositories    │
 ├────────────────────────────────────────────┤
-│  shared/   — UI kit, libs, types           │
+│  shared/   UI kit, libs, types             │
 └────────────────────────────────────────────┘
 ```
+
+### Request lifecycle
+
+Next.js 16 delegates every non-static request to `src/proxy.ts`, which runs a deterministic pipeline before the page/route handler executes:
+
+```
+Browser
+  │
+  ▼
+proxy.ts (Next 16 Proxy)                         ← runs on all non-static paths
+  ├─ 1. rateLimit(request)                       ← auth 5/min · api 60/min · general 100/min
+  │       Memory store (default) or Upstash Redis (env-configured)
+  │       429 + Retry-After + X-RateLimit-* headers when exceeded
+  ├─ 2. generate nonce (crypto.randomUUID)       ← fresh per request
+  ├─ 3. set Content-Security-Policy header       ← 'self' + nonce + 82 build-time sha256 hashes
+  ├─ 4. updateSession(nextRequest)               ← middleware.ts (below)
+  ├─ 5. addRateLimitHeaders + addSecurityHeaders ← X-Frame-Options, nosniff, HSTS (prod), CSP
+  ▼
+Next.js page / API handler
+  ▼
+Supabase  ← RLS enforces org/row isolation at the query layer
+```
+
+`src/shared/lib/supabase/middleware.ts` (`updateSession`) is the authorization spine:
+
+1. **Session refresh** — `createServerClient` + `getUser()` refresh tokens on every request.
+2. **Route classification** — public / protected (`/dashboard`, `/expenses`, `/reports`, `/categories`, `/settings`) / admin (`/admin`) / API (`/api/*`). Unauthenticated users on protected/admin/API paths are redirected to `/login`.
+3. **Consolidated lookups** — the user's `profiles` row and `org_members` memberships are fetched once, in parallel (two Supabase round trips total).
+4. **Org cookie validation** — the `ledgerly_active_org` cookie is checked against real memberships, never trusted blindly.
+5. **Fail-open posture** — a transient Supabase error downgrades to pass-through (with a `x-middleware-mode: fail-open` header). `MIDDLEWARE_FAIL_CLOSED=1` flips admin/suspension checks to fail-closed.
+
+### Content Security Policy
+
+- Static prerendered pages carry inline bootstrap/RSC scripts trusted by **SHA-256 hashes** generated at build time (`scripts/generate-csp-hashes.mjs`, 82 hashes in `src/shared/lib/csp-hashes.generated.ts`).
+- Dynamically rendered pages trust scripts via the **per-request nonce**.
+- `'unsafe-eval'` ships only in development; `style-src 'unsafe-inline'` is retained for Tailwind/chart inline styles; `frame-ancestors 'none'` blocks clickjacking.
+- The build pipeline is deterministic and self-verifying: `next build` → generate hashes → `next build` → `--verify` fails CI if the committed hash file drifts.
+
+### Data & query architecture
+
+- **RLS is the real security boundary.** Helper functions (`is_super_admin`, `is_org_member`, `can_write_in_org`, `can_admin_org`, `is_solo_user`, `is_row_owner`) gate every row. Server actions re-validate authorization on each call.
+- **Consolidated dashboard queries.** `src/features/dashboard/use-dashboard-data.ts` loads 6 months of scoped expenses, categories, budgets, and the base-currency rate map in **4 parallel round trips** (previously ~15–21 sequential). Nine widgets derive their numbers client-side from this shared payload, deduped by a single TanStack Query key.
+- **Audit logging** goes exclusively through the `log_audit_event` RPC with a pinned vocabulary (`src/shared/lib/audit-logger.ts`).
 
 ### Project structure
 
@@ -142,24 +201,29 @@ src/
 │   ├── login/ signup/ verify-otp/  # Auth pages
 │   ├── reset-password/ update-password/
 │   ├── request-access/             # Org access request form
-│   ├── page.tsx                    # Public landing page
+│   ├── page.tsx                    # Public landing page (with demo GIF)
 │   ├── layout.tsx / globals.css    # Root layout + design tokens
-│   └── middleware.ts               # Session, rate limiting, security headers
+│   └── proxy.ts                    # Next 16 proxy: rate limit, CSP, session, headers
 ├── widgets/dashboard/              # KPI cards, charts, activity, insights, summaries,
 │                                   # budget, leaderboard, org health, announcements
 ├── features/                       # auth, expenses, budgets, admin, org, invites, onboarding,
 │                                   # exchange-rates, export, pwa, settings
 ├── entities/                       # org, invite, expense, budget, exchange-rate
-├── shared/                         # ui/ (Button, Card, Dialog, Badge, …)
-│                                   # lib/ (supabase clients, org context, rate-limit,
-│                                   #       security-headers, utils)
-supabase/migrations/                # 7 SQL migrations (001–006)
+├── shared/
+│   ├── ui/                         # Button, Card, Dialog, Badge, …
+│   ├── lib/security-headers.ts     # buildCsp + addSecurityHeaders
+│   ├── lib/rate-limit.ts           # Memory/Upstash stores, env-overridable limits
+│   ├── lib/csp-hashes.generated.ts # build-time script hashes (auto-generated)
+│   └── lib/supabase/               # client + server clients, middleware
+supabase/migrations/                # 16 SQL migrations (001–014)
+public/demo/dashboard-demo.gif      # Landing page + README demo
 scripts/
-├── seed-test-users.mjs             # Canonical seeder — 5 demo users + org
+├── seed-test-users.mjs             # Canonical seeder — 5 demo users + org (env-driven)
+├── generate-csp-hashes.mjs         # Build-time CSP hash generator
 └── seed.ts                         # Legacy seeder — 90 days / 100 expenses
-docs/                               # PRD, architecture, API, UX, sprint, code review
 tests/
-├── unit/                           # VAT, utils, PDF, CSV
+├── e2e/                            # Playwright (21 tests)
+├── unit/                           # 22 files — VAT, utils, PDF, CSV, rate-limit, CSP, …
 └── integration/                    # expense actions, API routes
 ```
 
@@ -169,7 +233,7 @@ tests/
 
 | Route | Access | Purpose |
 |-------|--------|---------|
-| `/` | Public | Landing page |
+| `/` | Public | Landing page (with dashboard demo) |
 | `/login` | Public | Sign in |
 | `/signup` | Public | Solo signup |
 | `/org-signup` | Public | Organization signup |
@@ -178,6 +242,9 @@ tests/
 | `/update-password` | Public | Set new password |
 | `/request-access` | Public | Request org access |
 | `/invite` | Public | Accept org invite |
+| `/suspended` | Public | Suspended-account confinement page |
+| `/no-access` | Public | Removed-member confinement page |
+| `/auth/callback` | Public | Supabase OAuth callback |
 | `/onboarding` | Auth | Onboarding wizard |
 | `/dashboard` | Auth | Role-tailored dashboard |
 | `/expenses` | Auth | Expense list + CRUD |
@@ -191,23 +258,32 @@ tests/
 
 ## Database Schema
 
-Seven migrations manage the schema (run in order). **Supabase project ref:** `weitlewvoufvgfpkryvg`
+Sixteen migrations manage the schema — note there are two `002_*` and two `014_*` files (order of creation, both applied). **Supabase project ref:** `weitlewvoufvgfpkryvg`
 
 | Migration | Purpose |
 |-----------|---------|
 | `001_initial_schema.sql` | Core tables (`profiles`, `categories`, `expenses`, `settings`, `exchange_rates`) + `handle_new_user` trigger + RLS |
-| `002_tenancy_and_security.sql` | `plans`, `organizations`, `org_members`, `client_requests`, `subscriptions`, `audit_logs`; adds `org_id` columns; RLS rewrite; helper functions; `create_org_for_user` + `approve_client_request` RPCs; plan seeds |
+| `002_tenancy_and_security.sql` | `plans`, `organizations`, `org_members`, `client_requests`, `subscriptions`, `audit_logs`; `org_id` columns; RLS rewrite; helper functions; `create_org_for_user` + `approve_client_request` RPCs; plan seeds |
 | `002_performance_optimization.sql` | Composite indexes for dashboard date-range analytics |
 | `003_onboarding.sql` | `profiles.onboarding_completed` flag + index |
 | `004_messages_table.sql` | `messages` (support tickets + announcements) with RLS |
 | `005_invites_and_solo_support.sql` | `invites` table + solo-user RLS policies + `is_solo_user` / `is_row_owner` helpers |
 | `006_budgets.sql` | `budgets` table (user/org scopes), RLS policies, `set_updated_at` trigger, dedupe unique index via `COALESCE(org_id, …)` |
+| `007_income_and_public_plans.sql` | Income support + public plan seeds |
+| `008_announcements_and_suspension.sql` | Announcements + `profiles.is_suspended` + suspension confinement |
+| `009_super_admin_profile_updates.sql` | Super-admin profile write policies |
+| `010_unify_org_member_write.sql` | `can_write_in_org()` grants every member write access |
+| `011_remove_legacy_org_roles.sql` | Drops legacy `manager` / `client` roles |
+| `012_security_hardening.sql` | RLS hardening + defense-in-depth |
+| `013_org_administration.sql` | Org admin management (`can_admin_org`) |
+| `014_accept_invite_expired_persist.sql` | Invite acceptance + expiry handling |
+| `014_query_performance.sql` | Additional query-performance indexes |
 
 ### Tables
 
 | Table | Purpose |
 |-------|---------|
-| `profiles` | Per-user profile (display name, avatar, org) |
+| `profiles` | Per-user profile (display name, avatar, org, onboarding, suspension) |
 | `categories` | Expense categories (personal or org-scoped) |
 | `expenses` | Core transactions (`amount_cents`, currency, VAT/tax fields, soft-delete) |
 | `settings` | Per-user preferences (base currency, VAT rate, theme) |
@@ -226,24 +302,26 @@ Seven migrations manage the schema (run in order). **Supabase project ref:** `we
 
 ## Security Model
 
-**Row Level Security (RLS)** is enforced on every data table. Access is driven by a set of security-definer helper functions:
+**Row Level Security (RLS)** is enforced on every data table. Access is driven by security-definer helper functions:
 
 | Helper | Definition |
 |--------|------------|
 | `is_super_admin()` | User holds `super_admin` role in any org |
 | `is_org_member(org_id)` | User belongs to the given org |
 | `can_write_in_org(org_id)` | User is a member of the given org (all members write) |
-| `get_org_role(org_id)` | Returns the user's role in an org |
-| `user_org_ids()` | All org IDs the user belongs to |
+| `can_admin_org(org_id)` | User is an org admin of the given org |
 | `is_solo_user()` | User has no org memberships |
 | `is_row_owner(user_id)` | Row belongs to the authenticated user |
 
 **Additional controls**
-- **Proxy** (`src/proxy.ts`) runs on all non-static routes: session refresh, rate limiting (in-memory or Upstash Redis), and nonce-based security headers
-- **`httpOnly` active-org cookie** — org context is resolved server-side via server actions (XSS-safe)
+- **Proxy** (`src/proxy.ts`) runs on all non-static routes: rate limiting, per-request nonce, and security headers (CSP, `X-Frame-Options: DENY`, `nosniff`, HSTS in production)
+- **Per-request CSP nonce + 82 build-time script hashes** — no `unsafe-inline`/`unsafe-eval` in production scripts
+- **Rate limiting** — auth 5/min, API 60/min, general 100/min, env-overridable (`RATE_LIMIT_AUTH_MAX`, `RATE_LIMIT_API_MAX`, `RATE_LIMIT_GENERAL_MAX`), in-process or Upstash Redis store
+- **`httpOnly` active-org cookie** — org context resolved server-side (XSS-safe)
 - **Service-role key is server-only**; the browser only ever holds the anon key (RLS-restricted)
 - **Soft deletes** on expenses (`is_deleted` + `deleted_at`)
-- **Audit logging** of sensitive admin actions
+- **Audit logging** of sensitive admin actions via the `log_audit_event` RPC
+- **Fail-open middleware** with `MIDDLEWARE_FAIL_CLOSED=1` opt-in for admin/suspension checks
 - Server actions re-validate authorization on every call (defense in depth)
 
 ---
@@ -252,7 +330,7 @@ Seven migrations manage the schema (run in order). **Supabase project ref:** `we
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20+ (CI uses 22)
 - npm
 - A Supabase account (free tier works)
 
@@ -271,10 +349,19 @@ cp .env.example .env.local   # then fill in your values
 |----------|----------|-------------|
 | `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anon (public) key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Supabase service-role key (server only) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Supabase service-role key (server/scripts only) |
 | `NEXT_PUBLIC_SITE_URL` | No | Deployed URL for auth redirects (defaults to localhost:3000) |
+| `RESEND_API_KEY` | No | Transactional email (invites, onboarding) |
+| `DEV_EMAIL_LOG` | No | Log email to console instead of sending (dev convenience) |
+| `UPSTASH_REDIS_REST_URL` | No | Shared rate-limit store (fallback: in-process) |
+| `UPSTASH_REDIS_REST_TOKEN` | No | Upstash token (must accompany URL) |
+| `RATE_LIMIT_AUTH_MAX` | No | Auth requests per minute (default `5`) |
+| `RATE_LIMIT_API_MAX` | No | API requests per minute (default `60`) |
+| `RATE_LIMIT_GENERAL_MAX` | No | General requests per minute (default `100`) |
+| `MIDDLEWARE_FAIL_CLOSED` | No | `1` enables fail-closed admin/suspension checks |
+| `SUPABASE_MGMT_TOKEN` | No | Management API token for schema-verification scripts |
 
-> Find your keys in the Supabase dashboard under **Project Settings → API**. Never commit `.env.local`.
+> Find your Supabase keys under **Project Settings → API**. Never commit `.env.local`.
 
 ### Database Setup
 
@@ -289,6 +376,14 @@ supabase/migrations/004_messages_table.sql
 supabase/migrations/005_invites_and_solo_support.sql
 supabase/migrations/006_budgets.sql
 supabase/migrations/007_income_and_public_plans.sql
+supabase/migrations/008_announcements_and_suspension.sql
+supabase/migrations/009_super_admin_profile_updates.sql
+supabase/migrations/010_unify_org_member_write.sql
+supabase/migrations/011_remove_legacy_org_roles.sql
+supabase/migrations/012_security_hardening.sql
+supabase/migrations/013_org_administration.sql
+supabase/migrations/014_accept_invite_expired_persist.sql
+supabase/migrations/014_query_performance.sql
 ```
 
 Each file is applied with `POST https://api.supabase.com/v1/projects/{project_ref}/database/query`
@@ -336,16 +431,46 @@ Personas seeded: **Sarah Mitchell** (Super Admin) · **James Carter** (Org Admin
 
 ## Testing
 
-**59 tests across 6 files** — run with `npm test` (Vitest).
+### Unit & integration — Vitest
 
-| Test File | Type | Coverage |
-|-----------|------|----------|
-| `tests/unit/vat.test.ts` | Unit | VAT calculation logic |
-| `tests/unit/utils.test.ts` | Unit | Shared utilities |
-| `tests/unit/pdf-export.test.ts` | Unit | PDF generation |
-| `tests/unit/csv-export.test.ts` | Unit | CSV generation |
-| `tests/integration/expense-actions.test.ts` | Integration | Expense server actions |
-| `tests/integration/api-routes.test.ts` | Integration | API routes |
+**200 tests across 25 files** — run with `npm test` (or `npm run test:coverage` for coverage).
+
+| Area | Files | What's covered |
+|------|-------|----------------|
+| `tests/unit/` | 22 files | VAT, currency/totals, exchange-rate service + base rates, rate limiting, CSP/security headers, CSRF, password rules, expense schema, PDF/CSV export, schemas, caching, category icons, audit logger, date/time, middleware mode, utils |
+| `tests/integration/` | 2 files | Expense server actions, API routes |
+
+### End-to-end — Playwright
+
+**21 E2E tests** (`npm run test:e2e`, Chromium):
+
+| Spec | Coverage |
+|------|----------|
+| `smoke.spec.ts` | Landing page, login/signup render, full security-header assertions (CSP nonce + hashes, `frame-ancestors 'none'`, `X-Frame-Options: DENY`, `nosniff`) |
+| `public-routes.spec.ts` | All 10 public routes render (title + key form elements) |
+| `route-protection.spec.ts` | Unauthenticated access to protected, admin, and API routes redirects to `/login` (asserted at the 307 layer) |
+
+Configuration notes:
+- `bypassCSP: true` — the app's strict hash/nonce CSP would otherwise block Playwright's injected utility scripts
+- The web server (production build in CI, dev locally) runs with relaxed `RATE_LIMIT_*_MAX` env vars so the suite never trips the auth rate limiter
+- First install browsers with `npm run test:e2e:install`
+
+---
+
+## CI / CD
+
+GitHub Actions (`.github/workflows/ci.yml`) runs four gated jobs on push to `main`/`develop` and PRs to `main`:
+
+```
+lint → test → e2e → build
+```
+
+- **lint** — ESLint + `tsc --noEmit`
+- **test** — Vitest with coverage (artifacts uploaded, 7-day retention)
+- **e2e** — Playwright against a production build (`npm run build && npm run start`), chromium installed with system deps, report uploaded on failure
+- **build** — deterministic two-pass production build with CSP hash verification
+
+Secrets required for e2e/build jobs: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 
 ---
 
@@ -354,14 +479,18 @@ Personas seeded: **Sarah Mitchell** (Super Admin) · **James Carter** (Org Admin
 | Command | Description |
 |---------|-------------|
 | `npm run dev` | Start development server |
-| `npm run build` | Production build |
+| `npm run build` | Deterministic build: `next build` → generate CSP hashes → `next build` → verify |
 | `npm run start` | Start production server |
 | `npm run lint` | Run ESLint (zero-error baseline) |
-| `npm run seed` | Legacy seeder (100 expenses / 90 days) |
-| `npm test` | Run test suite (Vitest) |
+| `npx tsc --noEmit` | TypeScript type check |
+| `npm test` | Run unit/integration suite (Vitest) |
 | `npm run test:watch` | Run tests in watch mode |
 | `npm run test:coverage` | Run tests with coverage report |
 | `npm run test:ui` | Run tests with Vitest UI |
+| `npm run test:e2e` | Run Playwright E2E suite |
+| `npm run test:e2e:install` | Install Playwright chromium |
+| `node --env-file=.env.local scripts/seed-test-users.mjs` | Seed 5 demo users + org + expenses |
+| `npm run seed` | Legacy seeder (100 expenses / 90 days) |
 
 ---
 
@@ -394,7 +523,7 @@ Project docs live in [`docs/`](docs/):
 | Doc | Contents |
 |-----|----------|
 | `prd.md` | Product requirements |
-| `architecture.md` | Technical architecture |
+| `architecture.md` | Technical architecture (deep dive) |
 | `API.md` | API reference |
 | `ux-design-specs.md` | UX and design specifications |
 | `technical-research.md` | Technology research |
@@ -402,6 +531,11 @@ Project docs live in [`docs/`](docs/):
 | `sprint-plan.md` | Sprint plan |
 | `code-review.md` | Code review findings |
 | `implementation-readiness-report.md` | Readiness assessment |
+| `assessment.md` | Project assessment |
+| `deferred-work.md` | Deferred backlog |
+| `PREMIUM_AUDIT.md` | Premium audit findings |
+| `ANSWERS.md` | Decision log / Q&A |
+| `demo.mp4` | Dashboard walkthrough video |
 
 ---
 
@@ -430,6 +564,9 @@ Set the [environment variables](#environment-variables) in the Vercel dashboard.
 - [x] Per-user expenses for org clients (own-expense dashboards) and spend-by-member leaderboards for managers
 - [x] Wire Reports page to real query data (replacing mocks)
 - [x] Rich 6-month seed data across all personas (USD + KES)
+- [x] Consolidated dashboard queries (4 parallel round trips)
+- [x] Deterministic build-time CSP with 82 script hashes
+- [x] Real E2E suite (21 tests) gating CI
 
 ---
 

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Logo } from '@/shared/ui/logo'
 import {
   Globe,
@@ -231,16 +232,15 @@ export default function LandingPage() {
                     <div className="w-2.5 h-2.5 rounded-full bg-primary/60" />
                   </div>
                   <div className="p-4 md:p-16">
-                    <div className="w-full aspect-[16/9] bg-muted/30 rounded-lg flex flex-col items-center justify-center relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5" />
-                      <div className="flex flex-col items-center text-center relative z-10">
-                        <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                          <TrendingUp className="w-8 h-8 md:w-10 md:h-10 text-primary/60" />
-                        </div>
-                        <p className="text-muted-foreground font-body-md text-sm md:text-body-md leading-relaxed">
-                          Your expense dashboard
-                        </p>
-                      </div>
+                    <div className="w-full aspect-[16/9] bg-muted/30 rounded-lg overflow-hidden relative">
+                      <Image
+                        src="/demo/dashboard-demo.gif"
+                        alt="Ledgerly dashboard demo"
+                        fill
+                        sizes="(max-width: 768px) 0px, 768px"
+                        unoptimized
+                        className="object-cover object-top"
+                      />
                     </div>
                   </div>
                 </div>
