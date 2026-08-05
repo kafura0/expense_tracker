@@ -39,6 +39,7 @@
  * @see {@link src/shared/lib/org-context.ts} for the active org context provider
  */
 import { createServerClient } from '@supabase/ssr'
+import type { User } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
 
 /**
@@ -124,37 +125,48 @@ export async function updateSession(request: NextRequest) {
    * - Then it recreates the response and writes to response.cookies (so the browser
    *   receives the updated tokens)
    */
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          // Phase 1: Update request cookies so Supabase client sees the latest token
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
-          // Phase 2: Recreate the response with updated request, then set response cookies
-          // This ensures the browser receives the refreshed tokens
-          supabaseResponse = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
+  let supabase: ReturnType<typeof createServerClient> | null = null
 
   // Verify the user's session. This also silently refreshes expired tokens —
   // the updated tokens are written to the response cookies via setAll() above.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  //
+  // D-05 fail-open: a missing/invalid Supabase config (or a failed session
+  // lookup) must not take the whole site down with a 500 on every request.
+  // If the client can't be created or the session can't be verified, treat the
+  // request as unauthenticated: public routes still render and protected/admin/
+  // API routes redirect to login instead of erroring.
+  let user: User | null = null
+  try {
+    supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
+          },
+          setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
+            // Phase 1: Update request cookies so Supabase client sees the latest token
+            cookiesToSet.forEach(({ name, value }) =>
+              request.cookies.set(name, value)
+            )
+            // Phase 2: Recreate the response with updated request, then set response cookies
+            // This ensures the browser receives the refreshed tokens
+            supabaseResponse = NextResponse.next({
+              request,
+            })
+            cookiesToSet.forEach(({ name, value, options }) =>
+              supabaseResponse.cookies.set(name, value, options)
+            )
+          },
+        },
+      }
+    )
+    const { data } = await supabase.auth.getUser()
+    user = data.user
+  } catch (error) {
+    logFailOpen('session verification', error)
+  }
 
   const pathname = request.nextUrl.pathname
 
@@ -220,6 +232,13 @@ export async function updateSession(request: NextRequest) {
       url.pathname = '/login'
       return NextResponse.redirect(url)
     }
+    return supabaseResponse
+  }
+
+  // A verified user always has a client, but keep the narrowing explicit so the
+  // DB checks below never run on a null client (defensive; unreachable in practice).
+  if (!supabase) {
+    logFailOpen('session verification', new Error('Supabase client unavailable'))
     return supabaseResponse
   }
 
