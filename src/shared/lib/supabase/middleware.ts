@@ -52,6 +52,43 @@ import { NextResponse, type NextRequest } from 'next/server'
 const ACTIVE_ORG_COOKIE = 'ledgerly_active_org'
 
 /**
+ * Response header stamped whenever a lookup fails and the middleware downgrades
+ * to fail-open. Lets request-level logging / APM see degradation without
+ * parsing console output.
+ */
+export const FAIL_OPEN_HEADER = 'x-middleware-mode'
+export const FAIL_OPEN_MODE = 'fail-open'
+
+/** Whether a string env value means "on" for a boolean switch. */
+export function isTruthyEnv(value: string | undefined): boolean {
+  return value === '1' || value === 'true' || value === 'TRUE' || value === 'on'
+}
+
+/**
+ * D-05: configurable fail-closed enforcement.
+ *
+ * The default posture is fail-open: a transient Supabase/DB error on an
+ * authorization-critical lookup lets the request through rather than bricking
+ * auth (availability over strictness). This is correct for most routes, but for
+ * /admin a non-admin must never render the console, so when
+ * `MIDDLEWARE_FAIL_CLOSED=1` is set, an unverifiable org lookup denies admin
+ * access instead of allowing it.
+ */
+export const FAIL_CLOSED = isTruthyEnv(process.env.MIDDLEWARE_FAIL_CLOSED)
+
+/** Observability: every fail-open downgrade is logged with a stable tag. */
+function logFailOpen(context: string, error: unknown) {
+  console.warn(`[middleware:fail-open] ${context}`, error)
+}
+
+/** Stamp the pass-through response so logs/APM can flag the downgrade. */
+function failOpenResponse(response: NextResponse, context: string, error: unknown): NextResponse {
+  response.headers.set(FAIL_OPEN_HEADER, FAIL_OPEN_MODE)
+  logFailOpen(context, error)
+  return response
+}
+
+/**
  * Main middleware handler that intercepts every Next.js request.
  *
  * Flow:
@@ -204,8 +241,16 @@ export async function updateSession(request: NextRequest) {
         url.pathname = '/suspended'
         return NextResponse.redirect(url)
       }
-    } catch {
-      // If the is_suspended column is unavailable, fall through and serve normally
+    } catch (error) {
+      // If the is_suspended column is unavailable, fail closed by confining to
+      // /suspended when enabled (cannot verify the user is not suspended),
+      // otherwise fall through and serve normally.
+      if (FAIL_CLOSED) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/suspended'
+        return NextResponse.redirect(url)
+      }
+      logFailOpen('suspension check', error)
     }
   }
 
@@ -227,8 +272,9 @@ export async function updateSession(request: NextRequest) {
         url.pathname = '/admin'
         return NextResponse.redirect(url)
       }
-    } catch {
+    } catch (error) {
       // If the org_members query fails, fall through to the default redirect
+      logFailOpen('super-admin lookup on auth-page redirect', error)
     }
 
     // Check onboarding status before redirecting
@@ -242,8 +288,9 @@ export async function updateSession(request: NextRequest) {
       const url = request.nextUrl.clone()
       url.pathname = profile?.onboarding_completed ? '/dashboard' : '/onboarding'
       return NextResponse.redirect(url)
-    } catch {
+    } catch (error) {
       // If profiles query fails, redirect to dashboard
+      logFailOpen('onboarding check on auth-page redirect', error)
       const url = request.nextUrl.clone()
       url.pathname = '/dashboard'
       return NextResponse.redirect(url)
@@ -282,9 +329,16 @@ export async function updateSession(request: NextRequest) {
         .select('org_id, role, organizations!inner(id, name, slug, status)')
         .eq('user_id', user.id)
       memberships = result.data
-    } catch {
-      // If org_members query fails, let the user through
-      return supabaseResponse
+    } catch (error) {
+      // If the org_members query fails, let the user through — EXCEPT on admin
+      // routes when fail-closed is enabled: /admin must never render without
+      // proof of the super_admin role, so an unverifiable lookup denies access.
+      if (isAdminPath && FAIL_CLOSED) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/'
+        return NextResponse.redirect(url)
+      }
+      return failOpenResponse(supabaseResponse, 'org membership lookup', error)
     }
 
     if (!memberships || memberships.length === 0) {
@@ -311,8 +365,9 @@ export async function updateSession(request: NextRequest) {
             url.pathname = '/no-access'
             return NextResponse.redirect(url)
           }
-        } catch {
+        } catch (error) {
           // If the profiles query fails, fall through and let the request continue
+          logFailOpen('removed-member profile lookup', error)
         }
       }
     } else {
@@ -382,9 +437,10 @@ export async function updateSession(request: NextRequest) {
             url.pathname = '/onboarding'
             return NextResponse.redirect(url)
           }
-        } catch {
+        } catch (error) {
           // If the onboarding_completed column doesn't exist yet,
           // skip the redirect and let the user through
+          logFailOpen('onboarding guard', error)
         }
       }
     }

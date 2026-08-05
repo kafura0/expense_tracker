@@ -28,9 +28,9 @@ The active org now has a single source of truth: a server-set, httpOnly cookie r
 A canonical `categories` table per org exists (system categories seeded on org creation, org-scoped RLS via `applyCategoryScope`). Expenses reference categories by id; the UI reads the catalog. See `src/shared/lib/category-icons.ts`, `src/features/dashboard/scope.ts`, and the seed (`scripts/seed-test-users.mjs`).
 
 ### D-05 — Middleware Fail-Open
-**Severity:** Medium · **Superseded**
+**Severity:** Medium · **Resolved**
 
-The middleware entry point was replaced by `src/proxy.ts` (Next.js 16 Proxy). The session/auth logic lives in `src/shared/lib/supabase/middleware.ts` (`updateSession`), which still fails open on org-status lookups by design (availability over strictness). The configurable fail-closed mode for admin-only routes remains an optional future enhancement — see Open items.
+The middleware entry point was replaced by `src/proxy.ts` (Next.js 16 Proxy). Session/auth logic lives in `src/shared/lib/supabase/middleware.ts` (`updateSession`). Fail-open is now **configurable**: setting `MIDDLEWARE_FAIL_CLOSED=1` makes authorization-critical lookups deny instead of downgrade — an unverifiable `org_members` lookup on `/admin` redirects to home, and an unverifiable suspension check confines to `/suspended`. Every fail-open downgrade is observable: a `[middleware:fail-open] <context>` console tag plus an `x-middleware-mode: fail-open` response header.
 
 ### D-06 — Admin Invites Lack Org Context
 **Severity:** Medium · **Resolved**
@@ -50,11 +50,10 @@ Totals are currency-aware: every aggregate selects `currency` and converts throu
 - [x] D-02 client org cookie removal
 - [x] D-03 org cookie trust rework (single httpOnly server cookie)
 - [x] D-04 category catalog per org
-- [x] D-05 proxy migration (fail-open retained by design)
+- [x] D-05 proxy migration + configurable fail-closed enforcement
 - [x] D-06 invite token expiry + org context + expired persistence
 - [x] D-07 currency-aware totals + date-boundary cleanup
 
 ## Open Items
 
-- **D-05 remainder:** configurable fail-closed org-suspension enforcement + fail-open observability on admin-only routes.
 - **Invite expiry window:** tokens expire after 7 days (see smoke suite); tune the window if a shorter (e.g. 72h) expiry is preferred.
