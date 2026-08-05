@@ -228,6 +228,15 @@ async function seed() {
     return
   }
 
+  // Org defaults — migration 013 added these as nullable columns and
+  // create_org_for_user does not set them, so enforce the documented seed
+  // state here (idempotent: re-seeds repair drift).
+  const { error: defaultsError } = await supabase
+    .from('organizations')
+    .update({ default_currency: 'USD', default_vat_rate: 16 })
+    .eq('id', orgId)
+  log(defaultsError ? '❌' : '✅', `Org defaults USD / 16% VAT ${defaultsError?.message || 'ok'}`)
+
   // Memberships
   const memberships = [
     { user_id: managerUser.id, role: 'member' },
