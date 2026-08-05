@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import type { Metadata } from 'next'
 import { Logo } from '@/shared/ui/logo'
+import { SITE_URL, SITE_TITLE, SITE_DESCRIPTION } from '@/shared/lib/seo'
 import {
   Globe,
   Receipt,
@@ -146,6 +148,62 @@ const PRICING_PLANS = [
     featured: false,
   },
 ]
+
+const SITE_GRAPH = [
+  {
+    '@type': 'WebSite',
+    '@id': `${SITE_URL}/#website`,
+    url: SITE_URL,
+    name: 'Ledgerly',
+    alternateName: 'Ledgerly Expense Tracker',
+    description: SITE_DESCRIPTION,
+    inLanguage: 'en',
+    publisher: { '@id': `${SITE_URL}/#organization` },
+  },
+  {
+    '@type': 'Organization',
+    '@id': `${SITE_URL}/#organization`,
+    name: 'Ledgerly',
+    url: SITE_URL,
+    logo: {
+      '@type': 'ImageObject',
+      url: `${SITE_URL}/icons/icon-512x512.png`,
+      width: 512,
+      height: 512,
+    },
+  },
+  {
+    '@type': 'SoftwareApplication',
+    '@id': `${SITE_URL}/#software`,
+    name: 'Ledgerly',
+    applicationCategory: 'FinanceApplication',
+    operatingSystem: 'Web',
+    url: SITE_URL,
+    description: SITE_DESCRIPTION,
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    featureList: [
+      'Automated expense reconciliation',
+      'Multi-currency support',
+      'AI-powered spending insights',
+      'VAT calculations across 120+ jurisdictions',
+      'Role-based team access',
+      'Bank-grade security',
+    ],
+  },
+]
+
+export const metadata: Metadata = {
+  title: 'Master Your Financial Future',
+  description: SITE_DESCRIPTION,
+  alternates: { canonical: '/' },
+  openGraph: {
+    type: 'website',
+    url: '/',
+    title: SITE_TITLE,
+    description:
+      'Transform chaotic financial data into precise strategic assets. Automated reconciliation, multi-currency mastery, and bank-grade security — all in one platform.',
+  },
+}
 
 export default function LandingPage() {
   const currentYear = new Date().getFullYear()
@@ -587,6 +645,13 @@ export default function LandingPage() {
           <span className="text-[10px] mt-0.5">Sign In</span>
         </Link>
       </nav>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({ '@context': 'https://schema.org', '@graph': SITE_GRAPH }),
+        }}
+      />
     </div>
   )
 }

@@ -5,6 +5,12 @@ import { ThemeProvider } from "@/shared/ui/theme-provider";
 import { ToastProvider } from "@/shared/ui/toast";
 import { InstallPrompt } from "@/features/pwa/install-prompt";
 import { ServiceWorkerRegistration } from "@/features/pwa/service-worker-registration";
+import {
+  SITE_URL,
+  SITE_NAME,
+  SITE_TITLE,
+  SITE_DESCRIPTION,
+} from "@/shared/lib/seo";
 
 // Fonts are self-hosted via the `geist` package (next/font/local), so builds
 // never require network access to Google Fonts at compile time.
@@ -16,9 +22,32 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Ledgerly",
-  description: "Intelligence for your personal capital",
+  metadataBase: new URL(SITE_URL),
+  applicationName: SITE_NAME,
   manifest: "/manifest.json",
+  category: "finance",
+  title: {
+    default: SITE_TITLE,
+    template: "%s | Ledgerly",
+  },
+  description: SITE_DESCRIPTION,
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    url: "/",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+  },
 };
 
 export default async function RootLayout({
