@@ -89,6 +89,28 @@ function failOpenResponse(response: NextResponse, context: string, error: unknow
   return response
 }
 
+/** Result of a possibly-failing lookup query. */
+type Settled<T> =
+  | { ok: true; data: T }
+  | { ok: false; data: null; error: unknown }
+
+/**
+ * Await a lookup query without letting a transient DB error abort the whole
+ * request. Callers apply their own per-check fail-open policy via `.ok`. A
+ * `null` promise (a lookup a route doesn't need) resolves as a no-op success.
+ */
+async function settle<T>(
+  promise: PromiseLike<{ data: T }> | null
+): Promise<Settled<T>> {
+  if (!promise) return { ok: true, data: null as T }
+  try {
+    const result = await promise
+    return { ok: true, data: result.data }
+  } catch (error) {
+    return { ok: false, data: null, error }
+  }
+}
+
 /**
  * Main middleware handler that intercepts every Next.js request.
  *
@@ -242,25 +264,68 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse
   }
 
+  // ──────────────────────────────────────────────────────────────────────
+  // Consolidated authorization lookups
+  //
+  // Every remaining decision (suspension, super-admin routing, onboarding
+  // status, org membership, removed-member confinement) depends on just two
+  // rows: the user's `profiles` row and their `org_members` memberships.
+  // Both are fetched ONCE here, in parallel. This replaces the four
+  // sequential round trips (suspension, super-admin, onboarding, memberships)
+  // the middleware used to issue, so an authenticated request now costs two
+  // Supabase round trips instead of four.
+  // ──────────────────────────────────────────────────────────────────────
+
+  // Which lookups does this route need?
+  // - profiles: every authenticated path except /suspended (suspension flag,
+  //   onboarding status, and org_id for removed-member confinement).
+  // - memberships: protected/admin routes (org validation) and the public
+  //   auth pages that redirect logged-in users away (super-admin routing).
+  const needsProfile = pathname !== '/suspended'
+  const isRedirectBlockPublic =
+    isPublicPath &&
+    pathname !== '/auth/callback' &&
+    pathname !== '/onboarding' &&
+    pathname !== '/' &&
+    pathname !== '/suspended' &&
+    pathname !== '/invite' &&
+    pathname !== '/update-password'
+  const needsMemberships = isProtectedPath || isAdminPath || isRedirectBlockPublic
+
+  const [profileLookup, membershipLookup] = await Promise.all([
+    settle(
+      needsProfile
+        ? supabase
+            .from('profiles')
+            .select('is_suspended, onboarding_completed, org_id')
+            .eq('user_id', user.id)
+            .maybeSingle()
+        : null
+    ),
+    settle(
+      needsMemberships
+        ? supabase
+            .from('org_members')
+            .select('org_id, role, organizations!inner(id, name, slug, status)')
+            .eq('user_id', user.id)
+        : null
+    ),
+  ])
+
+  const profile = profileLookup.data
+  const memberships = membershipLookup.data
+
+  // ──────────────────────────────────────────────────────────────────────
+  // Suspension enforcement
+  //
   // Suspended accounts are confined to /suspended (where they can sign out
   // or contact support). This applies to every route — even public auth pages.
   // `is_suspended` lives on `profiles`; RLS still lets a user read their own
   // suspension flag (solo users via their own-profile policy, org members via
   // their org-scoped profile row).
-  if (pathname !== '/suspended') {
-    try {
-      const { data: suspension } = await supabase
-        .from('profiles')
-        .select('is_suspended')
-        .eq('user_id', user.id)
-        .maybeSingle()
-
-      if (suspension?.is_suspended) {
-        const url = request.nextUrl.clone()
-        url.pathname = '/suspended'
-        return NextResponse.redirect(url)
-      }
-    } catch (error) {
+  // ──────────────────────────────────────────────────────────────────────
+  if (needsProfile) {
+    if (!profileLookup.ok) {
       // If the is_suspended column is unavailable, fail closed by confining to
       // /suspended when enabled (cannot verify the user is not suspended),
       // otherwise fall through and serve normally.
@@ -269,51 +334,52 @@ export async function updateSession(request: NextRequest) {
         url.pathname = '/suspended'
         return NextResponse.redirect(url)
       }
-      logFailOpen('suspension check', error)
+      logFailOpen('suspension check', profileLookup.error)
+    } else if (profile?.is_suspended) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/suspended'
+      return NextResponse.redirect(url)
     }
   }
 
+  // ──────────────────────────────────────────────────────────────────────
+  // Auth-page redirect for logged-in users
+  //
   // Authenticated users who land on auth pages (login, reset-password, etc.)
   // are redirected to the dashboard. The /auth/callback exception is necessary
   // because the OAuth callback flow needs to complete before redirecting.
-  if (isPublicPath && pathname !== '/auth/callback' && pathname !== '/onboarding' && pathname !== '/' && pathname !== '/suspended' && pathname !== '/invite' && pathname !== '/update-password') {
+  // ──────────────────────────────────────────────────────────────────────
+  if (isRedirectBlockPublic) {
     // Super admins are redirected to the admin console, not the dashboard.
-    try {
-      const { data: superAdmin } = await supabase
-        .from('org_members')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('role', 'super_admin')
-        .maybeSingle()
-
-      if (superAdmin) {
-        const url = request.nextUrl.clone()
-        url.pathname = '/admin'
-        return NextResponse.redirect(url)
-      }
-    } catch (error) {
+    if (!membershipLookup.ok) {
       // If the org_members query fails, fall through to the default redirect
-      logFailOpen('super-admin lookup on auth-page redirect', error)
+      logFailOpen('super-admin lookup on auth-page redirect', membershipLookup.error)
+    } else if (memberships?.some((m) => m.role === 'super_admin')) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin'
+      return NextResponse.redirect(url)
     }
 
     // Check onboarding status before redirecting
-    try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('onboarding_completed')
-        .eq('user_id', user.id)
-        .single()
-
-      const url = request.nextUrl.clone()
-      url.pathname = profile?.onboarding_completed ? '/dashboard' : '/onboarding'
-      return NextResponse.redirect(url)
-    } catch (error) {
-      // If profiles query fails, redirect to dashboard
-      logFailOpen('onboarding check on auth-page redirect', error)
+    if (!profileLookup.ok) {
+      // If the profiles query fails, redirect to dashboard
+      logFailOpen('onboarding check on auth-page redirect', profileLookup.error)
       const url = request.nextUrl.clone()
       url.pathname = '/dashboard'
       return NextResponse.redirect(url)
     }
+    if (!profile) {
+      // No profile row — the old per-check `.single()` threw here and fell
+      // back to /dashboard, so match that behavior.
+      logFailOpen('onboarding check on auth-page redirect', new Error('no profiles row'))
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
+
+    const url = request.nextUrl.clone()
+    url.pathname = profile?.onboarding_completed ? '/dashboard' : '/onboarding'
+    return NextResponse.redirect(url)
   }
 
   // ──────────────────────────────────────────────────────────────────────
@@ -337,18 +403,7 @@ export async function updateSession(request: NextRequest) {
     // The cookie is NOT trusted blindly; we validate it against org_members.
     const activeOrgId = request.cookies.get(ACTIVE_ORG_COOKIE)?.value
 
-    // Fetch all org memberships for this user, including org details.
-    // The `organizations!inner` join ensures we only get memberships where
-    // the referenced organization still exists (deleted orgs are excluded).
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let memberships: any[] | null = null
-    try {
-      const result = await supabase
-        .from('org_members')
-        .select('org_id, role, organizations!inner(id, name, slug, status)')
-        .eq('user_id', user.id)
-      memberships = result.data
-    } catch (error) {
+    if (!membershipLookup.ok) {
       // If the org_members query fails, let the user through — EXCEPT on admin
       // routes when fail-closed is enabled: /admin must never render without
       // proof of the super_admin role, so an unverifiable lookup denies access.
@@ -357,7 +412,7 @@ export async function updateSession(request: NextRequest) {
         url.pathname = '/'
         return NextResponse.redirect(url)
       }
-      return failOpenResponse(supabaseResponse, 'org membership lookup', error)
+      return failOpenResponse(supabaseResponse, 'org membership lookup', membershipLookup.error)
     }
 
     if (!memberships || memberships.length === 0) {
@@ -372,21 +427,13 @@ export async function updateSession(request: NextRequest) {
       // Confine them to /no-access (where they can sign out or request access
       // again). Solo users (profiles.org_id IS NULL) are allowed through.
       if (isProtectedPath) {
-        try {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('org_id')
-            .eq('user_id', user.id)
-            .maybeSingle()
-
-          if (profile?.org_id) {
-            const url = request.nextUrl.clone()
-            url.pathname = '/no-access'
-            return NextResponse.redirect(url)
-          }
-        } catch (error) {
+        if (!profileLookup.ok) {
           // If the profiles query fails, fall through and let the request continue
-          logFailOpen('removed-member profile lookup', error)
+          logFailOpen('removed-member profile lookup', profileLookup.error)
+        } else if (profile?.org_id) {
+          const url = request.nextUrl.clone()
+          url.pathname = '/no-access'
+          return NextResponse.redirect(url)
         }
       }
     } else {
@@ -444,22 +491,14 @@ export async function updateSession(request: NextRequest) {
       // or on admin/settings/API routes.
       const isOnboardingPath = pathname === '/onboarding' || pathname.startsWith('/onboarding/')
       if (isProtectedPath && !isOnboardingPath && !isAdminPath) {
-        try {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('onboarding_completed')
-            .eq('user_id', user.id)
-            .single()
-
-          if (profile && !profile.onboarding_completed) {
-            const url = request.nextUrl.clone()
-            url.pathname = '/onboarding'
-            return NextResponse.redirect(url)
-          }
-        } catch (error) {
+        if (!profileLookup.ok) {
           // If the onboarding_completed column doesn't exist yet,
           // skip the redirect and let the user through
-          logFailOpen('onboarding guard', error)
+          logFailOpen('onboarding guard', profileLookup.error)
+        } else if (profile && !profile.onboarding_completed) {
+          const url = request.nextUrl.clone()
+          url.pathname = '/onboarding'
+          return NextResponse.redirect(url)
         }
       }
     }
