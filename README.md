@@ -300,7 +300,7 @@ The canonical seeder creates **5 demo users**, one org ("Carter Enterprises"), 6
 (org-wide USD + solo KES), and real budget rows per category:
 
 ```bash
-node scripts/seed-test-users.mjs
+node --env-file=.env.local scripts/seed-test-users.mjs
 ```
 
 A legacy seeder (100 expenses over 90 days for `client@demo.com`) also ships:

@@ -33,8 +33,9 @@ Premium SaaS expense tracker built with Next.js 16, Supabase, Tailwind CSS v4. D
 
 ## Seed Data
 ```bash
-node scripts/seed-test-users.mjs
+node --env-file=.env.local scripts/seed-test-users.mjs
 ```
+The script reads `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from the environment — never hardcodes credentials.
 
 ## Demo Credentials
 | Role | Email | Password |

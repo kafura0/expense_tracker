@@ -12,6 +12,7 @@ export default defineConfig({
   use: {
     baseURL,
     trace: 'on-first-retry',
+    bypassCSP: true,
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
@@ -23,5 +24,11 @@ export default defineConfig({
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 240_000,
+    env: {
+      ...process.env,
+      RATE_LIMIT_AUTH_MAX: '200',
+      RATE_LIMIT_API_MAX: '2000',
+      RATE_LIMIT_GENERAL_MAX: '5000',
+    },
   },
 })

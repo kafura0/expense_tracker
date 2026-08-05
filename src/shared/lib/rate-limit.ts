@@ -82,22 +82,31 @@ export function getRateLimitStore(): RateLimitStore {
   return cachedStore
 }
 
+// Limits are env-overridable so E2E suites can relax them without weakening
+// production defaults. Defaults stay as-is when no env var is present.
+function intEnv(name: string, fallback: number): number {
+  const raw = process.env[name]
+  if (!raw) return fallback
+  const parsed = Number(raw)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
+}
+
 // Rate limit configurations
 const RATE_LIMITS = {
   // Auth endpoints: 5 requests per minute
   auth: {
     windowMs: 60 * 1000,
-    maxRequests: 5,
+    maxRequests: intEnv('RATE_LIMIT_AUTH_MAX', 5),
   },
   // API endpoints: 60 requests per minute
   api: {
     windowMs: 60 * 1000,
-    maxRequests: 60,
+    maxRequests: intEnv('RATE_LIMIT_API_MAX', 60),
   },
   // General: 100 requests per minute
   general: {
     windowMs: 60 * 1000,
-    maxRequests: 100,
+    maxRequests: intEnv('RATE_LIMIT_GENERAL_MAX', 100),
   },
 } as const
 

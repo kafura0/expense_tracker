@@ -1,7 +1,19 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = 'https://weitlewvoufvgfpkryvg.supabase.co'
-const serviceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlaXRsZXd2b3VmdmdmcGtyeXZnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDI5MjA5MywiZXhwIjoyMDk5ODY4MDkzfQ.2ojZEJfO4kgvhxvhNS5RBT_FVE1VRYdGA4bhwYbknFU'
+// Credentials come from the environment (see .env.example). Never hardcode the
+// service-role key in source — it bypasses RLS. Locally, load .env.local via
+// `node --env-file=.env.local scripts/seed-test-users.mjs` (Node 20+).
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+if (!supabaseUrl || !serviceRoleKey) {
+  console.error(
+    '\n❌ Missing Supabase credentials.\n' +
+      '   Set NEXT_PUBLIC_SUPABASE_URL (or SUPABASE_URL) and SUPABASE_SERVICE_ROLE_KEY.\n' +
+      '   Local: node --env-file=.env.local scripts/seed-test-users.mjs'
+  )
+  process.exit(1)
+}
 
 const supabase = createClient(supabaseUrl, serviceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false }
