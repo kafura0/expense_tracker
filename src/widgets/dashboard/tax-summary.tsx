@@ -1,55 +1,34 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
-import { createClient } from '@/shared/lib/supabase/client'
-import { applyExpenseScope, type DashboardScope } from '@/features/dashboard/scope'
+import { useMemo } from 'react'
+import type { DashboardScope } from '@/features/dashboard/scope'
+import { useDashboardData, useCurrentMonthExpenses } from '@/features/dashboard/use-dashboard-data'
 import { formatMoney } from '@/shared/lib/currency'
 import { sumInBaseCurrency } from '@/entities/expense/totals'
-import { fetchBaseRates } from '@/entities/exchange-rate/base-rates'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Receipt } from 'lucide-react'
-import { startOfMonth, endOfMonth } from 'date-fns'
 
 export function TaxSummary({ scope }: { scope: DashboardScope }) {
-  const supabase = createClient()
+  const { data: query, isLoading, error } = useDashboardData(scope)
+  const currentMonth = useCurrentMonthExpenses(query?.expenses)
 
-  const fetchTaxSummary = async () => {
-    const now = new Date()
-    const start = startOfMonth(now)
-    const end = endOfMonth(now)
+  const data = useMemo(() => {
+    if (!query) return undefined
 
-    let query = supabase
-      .from('expenses')
-      .select('amount_cents, currency, tax_amount_cents')
-      .eq('is_deleted', false)
-      .eq('is_taxable', true)
-      .eq('entry_type', 'expense')
-      .gte('date', start.toISOString())
-      .lte('date', end.toISOString())
-    query = applyExpenseScope(query, scope)
-    const { data: expenses, error } = await query
-
-    if (error) throw error
-
-    const rates = await fetchBaseRates(supabase, scope.baseCurrency)
+    const taxable = currentMonth.filter((e) => e.is_taxable)
 
     const totalTax = sumInBaseCurrency(
-      (expenses || []).map((e) => ({ amount_cents: e.tax_amount_cents || 0, currency: e.currency })),
+      taxable.map((e) => ({ amount_cents: e.tax_amount_cents || 0, currency: e.currency })),
       scope.baseCurrency,
-      rates
+      query.rates
     )
-    const totalAmount = sumInBaseCurrency(expenses || [], scope.baseCurrency, rates)
-    const taxableExpenses = expenses?.length || 0
+    const totalAmount = sumInBaseCurrency(taxable, scope.baseCurrency, query.rates)
+    const taxableExpenses = taxable.length
     const effectiveTaxRate = totalAmount > 0 ? (totalTax / totalAmount) * 100 : 0
 
     return { totalTax, totalAmount, taxableExpenses, effectiveTaxRate }
-  }
-
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['tax-summary', scope],
-    queryFn: fetchTaxSummary,
-  })
+  }, [query, currentMonth, scope.baseCurrency])
 
   if (isLoading) {
     return (

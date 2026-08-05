@@ -1,15 +1,13 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
-import { createClient } from '@/shared/lib/supabase/client'
-import { applyExpenseScope, applyCategoryScope, type DashboardScope } from '@/features/dashboard/scope'
+import { useMemo } from 'react'
+import type { DashboardScope } from '@/features/dashboard/scope'
+import { useDashboardData, useCurrentMonthExpenses } from '@/features/dashboard/use-dashboard-data'
 import { formatMoney } from '@/shared/lib/currency'
-import { fetchBaseRates } from '@/entities/exchange-rate/base-rates'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card'
 import { CategoryIconTile } from '@/shared/ui/category-icon'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
-import { startOfMonth, endOfMonth } from 'date-fns'
 
 const COLORS = ['#4edea3', '#c0c1ff', '#ffb3af', '#ffd5a0', '#ba68c8', '#4fc3f7']
 
@@ -56,36 +54,15 @@ function CustomLegend({ payload }: { payload?: Array<{ value: string; color: str
 }
 
 export function CategoryChart({ scope }: { scope: DashboardScope }) {
-  const supabase = createClient()
+  const { data: query, isLoading, error } = useDashboardData(scope)
+  const currentMonth = useCurrentMonthExpenses(query?.expenses)
 
-  const fetchCategoryData = async () => {
-    const now = new Date()
-    const start = startOfMonth(now)
-    const end = endOfMonth(now)
+  const data = useMemo(() => {
+    if (!query) return undefined
 
-    let expenseQuery = supabase
-      .from('expenses')
-      .select('amount_cents, currency, category_id')
-      .eq('is_deleted', false)
-      .eq('entry_type', 'expense')
-      .gte('date', start.toISOString())
-      .lte('date', end.toISOString())
-    expenseQuery = applyExpenseScope(expenseQuery, scope)
-    const { data: expenses, error: expensesError } = await expenseQuery
+    const { categories, rates } = query
 
-    if (expensesError) throw expensesError
-
-    const categoryQuery = applyCategoryScope(
-      supabase.from('categories').select('id, name, icon, color'),
-      scope
-    )
-    const { data: categories, error: categoriesError } = await categoryQuery
-
-    if (categoriesError) throw categoriesError
-
-    const rates = await fetchBaseRates(supabase, scope.baseCurrency)
-
-    const categoryTotals = expenses?.reduce((acc, expense) => {
+    const categoryTotals = currentMonth.reduce((acc, expense) => {
       const catId = expense.category_id
       if (!catId) return acc
       if (!acc[catId]) acc[catId] = 0
@@ -93,11 +70,11 @@ export function CategoryChart({ scope }: { scope: DashboardScope }) {
         ? expense.amount_cents
         : (rates[expense.currency] ? Math.round(expense.amount_cents / rates[expense.currency]) : 0)
       return acc
-    }, {} as Record<string, number>) || {}
+    }, {} as Record<string, number>)
 
     return Object.entries(categoryTotals)
       .map(([catId, total]) => {
-        const category = categories?.find(c => c.id === catId)
+        const category = categories.find(c => c.id === catId)
         return {
           name: category?.name || 'Unknown',
           value: total / 100,
@@ -106,12 +83,7 @@ export function CategoryChart({ scope }: { scope: DashboardScope }) {
         }
       })
       .sort((a, b) => b.value - a.value)
-  }
-
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['category-chart', scope],
-    queryFn: fetchCategoryData,
-  })
+  }, [query, currentMonth, scope.baseCurrency])
 
   if (isLoading) {
     return (

@@ -1,10 +1,9 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
-import { createClient } from '@/shared/lib/supabase/client'
-import { applyExpenseScope, applyCategoryScope, type DashboardScope } from '@/features/dashboard/scope'
+import { useMemo } from 'react'
+import type { DashboardScope } from '@/features/dashboard/scope'
+import { useDashboardData, useCurrentMonthExpenses, useLastMonthExpenses } from '@/features/dashboard/use-dashboard-data'
 import { sumInBaseCurrency } from '@/entities/expense/totals'
-import { fetchBaseRates } from '@/entities/exchange-rate/base-rates'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { TrendingUp, TrendingDown, AlertCircle, Lightbulb, Sparkles } from 'lucide-react'
@@ -17,64 +16,31 @@ interface Insight {
 }
 
 export function Insights({ scope }: { scope: DashboardScope }) {
-  const supabase = createClient()
   const teamView = scope.persona === 'org' || scope.persona === 'platform-admin'
   const subject = teamView ? 'the team' : 'you'
 
-  const fetchInsights = async (): Promise<Insight[]> => {
-    const now = new Date()
-    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0)
+  const { data: query, isLoading, error } = useDashboardData(scope)
+  const currentMonth = useCurrentMonthExpenses(query?.expenses)
+  const lastMonth = useLastMonthExpenses(query?.expenses)
 
-    let currentQuery = supabase
-      .from('expenses')
-      .select('amount_cents, currency, category_id')
-      .eq('is_deleted', false)
-      .eq('entry_type', 'expense')
-      .gte('date', currentMonthStart.toISOString())
-      .lte('date', now.toISOString())
-    currentQuery = applyExpenseScope(currentQuery, scope)
-    const { data: currentExpenses, error: currentError } = await currentQuery
+  const insights = useMemo((): Insight[] | undefined => {
+    if (!query) return undefined
 
-    if (currentError) throw new Error(`Failed to fetch current month expenses: ${currentError.message}`)
-
-    let lastQuery = supabase
-      .from('expenses')
-      .select('amount_cents, currency, category_id')
-      .eq('is_deleted', false)
-      .eq('entry_type', 'expense')
-      .gte('date', lastMonthStart.toISOString())
-      .lte('date', lastMonthEnd.toISOString())
-    lastQuery = applyExpenseScope(lastQuery, scope)
-    const { data: lastExpenses, error: lastError } = await lastQuery
-
-    if (lastError) throw new Error(`Failed to fetch last month expenses: ${lastError.message}`)
-
-    const categoryQuery = applyCategoryScope(
-      supabase.from('categories').select('id, name'),
-      scope
-    )
-    const { data: categories, error: catError } = await categoryQuery
-
-    if (catError) throw new Error(`Failed to fetch categories: ${catError.message}`)
-
-    const rates = await fetchBaseRates(supabase, scope.baseCurrency)
-
-    const insights: Insight[] = []
-    const currentTotal = sumInBaseCurrency(currentExpenses || [], scope.baseCurrency, rates)
-    const lastTotal = sumInBaseCurrency(lastExpenses || [], scope.baseCurrency, rates)
+    const { categories, rates } = query
+    const list: Insight[] = []
+    const currentTotal = sumInBaseCurrency(currentMonth, scope.baseCurrency, rates)
+    const lastTotal = sumInBaseCurrency(lastMonth, scope.baseCurrency, rates)
 
     if (lastTotal > 0) {
       const change = ((currentTotal - lastTotal) / lastTotal) * 100
       if (change > 10) {
-        insights.push({ id: 'spending-increase', type: 'increase', title: 'Spending Up', description: `${subject === 'the team' ? 'The team has' : `You've`} spent ${change.toFixed(0)}% more than last month` })
+        list.push({ id: 'spending-increase', type: 'increase', title: 'Spending Up', description: `${subject === 'the team' ? 'The team has' : `You've`} spent ${change.toFixed(0)}% more than last month` })
       } else if (change < -10) {
-        insights.push({ id: 'spending-decrease', type: 'decrease', title: 'Spending Down', description: `Great! ${subject === 'the team' ? 'the team has' : `You've`} spent ${Math.abs(change).toFixed(0)}% less than last month` })
+        list.push({ id: 'spending-decrease', type: 'decrease', title: 'Spending Down', description: `Great! ${subject === 'the team' ? 'the team has' : `You've`} spent ${Math.abs(change).toFixed(0)}% less than last month` })
       }
     }
 
-    const currentByCategory = currentExpenses?.reduce((acc, e) => {
+    const currentByCategory = currentMonth.reduce((acc, e) => {
       const catId = e.category_id
       if (!catId) return acc
       if (!acc[catId]) acc[catId] = 0
@@ -82,9 +48,9 @@ export function Insights({ scope }: { scope: DashboardScope }) {
         ? e.amount_cents
         : (rates[e.currency] ? Math.round(e.amount_cents / rates[e.currency]) : 0)
       return acc
-    }, {} as Record<string, number>) || {}
+    }, {} as Record<string, number>)
 
-    const lastByCategory = lastExpenses?.reduce((acc, e) => {
+    const lastByCategory = lastMonth.reduce((acc, e) => {
       const catId = e.category_id
       if (!catId) return acc
       if (!acc[catId]) acc[catId] = 0
@@ -92,40 +58,35 @@ export function Insights({ scope }: { scope: DashboardScope }) {
         ? e.amount_cents
         : (rates[e.currency] ? Math.round(e.amount_cents / rates[e.currency]) : 0)
       return acc
-    }, {} as Record<string, number>) || {}
+    }, {} as Record<string, number>)
 
     const sortedCategories = Object.entries(currentByCategory).sort(([, a], [, b]) => b - a)
     if (sortedCategories.length > 0) {
       const [topCatId, topAmount] = sortedCategories[0]
-      const topCat = categories?.find(c => c.id === topCatId)
+      const topCat = categories.find(c => c.id === topCatId)
       if (topCat && currentTotal > 0) {
         const percentage = ((topAmount / currentTotal) * 100).toFixed(0)
-        insights.push({ id: 'top-category', type: 'tip', title: 'Top Category', description: `${percentage}% of spending is on ${topCat.name}` })
+        list.push({ id: 'top-category', type: 'tip', title: 'Top Category', description: `${percentage}% of spending is on ${topCat.name}` })
       }
     }
 
     for (const [catId, currentAmount] of Object.entries(currentByCategory)) {
       const lastAmount = lastByCategory[catId] || 0
       if (lastAmount > 0 && currentAmount > lastAmount * 1.5) {
-        const cat = categories?.find(c => c.id === catId)
+        const cat = categories.find(c => c.id === catId)
         if (cat) {
           const increase = ((currentAmount - lastAmount) / lastAmount * 100).toFixed(0)
-          insights.push({ id: `category-increase-${catId}`, type: 'alert', title: `${cat.name} Alert`, description: `Spending on ${cat.name} increased by ${increase}%` })
+          list.push({ id: `category-increase-${catId}`, type: 'alert', title: `${cat.name} Alert`, description: `Spending on ${cat.name} increased by ${increase}%` })
         }
       }
     }
 
-    if (insights.length === 0) {
-      insights.push({ id: 'no-insights', type: 'tip', title: 'All Good!', description: `${teamView ? 'Team spending' : 'Your spending'} is consistent this month` })
+    if (list.length === 0) {
+      list.push({ id: 'no-insights', type: 'tip', title: 'All Good!', description: `${teamView ? 'Team spending' : 'Your spending'} is consistent this month` })
     }
 
-    return insights.slice(0, 4)
-  }
-
-  const { data: insights, isLoading, error } = useQuery({
-    queryKey: ['insights', scope],
-    queryFn: fetchInsights,
-  })
+    return list.slice(0, 4)
+  }, [query, currentMonth, lastMonth, scope.baseCurrency, subject, teamView])
 
   if (isLoading) {
     return (

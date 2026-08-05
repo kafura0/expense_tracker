@@ -1,64 +1,35 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
-import { createClient } from '@/shared/lib/supabase/client'
-import { applyExpenseScope, applyBudgetScope, type DashboardScope } from '@/features/dashboard/scope'
+import { useMemo } from 'react'
+import type { DashboardScope } from '@/features/dashboard/scope'
+import { useDashboardData, useCurrentMonthExpenses, useLastMonthExpenses } from '@/features/dashboard/use-dashboard-data'
 import { formatMoney } from '@/shared/lib/currency'
 import { sumInBaseCurrency } from '@/entities/expense/totals'
-import { fetchBaseRates } from '@/entities/exchange-rate/base-rates'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Card, CardContent } from '@/shared/ui/card'
 import { ArrowUpRight, ArrowDownRight, Wallet, BarChart3, PiggyBank, Target } from 'lucide-react'
 
 export function KpiCards({ scope }: { scope: DashboardScope }) {
-  const supabase = createClient()
+  const { data, isLoading, error } = useDashboardData(scope)
 
-  const fetchKpis = async () => {
-    const now = new Date()
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0)
+  const currentMonth = useCurrentMonthExpenses(data?.expenses)
+  const lastMonth = useLastMonthExpenses(data?.expenses)
 
-    let currentQuery = supabase
-      .from('expenses')
-      .select('amount_cents, currency, category_id')
-      .eq('is_deleted', false)
-      .eq('entry_type', 'expense')
-      .gte('date', startOfMonth.toISOString())
-      .lte('date', now.toISOString())
-    currentQuery = applyExpenseScope(currentQuery, scope)
-    const { data: currentMonth, error: currentError } = await currentQuery
+  const kpis = useMemo(() => {
+    if (!data) return undefined
 
-    let lastQuery = supabase
-      .from('expenses')
-      .select('amount_cents, currency')
-      .eq('is_deleted', false)
-      .eq('entry_type', 'expense')
-      .gte('date', startOfLastMonth.toISOString())
-      .lte('date', endOfLastMonth.toISOString())
-    lastQuery = applyExpenseScope(lastQuery, scope)
-    const { data: lastMonth, error: lastError } = await lastQuery
-
-    const budgetQuery = applyBudgetScope(
-      supabase.from('budgets').select('category_id, amount_cents'),
-      scope
-    )
-    const { data: budgets, error: budgetError } = await budgetQuery
+    const { rates, budgets } = data
 
     // Currency-aware aggregation: totals convert each row to the scope's base
     // currency and only when a cached rate actually exists.
-    const rates = await fetchBaseRates(supabase, scope.baseCurrency)
-
-    if (currentError || lastError || budgetError) throw new Error('Failed to fetch KPIs')
-
-    const currentTotal = sumInBaseCurrency(currentMonth || [], scope.baseCurrency, rates)
-    const lastTotal = sumInBaseCurrency(lastMonth || [], scope.baseCurrency, rates)
-    const transactionCount = currentMonth?.length || 0
+    const currentTotal = sumInBaseCurrency(currentMonth, scope.baseCurrency, rates)
+    const lastTotal = sumInBaseCurrency(lastMonth, scope.baseCurrency, rates)
+    const transactionCount = currentMonth.length
     const avgTransaction = transactionCount > 0 ? currentTotal / transactionCount : 0
     const spendChange = lastTotal > 0 ? ((currentTotal - lastTotal) / lastTotal) * 100 : 0
 
     // Budget used = capped sum of category spend vs each budget, over total budget.
-    const spentByCategory = currentMonth?.reduce((acc, e) => {
+    const spentByCategory = currentMonth.reduce((acc, e) => {
       const catId = e.category_id
       if (!catId) return acc
       const converted = e.currency === scope.baseCurrency
@@ -66,13 +37,13 @@ export function KpiCards({ scope }: { scope: DashboardScope }) {
         : (rates[e.currency] ? Math.round(e.amount_cents / rates[e.currency]) : 0)
       acc[catId] = (acc[catId] || 0) + converted
       return acc
-    }, {} as Record<string, number>) || {}
+    }, {} as Record<string, number>)
 
-    const totalBudget = budgets?.reduce((sum, b) => sum + b.amount_cents, 0) || 0
-    const consumed = budgets?.reduce((sum, b) => {
+    const totalBudget = budgets.reduce((sum, b) => sum + b.amount_cents, 0)
+    const consumed = budgets.reduce((sum, b) => {
       const spent = spentByCategory[b.category_id] || 0
       return sum + Math.min(spent, b.amount_cents)
-    }, 0) || 0
+    }, 0)
 
     return {
       totalSpend: currentTotal,
@@ -82,12 +53,7 @@ export function KpiCards({ scope }: { scope: DashboardScope }) {
       budgetUsed: totalBudget > 0 ? Math.min(100, (consumed / totalBudget) * 100) : null,
       budgetTotal: totalBudget,
     }
-  }
-
-  const { data: kpis, isLoading, error } = useQuery({
-    queryKey: ['kpis', scope],
-    queryFn: fetchKpis,
-  })
+  }, [data, currentMonth, lastMonth, scope.baseCurrency])
 
   if (isLoading) {
     return (

@@ -1,41 +1,27 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
-import { createClient } from '@/shared/lib/supabase/client'
-import { applyExpenseScope, type DashboardScope } from '@/features/dashboard/scope'
+import { useMemo } from 'react'
+import type { DashboardScope } from '@/features/dashboard/scope'
+import { useDashboardData, useCurrentMonthExpenses } from '@/features/dashboard/use-dashboard-data'
 import { formatMoney } from '@/shared/lib/currency'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Globe } from 'lucide-react'
-import { startOfMonth, endOfMonth } from 'date-fns'
 
 export function CurrencySummary({ scope }: { scope: DashboardScope }) {
-  const supabase = createClient()
+  const { data: query, isLoading, error } = useDashboardData(scope)
+  const currentMonth = useCurrentMonthExpenses(query?.expenses)
 
-  const fetchCurrencySummary = async () => {
-    const now = new Date()
-    const start = startOfMonth(now)
-    const end = endOfMonth(now)
+  const currencies = useMemo(() => {
+    if (!query) return undefined
 
-    let query = supabase
-      .from('expenses')
-      .select('amount_cents, currency')
-      .eq('is_deleted', false)
-      .eq('entry_type', 'expense')
-      .gte('date', start.toISOString())
-      .lte('date', end.toISOString())
-    query = applyExpenseScope(query, scope)
-    const { data: expenses, error } = await query
-
-    if (error) throw error
-
-    const byCurrency = expenses?.reduce((acc, expense) => {
+    const byCurrency = currentMonth.reduce((acc, expense) => {
       const curr = expense.currency
       if (!acc[curr]) acc[curr] = { count: 0, total: 0 }
       acc[curr].count++
       acc[curr].total += expense.amount_cents
       return acc
-    }, {} as Record<string, { count: number; total: number }>) || {}
+    }, {} as Record<string, { count: number; total: number }>)
 
     return Object.entries(byCurrency)
       .map(([currency, data]) => ({
@@ -45,12 +31,7 @@ export function CurrencySummary({ scope }: { scope: DashboardScope }) {
         formatted: formatMoney(data.total, currency),
       }))
       .sort((a, b) => b.total - a.total)
-  }
-
-  const { data: currencies, isLoading, error } = useQuery({
-    queryKey: ['currency-summary', scope],
-    queryFn: fetchCurrencySummary,
-  })
+  }, [query, currentMonth])
 
   if (isLoading) {
     return (

@@ -1,14 +1,12 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
-import { createClient } from '@/shared/lib/supabase/client'
-import { applyBudgetScope, applyExpenseScope, type DashboardScope } from '@/features/dashboard/scope'
+import { useMemo } from 'react'
+import type { DashboardScope } from '@/features/dashboard/scope'
+import { useDashboardData, useCurrentMonthExpenses } from '@/features/dashboard/use-dashboard-data'
 import { formatMoney } from '@/shared/lib/currency'
-import { fetchBaseRates } from '@/entities/exchange-rate/base-rates'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card'
 import { CategoryIconTile } from '@/shared/ui/category-icon'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { startOfMonth, endOfMonth } from 'date-fns'
 import { Target } from 'lucide-react'
 
 interface BudgetRow {
@@ -22,36 +20,15 @@ interface BudgetRow {
 }
 
 export function BudgetSummary({ scope }: { scope: DashboardScope }) {
-  const supabase = createClient()
+  const { data: query, isLoading, error } = useDashboardData(scope)
+  const currentMonth = useCurrentMonthExpenses(query?.expenses)
 
-  const fetchBudgetData = async () => {
-    const now = new Date()
-    const start = startOfMonth(now)
-    const end = endOfMonth(now)
+  const data = useMemo(() => {
+    if (!query) return undefined
 
-    const budgetQuery = applyBudgetScope(
-      supabase
-        .from('budgets')
-        .select('id, category_id, amount_cents, categories(id, name, icon, color)'),
-      scope
-    )
-    const { data: budgets, error: budgetError } = await budgetQuery
-    if (budgetError) throw budgetError
+    const { budgets, rates } = query
 
-    let expenseQuery = supabase
-      .from('expenses')
-      .select('amount_cents, currency, category_id')
-      .eq('is_deleted', false)
-      .eq('entry_type', 'expense')
-      .gte('date', start.toISOString())
-      .lte('date', end.toISOString())
-    expenseQuery = applyExpenseScope(expenseQuery, scope)
-    const { data: expenses, error: expenseError } = await expenseQuery
-    if (expenseError) throw expenseError
-
-    const rates = await fetchBaseRates(supabase, scope.baseCurrency)
-
-    const spentByCategory = expenses?.reduce((acc, e) => {
+    const spentByCategory = currentMonth.reduce((acc, e) => {
       const catId = e.category_id
       if (!catId) return acc
       const converted = e.currency === scope.baseCurrency
@@ -59,11 +36,11 @@ export function BudgetSummary({ scope }: { scope: DashboardScope }) {
         : (rates[e.currency] ? Math.round(e.amount_cents / rates[e.currency]) : 0)
       acc[catId] = (acc[catId] || 0) + converted
       return acc
-    }, {} as Record<string, number>) || {}
+    }, {} as Record<string, number>)
 
-    const rows: BudgetRow[] = (budgets || [])
+    const rows: BudgetRow[] = budgets
       .map((b) => {
-        const category = (b.categories as unknown as { id: string; name: string; icon: string | null; color: string | null } | null) || null
+        const category = b.categories
         const budgeted = b.amount_cents
         const spent = spentByCategory[b.category_id] || 0
         return {
@@ -78,17 +55,12 @@ export function BudgetSummary({ scope }: { scope: DashboardScope }) {
       })
       .sort((a, b) => b.percent - a.percent)
 
-    const totalBudget = budgets?.reduce((sum, b) => sum + b.amount_cents, 0) || 0
+    const totalBudget = budgets.reduce((sum, b) => sum + b.amount_cents, 0)
     const totalSpent = rows.reduce((sum, r) => sum + Math.min(r.spent, r.budgeted), 0)
     const overallPercent = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0
 
     return { rows, totalBudget, totalSpent, overallPercent }
-  }
-
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['budget-summary', scope],
-    queryFn: fetchBudgetData,
-  })
+  }, [query, currentMonth, scope.baseCurrency])
 
   if (isLoading) {
     return (

@@ -1,13 +1,13 @@
 'use client'
 
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/shared/lib/supabase/client'
-import { applyExpenseScope, type DashboardScope } from '@/features/dashboard/scope'
+import type { DashboardScope } from '@/features/dashboard/scope'
+import { useDashboardData, useCurrentMonthExpenses } from '@/features/dashboard/use-dashboard-data'
 import { formatMoney } from '@/shared/lib/currency'
-import { fetchBaseRates } from '@/entities/exchange-rate/base-rates'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { startOfMonth, endOfMonth } from 'date-fns'
 import { Trophy } from 'lucide-react'
 
 interface MemberSpend {
@@ -19,26 +19,16 @@ interface MemberSpend {
 
 export function TeamSpendLeaderboard({ scope }: { scope: DashboardScope }) {
   const supabase = createClient()
+  const { data: query, isLoading, error } = useDashboardData(scope)
+  const currentMonth = useCurrentMonthExpenses(query?.expenses)
 
-  const fetchLeaderboard = async () => {
-    const now = new Date()
-    const start = startOfMonth(now)
-    const end = endOfMonth(now)
+  const byUser = useMemo(() => {
+    if (!query) return undefined
 
-    let expenseQuery = supabase
-      .from('expenses')
-      .select('amount_cents, currency, user_id')
-      .eq('is_deleted', false)
-      .eq('entry_type', 'expense')
-      .gte('date', start.toISOString())
-      .lte('date', end.toISOString())
-    expenseQuery = applyExpenseScope(expenseQuery, scope)
-    const { data: expenses, error: expenseError } = await expenseQuery
-    if (expenseError) throw expenseError
-
-    const rates = await fetchBaseRates(supabase, scope.baseCurrency)
-
-    const byUser = expenses?.reduce((acc, e) => {
+    const { rates } = query
+    const acc: Record<string, MemberSpend> = {}
+    for (const e of currentMonth) {
+      if (!e.user_id) continue
       if (!acc[e.user_id]) {
         acc[e.user_id] = { userId: e.user_id, name: 'Team member', total: 0, count: 0 }
       }
@@ -46,28 +36,33 @@ export function TeamSpendLeaderboard({ scope }: { scope: DashboardScope }) {
         ? e.amount_cents
         : (rates[e.currency] ? Math.round(e.amount_cents / rates[e.currency]) : 0)
       acc[e.user_id].count += 1
-      return acc
-    }, {} as Record<string, MemberSpend>) || {}
+    }
+    return acc
+  }, [query, currentMonth, scope.baseCurrency])
 
-    const userIds = Object.keys(byUser)
-    if (userIds.length > 0) {
-      const { data: profiles } = await supabase
+  const userIds = useMemo(() => Object.keys(byUser || {}), [byUser])
+
+  const { data: profiles } = useQuery({
+    queryKey: ['team-profiles', scope, userIds],
+    queryFn: async () => {
+      const { data } = await supabase
         .from('profiles')
         .select('user_id, display_name')
         .in('user_id', userIds)
-      const nameByUserId = new Map((profiles || []).map((p) => [p.user_id, p.display_name]))
-      for (const [userId, spend] of Object.entries(byUser)) {
-        spend.name = nameByUserId.get(userId) || spend.name
-      }
-    }
-
-    return Object.values(byUser).sort((a, b) => b.total - a.total)
-  }
-
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['team-leaderboard', scope],
-    queryFn: fetchLeaderboard,
+      return new Map((data || []).map((p) => [p.user_id, p.display_name]))
+    },
+    enabled: userIds.length > 0,
   })
+
+  const data = useMemo(() => {
+    if (!byUser) return undefined
+    const rows = Object.values(byUser)
+    for (const spend of rows) {
+      const name = profiles?.get(spend.userId)
+      if (name) spend.name = name
+    }
+    return rows.sort((a, b) => b.total - a.total)
+  }, [byUser, profiles])
 
   if (isLoading) {
     return (

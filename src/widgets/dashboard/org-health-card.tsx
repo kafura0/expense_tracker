@@ -1,8 +1,10 @@
 'use client'
 
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/shared/lib/supabase/client'
 import type { DashboardScope } from '@/features/dashboard/scope'
+import { useDashboardData } from '@/features/dashboard/use-dashboard-data'
 import { formatMoney } from '@/shared/lib/currency'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -12,12 +14,11 @@ import { Building2, CreditCard, Users, ReceiptText } from 'lucide-react'
 
 export function OrgHealthCard({ scope, orgName }: { scope: DashboardScope; orgName?: string }) {
   const supabase = createClient()
+  const { data: dashboard, isLoading: expensesLoading, error: expensesError } = useDashboardData(scope)
 
   const fetchHealth = async () => {
     const orgId = scope.orgId
     if (!orgId) return null
-    const now = new Date()
-    const start = startOfMonth(now)
 
     const { data: org } = await supabase
       .from('organizations')
@@ -38,13 +39,23 @@ export function OrgHealthCard({ scope, orgName }: { scope: DashboardScope; orgNa
       .select('role')
       .eq('org_id', orgId)
 
-    const { count: monthExpenses } = await supabase
-      .from('expenses')
-      .select('id', { count: 'exact', head: true })
-      .eq('org_id', orgId)
-      .eq('is_deleted', false)
-      .eq('entry_type', 'expense')
-      .gte('date', start.toISOString())
+    return { org, subscription, members }
+  }
+
+  const { data: health, isLoading: healthLoading, error: healthError } = useQuery({
+    queryKey: ['org-health', scope],
+    queryFn: fetchHealth,
+    enabled: Boolean(scope.orgId),
+  })
+
+  const data = useMemo(() => {
+    if (!health) return null
+
+    const now = new Date()
+    const start = startOfMonth(now)
+    const monthExpenses = dashboard?.expenses.filter((e) => new Date(e.date) >= start).length || 0
+
+    const { org, subscription, members } = health
 
     return {
       orgName: (org as { name?: string } | null)?.name || orgName || 'Organization',
@@ -55,15 +66,12 @@ export function OrgHealthCard({ scope, orgName }: { scope: DashboardScope; orgNa
       subStatus: subscription?.status || 'active',
       periodEnd: subscription?.current_period_end || null,
       memberCount: members?.length || 0,
-      monthExpenses: monthExpenses || 0,
+      monthExpenses,
     }
-  }
+  }, [health, dashboard, orgName])
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['org-health', scope],
-    queryFn: fetchHealth,
-    enabled: Boolean(scope.orgId),
-  })
+  const isLoading = healthLoading || expensesLoading
+  const error = healthError || expensesError
 
   if (isLoading) {
     return (
