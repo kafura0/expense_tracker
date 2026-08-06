@@ -17,6 +17,6 @@ export const SITE_NAME = 'Ledgerly'
 export const SITE_TITLE = 'Ledgerly — Master Your Financial Future'
 
 export const SITE_DESCRIPTION =
-  'Ledgerly is a premium expense tracker with automated reconciliation, multi-currency support across 40+ currencies, AI-powered insights, and bank-grade security for individuals and teams.'
+  'Ledgerly is an expense and income tracker with multi-currency support, automatic VAT, team workspaces, and exportable reports for individuals and small teams.'
 
 export const ORG_NAME = 'Ledgerly Inc.'

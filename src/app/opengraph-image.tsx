@@ -74,9 +74,9 @@ export default function OpengraphImage() {
             fontWeight: 500,
           }}
         >
-          <span style={{ display: 'flex' }}>40+ currencies</span>
-          <span style={{ display: 'flex' }}>AI insights</span>
-          <span style={{ display: 'flex' }}>Bank-grade security</span>
+          <span style={{ display: 'flex' }}>7 currencies</span>
+          <span style={{ display: 'flex' }}>VAT engine</span>
+          <span style={{ display: 'flex' }}>Team workspaces</span>
         </div>
       </div>
     ),

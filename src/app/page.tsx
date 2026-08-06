@@ -6,69 +6,67 @@ import { SITE_URL, SITE_TITLE, SITE_DESCRIPTION } from '@/shared/lib/seo'
 import {
   Globe,
   Receipt,
-  Brain,
+  Percent,
+  Tag,
   ArrowRight,
   Check,
   X,
   Play,
   CreditCard,
-  Sparkles,
   TrendingUp,
   Users,
   ShieldCheck,
   Handshake,
-  Zap,
   BarChart3,
-  Shield,
 } from 'lucide-react'
 import { LandingNav } from '@/widgets/landing/landing-nav'
 
 const FEATURES = [
   {
-    icon: Shield,
-    title: 'Bank-Grade Security',
+    icon: Receipt,
+    title: 'Expense & Income Tracking',
     description:
-      'End-to-end encryption with SOC 2 Type II compliance. Your financial data never leaves your control.',
+      'Log expenses and income in seconds with categories, VAT, and notes on every entry.',
     color: 'text-primary',
     bg: 'bg-primary/10',
-  },
-  {
-    icon: Zap,
-    title: 'Global Bank Sync',
-    description:
-      'Connect to 15,000+ financial institutions via Plaid, Salt Edge, and direct API endpoints.',
-    color: 'text-secondary',
-    bg: 'bg-secondary/10',
   },
   {
     icon: Globe,
     title: 'Multi-Currency',
     description:
-      'Real-time spot rates with historical data syncing for seamless cross-border reporting.',
-    color: 'text-primary',
-    bg: 'bg-primary/10',
-  },
-  {
-    icon: BarChart3,
-    title: 'Smart Analytics',
-    description:
-      'Real-time dashboards and AI-driven insights that surface spending anomalies before they impact your runway.',
+      'Track in KES, USD, EUR, GBP, CAD, AUD, or JPY with live conversion using real-time FX rates.',
     color: 'text-secondary',
     bg: 'bg-secondary/10',
   },
   {
-    icon: Brain,
-    title: 'Smart Insights',
+    icon: Percent,
+    title: 'VAT Calculations',
     description:
-      'AI-driven patterns that detect anomalies and spending trends before they impact your runway.',
+      'Automatic VAT per expense using your organization\u2019s default rate — no manual math.',
     color: 'text-primary',
     bg: 'bg-primary/10',
   },
   {
-    icon: Receipt,
-    title: 'VAT Calculations',
+    icon: Users,
+    title: 'Team Workspaces',
     description:
-      'Automatic tax extraction and VAT compliance across 120+ jurisdictions.',
+      'Invite members and share one org-wide ledger so everyone stays in sync.',
+    color: 'text-secondary',
+    bg: 'bg-secondary/10',
+  },
+  {
+    icon: BarChart3,
+    title: 'Reports & Analytics',
+    description:
+      'Period totals, category breakdowns, and spending trends — exportable to CSV and PDF.',
+    color: 'text-primary',
+    bg: 'bg-primary/10',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Secure by Default',
+    description:
+      'Row-level security, audited actions, and email/OTP authentication protect every entry.',
     color: 'text-secondary',
     bg: 'bg-secondary/10',
   },
@@ -78,74 +76,59 @@ const STEPS = [
   {
     number: '01',
     icon: CreditCard,
-    title: 'Connect Your Accounts',
+    title: 'Create Your Account',
     description:
-      'Link your bank accounts, credit cards, and payment processors in under 60 seconds with our secure OAuth flow.',
+      'Sign up for free and set your base currency and VAT rate in under a minute.',
   },
   {
     number: '02',
-    icon: Sparkles,
-    title: 'Automate Everything',
+    icon: Tag,
+    title: 'Track Everything',
     description:
-      'Our AI categorizes transactions, extracts receipt data, and reconciles accounts automatically.',
+      'Add expenses and income, pick a category, and let VAT be applied automatically.',
   },
   {
     number: '03',
     icon: TrendingUp,
-    title: 'Master Your Finances',
+    title: 'Understand Your Spend',
     description:
-      'Get actionable insights, forecast cash flow, and make data-driven decisions with real-time dashboards.',
+      'Turn every entry into reports and charts that make your next decision obvious.',
   },
 ]
 
 const PRICING_PLANS = [
   {
-    name: 'Starter',
+    name: 'Free',
     price: '$0',
     period: '/mo',
-    description: 'Perfect for individuals getting started',
+    description: 'For individuals getting started',
     features: [
-      { text: 'Up to 100 transactions/mo', included: true },
-      { text: 'Manual CSV import', included: true },
-      { text: 'Basic analytics dashboard', included: true },
-      { text: 'Single currency', included: true },
-      { text: 'Bank sync', included: false },
-      { text: 'AI insights', included: false },
+      { text: 'Up to 50 expenses/mo', included: true },
+      { text: 'Manual entry with categories & VAT', included: true },
+      { text: 'CSV export', included: true },
+      { text: 'Multi-currency support', included: false },
+      { text: 'Team members', included: false },
     ],
     cta: 'Start for Free',
+    href: '/signup',
     featured: false,
   },
   {
     name: 'Pro',
-    price: '$12',
+    price: '$9.99',
     period: '/mo',
-    description: 'For professionals who need more power',
+    description: 'For teams that need more power',
     features: [
-      { text: 'Unlimited transactions', included: true },
-      { text: 'Auto bank sync (15k+ banks)', included: true },
-      { text: 'AI-powered insights', included: true },
-      { text: 'Multi-currency support', included: true },
-      { text: 'Receipt OCR scanning', included: true },
-      { text: 'Priority support', included: true },
+      { text: 'Unlimited expenses', included: true },
+      { text: 'Up to 10 team members', included: true },
+      { text: 'Multi-currency with live FX', included: true },
+      { text: 'Insights & reports', included: true },
+      { text: 'CSV + PDF export', included: true },
+      { text: 'VAT calculations', included: true },
     ],
-    cta: 'Get Started Free',
+    cta: 'Start with Pro',
+    href: '/org-signup',
     featured: true,
-  },
-  {
-    name: 'Enterprise',
-    price: 'Custom',
-    period: '',
-    description: 'For teams with advanced requirements',
-    features: [
-      { text: 'Everything in Pro', included: true },
-      { text: 'Custom API endpoints', included: true },
-      { text: 'Role-based access control', included: true },
-      { text: 'Dedicated account manager', included: true },
-      { text: 'Custom integrations', included: true },
-      { text: 'SLA guarantee', included: true },
-    ],
-    cta: 'Contact Sales',
-    featured: false,
   },
 ]
 
@@ -182,12 +165,12 @@ const SITE_GRAPH = [
     description: SITE_DESCRIPTION,
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
     featureList: [
-      'Automated expense reconciliation',
-      'Multi-currency support',
-      'AI-powered spending insights',
-      'VAT calculations across 120+ jurisdictions',
-      'Role-based team access',
-      'Bank-grade security',
+      'Expense and income tracking',
+      'Multi-currency support with live FX rates',
+      'Automatic VAT calculations',
+      'Team workspaces with shared ledgers',
+      'Reports with CSV and PDF export',
+      'Row-level security with audited actions',
     ],
   },
 ]
@@ -201,7 +184,7 @@ export const metadata: Metadata = {
     url: '/',
     title: SITE_TITLE,
     description:
-      'Transform chaotic financial data into precise strategic assets. Automated reconciliation, multi-currency mastery, and bank-grade security — all in one platform.',
+      'Track expenses across currencies, apply VAT automatically, and turn your data into clear reports — all in one secure workspace.',
   },
 }
 
@@ -247,7 +230,7 @@ export default function LandingPage() {
             <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full border border-border bg-card/50 mb-6 md:mb-10 animate-fade-in">
               <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
               <span className="font-label-sm text-xs md:text-label-sm text-primary uppercase tracking-widest">
-                Now supporting 40+ currencies
+                Multi-currency · Live FX · VAT · Team workspaces
               </span>
             </div>
 
@@ -263,9 +246,8 @@ export default function LandingPage() {
             </h1>
 
             <p className="font-body-md text-body-lg md:text-xl leading-relaxed text-muted-foreground mx-auto max-w-2xl mb-10 md:mb-16 animate-slide-up delay-75">
-              Transform chaotic financial data into precise strategic assets.
-              Automated reconciliation, multi-currency mastery, and bank-grade
-              security — all in one platform.
+              Track expenses and income across currencies, apply VAT automatically,
+              and turn your data into clear reports — all in one secure workspace.
             </p>
 
             <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-4 mb-16 animate-slide-up delay-150">
@@ -408,15 +390,15 @@ export default function LandingPage() {
                 Built for Teams
               </h2>
               <p className="text-muted-foreground font-body-md text-sm md:text-body-md leading-relaxed max-w-xl">
-                Invite clients, manage permissions, and track team expenses in one place
+                Invite teammates, share one ledger, and stay in sync
               </p>
             </div>
 
             <div className="flex flex-col md:flex-row md:flex-wrap gap-2 md:gap-6 justify-center w-full">
               {[
-                { icon: Users, title: 'Client Management', desc: 'Create client accounts, assign roles, and manage access with ease', color: 'text-primary', bg: 'bg-primary/10' },
-                { icon: ShieldCheck, title: 'Role-Based Access', desc: 'Managers get full control, clients see only their own data', color: 'text-secondary', bg: 'bg-secondary/10' },
-                { icon: Handshake, title: 'Team Collaboration', desc: 'Work together with shared categories, budgets, and real-time insights', color: 'text-primary', bg: 'bg-primary/10' },
+                { icon: Users, title: 'Team Workspaces', desc: 'Invite members to one shared, org-wide ledger with full visibility', color: 'text-primary', bg: 'bg-primary/10' },
+                { icon: ShieldCheck, title: 'Granular Access', desc: 'Row-level security keeps every member scoped to their own organization', color: 'text-secondary', bg: 'bg-secondary/10' },
+                { icon: Handshake, title: 'Shared Defaults', desc: 'Set org-wide currency and VAT defaults that every member inherits', color: 'text-primary', bg: 'bg-primary/10' },
               ].map((item) => (
                 <div
                   key={item.title}
@@ -505,7 +487,7 @@ export default function LandingPage() {
                     ))}
                   </ul>
                   <Link
-                    href={plan.featured ? '/signup' : plan.cta === 'Contact Sales' ? '/request-access' : '/signup'}
+                    href={plan.href}
                     className={`w-full py-3 rounded-xl font-medium transition-all text-center block ${
                       plan.featured
                         ? 'bg-primary text-primary-foreground hover:brightness-110'
@@ -588,24 +570,6 @@ export default function LandingPage() {
             <ul className="space-y-2 text-muted-foreground font-body-md text-sm">
               <li><Link href="/request-access" className="hover:text-primary transition-colors">Contact Sales</Link></li>
             </ul>
-          </div>
-          <div className="flex flex-col w-full md:w-auto md:min-w-[200px]">
-            <h4 className="font-label-sm text-xs md:text-label-sm text-foreground uppercase mb-4 md:mb-6 tracking-wider">
-              Stay Updated
-            </h4>
-            <p className="text-muted-foreground font-body-md text-sm md:text-body-md mb-2">
-              Get the latest product updates and financial insights.
-            </p>
-            <div className="flex gap-2">
-              <input
-                type="email"
-                placeholder="email@example.com"
-                className="bg-muted/50 border border-border rounded-lg px-2 py-2 flex-1 min-w-0 focus:ring-1 focus:ring-primary focus:border-primary outline-none text-foreground placeholder:text-muted-foreground text-sm"
-              />
-              <button className="bg-primary text-primary-foreground py-2 px-2 rounded-lg font-medium hover:brightness-110 transition-all text-sm whitespace-nowrap">
-                Subscribe
-              </button>
-            </div>
           </div>
         </div>
         <div className="max-w-container-max w-full flex flex-col md:flex-row justify-center items-center gap-2 md:gap-6 border-t border-border pt-6 md:pt-10">

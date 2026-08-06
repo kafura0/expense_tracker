@@ -49,7 +49,7 @@ export default function OnboardingPage() {
               Intelligence for your <span className="text-primary">business capital.</span>
             </h1>
             <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-6 md:mb-10 leading-relaxed">
-              Ledgerly transforms chaotic expense data into precise strategic assets. Automated reconciliation, multi-currency mastery, and bank-grade security.
+              Ledgerly turns your expenses into clear reports. Multi-currency tracking, automatic VAT, and exportable insights in one secure workspace.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-4 mb-12 md:mb-16">
               <button
@@ -239,9 +239,9 @@ export default function OnboardingPage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[
-                { icon: 'schedule', title: 'Save 5+ hours per month', desc: 'Automated categorization, tax calculation, and report generation eliminate manual spreadsheet work.' },
-                { icon: 'shield', title: 'Enterprise-grade security', desc: 'Row-level security, encrypted data at rest, rate limiting, and audit logging protect your financial data.' },
-                { icon: 'group', title: 'Multi-tenant team access', desc: 'Role-based access for managers, clients, and admins. Each person sees only what they need.' },
+                { icon: 'schedule', title: 'Save hours of bookkeeping', desc: 'Automatic VAT, org-wide currency defaults, and one-click report generation eliminate manual spreadsheet work.' },
+                { icon: 'shield', title: 'Secure by default', desc: 'Row-level security, audited actions, rate limiting, and email/OTP authentication protect your financial data.' },
+                { icon: 'group', title: 'Org-wide team access', desc: 'Invite members and share one shared ledger with full visibility across your organization.' },
                 { icon: 'download', title: 'Your data, your format', desc: 'Export anytime to CSV or PDF. No lock-in. Your financial data is always accessible and portable.' },
               ].map(({ icon, title, desc }) => (
                 <div key={title} className="flex gap-4 p-8 rounded-2xl bg-card border border-border/30">
@@ -265,19 +265,19 @@ export default function OnboardingPage() {
               <h2 className="text-3xl font-headline font-semibold mb-3">Transparent Scaling</h2>
               <p className="text-muted-foreground text-base">Choose the workspace that fits your volume.</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Starter */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Free */}
               <div className="p-8 rounded-2xl border border-border/30 bg-card flex flex-col hover:border-muted-foreground/30 transition-all">
-                <span className="text-xs uppercase tracking-widest text-muted-foreground font-medium mb-4">Starter</span>
+                <span className="text-xs uppercase tracking-widest text-muted-foreground font-medium mb-4">Free</span>
                 <div className="flex items-end gap-2 mb-8">
                   <span className="text-3xl font-headline font-bold">$0</span>
                   <span className="text-muted-foreground text-sm mb-1">/mo</span>
                 </div>
                 <ul className="space-y-4 mb-10 flex-1">
-                  <li className="flex items-center gap-3 text-sm"><span className="material-symbols-outlined text-primary text-base">check_circle</span> 1 team member</li>
+                  <li className="flex items-center gap-3 text-sm"><span className="material-symbols-outlined text-primary text-base">check_circle</span> 1 member</li>
                   <li className="flex items-center gap-3 text-sm"><span className="material-symbols-outlined text-primary text-base">check_circle</span> 50 expenses/month</li>
                   <li className="flex items-center gap-3 text-sm"><span className="material-symbols-outlined text-primary text-base">check_circle</span> CSV export</li>
-                  <li className="flex items-center gap-3 text-sm"><span className="material-symbols-outlined text-primary text-base">check_circle</span> Basic categories</li>
+                  <li className="flex items-center gap-3 text-sm"><span className="material-symbols-outlined text-primary text-base">check_circle</span> Categories & VAT</li>
                 </ul>
                 <button
                   onClick={handleComplete}
@@ -288,51 +288,28 @@ export default function OnboardingPage() {
                 </button>
               </div>
 
-              {/* Professional */}
+              {/* Pro */}
               <div className="p-8 rounded-2xl border-2 border-primary bg-card flex flex-col relative shadow-[0_0_40px_rgba(78,222,163,0.08)]">
                 <div className="absolute top-0 right-8 -translate-y-1/2 bg-primary text-primary-foreground text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">Most Popular</div>
-                <span className="text-xs uppercase tracking-widest text-primary font-medium mb-4">Professional</span>
+                <span className="text-xs uppercase tracking-widest text-primary font-medium mb-4">Pro</span>
                 <div className="flex items-end gap-2 mb-8">
                   <span className="text-3xl font-headline font-bold">$9.99</span>
                   <span className="text-muted-foreground text-sm mb-1">/mo</span>
                 </div>
                 <ul className="space-y-4 mb-10 flex-1">
-                  <li className="flex items-center gap-3 text-sm"><span className="material-symbols-outlined text-primary text-base">check_circle</span> 10 team members</li>
+                  <li className="flex items-center gap-3 text-sm"><span className="material-symbols-outlined text-primary text-base">check_circle</span> Up to 10 team members</li>
                   <li className="flex items-center gap-3 text-sm"><span className="material-symbols-outlined text-primary text-base">check_circle</span> Unlimited expenses</li>
                   <li className="flex items-center gap-3 text-sm"><span className="material-symbols-outlined text-primary text-base">check_circle</span> CSV + PDF export</li>
                   <li className="flex items-center gap-3 text-sm"><span className="material-symbols-outlined text-primary text-base">check_circle</span> Multi-currency</li>
                   <li className="flex items-center gap-3 text-sm"><span className="material-symbols-outlined text-primary text-base">check_circle</span> Analytics & insights</li>
-                  <li className="flex items-center gap-3 text-sm"><span className="material-symbols-outlined text-primary text-base">check_circle</span> Tax/VAT engine</li>
+                  <li className="flex items-center gap-3 text-sm"><span className="material-symbols-outlined text-primary text-base">check_circle</span> VAT engine</li>
                 </ul>
                 <button
                   onClick={handleComplete}
                   disabled={loading}
                   className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-medium text-sm hover:brightness-110 transition-all disabled:opacity-50"
                 >
-                  Go Professional
-                </button>
-              </div>
-
-              {/* Enterprise */}
-              <div className="p-8 rounded-2xl border border-border/30 bg-card flex flex-col hover:border-muted-foreground/30 transition-all">
-                <span className="text-xs uppercase tracking-widest text-muted-foreground font-medium mb-4">Enterprise</span>
-                <div className="flex items-end gap-2 mb-8">
-                  <span className="text-3xl font-headline font-bold">$29.99</span>
-                  <span className="text-muted-foreground text-sm mb-1">/mo</span>
-                </div>
-                <ul className="space-y-4 mb-10 flex-1">
-                  <li className="flex items-center gap-3 text-sm"><span className="material-symbols-outlined text-primary text-base">check_circle</span> Unlimited members</li>
-                  <li className="flex items-center gap-3 text-sm"><span className="material-symbols-outlined text-primary text-base">check_circle</span> Unlimited expenses</li>
-                  <li className="flex items-center gap-3 text-sm"><span className="material-symbols-outlined text-primary text-base">check_circle</span> All export formats</li>
-                  <li className="flex items-center gap-3 text-sm"><span className="material-symbols-outlined text-primary text-base">check_circle</span> API access</li>
-                  <li className="flex items-center gap-3 text-sm"><span className="material-symbols-outlined text-primary text-base">check_circle</span> Priority support</li>
-                </ul>
-                <button
-                  onClick={handleComplete}
-                  disabled={loading}
-                  className="w-full border border-border py-3 rounded-xl font-medium text-sm hover:bg-muted transition-all disabled:opacity-50"
-                >
-                  Contact Sales
+                  Go Pro
                 </button>
               </div>
             </div>
@@ -371,13 +348,6 @@ export default function OnboardingPage() {
               >
                 <span className="material-symbols-outlined text-sm">code</span>
               </a>
-            </div>
-          </div>
-          <div className="md:col-span-4 md:col-start-9">
-            <h4 className="text-xs uppercase tracking-widest font-medium mb-4">Subscribe to Updates</h4>
-            <div className="flex gap-2">
-              <input className="bg-card border border-border rounded-lg px-4 py-2 flex-1 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none placeholder:text-muted-foreground" placeholder="email@example.com" type="email" />
-              <button className="bg-foreground text-background py-2 px-5 rounded-lg font-medium text-sm hover:opacity-90 transition-all">Join</button>
             </div>
           </div>
         </div>
