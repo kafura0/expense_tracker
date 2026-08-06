@@ -39,6 +39,73 @@ describe('expense schema', () => {
         expect(paths).toContain('converted_amount_cents')
       }
     })
+
+    it('accepts an income entry (boundary enum value)', () => {
+      const payload = {
+        amount_cents: 100_000,
+        entry_type: 'income' as const,
+        currency: 'USD' as const,
+        date: '2026-08-02T14:30:00.000Z',
+        tax_applicable: false,
+        is_taxable: false,
+      }
+      const result = expenseInsertSchema.safeParse(payload)
+      expect(result.success).toBe(true)
+    })
+
+    it('rejects an unknown entry_type', () => {
+      const payload = {
+        amount_cents: 1000,
+        entry_type: 'refund',
+        currency: 'USD',
+        date: '2026-08-02T14:30:00.000Z',
+        tax_applicable: false,
+        is_taxable: false,
+      }
+      const result = expenseInsertSchema.safeParse(payload)
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.issues.map((i) => i.path.join('.'))).toContain('entry_type')
+      }
+    })
+
+    it('rejects a zero amount (min is 1 cent)', () => {
+      const payload = {
+        amount_cents: 0,
+        entry_type: 'expense' as const,
+        currency: 'USD' as const,
+        date: '2026-08-02T14:30:00.000Z',
+        tax_applicable: false,
+        is_taxable: false,
+      }
+      const result = expenseInsertSchema.safeParse(payload)
+      expect(result.success).toBe(false)
+    })
+
+    it('rejects a negative amount', () => {
+      const payload = {
+        amount_cents: -500,
+        entry_type: 'expense' as const,
+        currency: 'USD' as const,
+        date: '2026-08-02T14:30:00.000Z',
+        tax_applicable: false,
+        is_taxable: false,
+      }
+      const result = expenseInsertSchema.safeParse(payload)
+      expect(result.success).toBe(false)
+    })
+
+    it('accepts exactly the max amount ($1,000,000.00) and rejects one cent more', () => {
+      const base = {
+        entry_type: 'expense' as const,
+        currency: 'USD' as const,
+        date: '2026-08-02T14:30:00.000Z',
+        tax_applicable: false,
+        is_taxable: false,
+      }
+      expect(expenseInsertSchema.safeParse({ ...base, amount_cents: 100_000_000 }).success).toBe(true)
+      expect(expenseInsertSchema.safeParse({ ...base, amount_cents: 100_000_001 }).success).toBe(false)
+    })
   })
 
   describe('expenseSchema (repository response)', () => {

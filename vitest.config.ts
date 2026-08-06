@@ -32,7 +32,7 @@ export default defineConfig({
         'src/entities/**/catalog.ts',
         'src/entities/**/service.ts',
         'src/entities/exchange-rate/base-rates.ts',
-        'src/shared/lib/{audit-logger,cache,category-icons,csrf,currency,datetime,effective-settings,like-escape,password,rate-limit,security-headers,utils,vat,csv-export,pdf-export}.ts',
+        'src/shared/lib/{audit-logger,billing/stripe-status,cache,category-icons,csrf,currency,datetime,effective-settings,like-escape,password,rate-limit,security-headers,utils,vat,csv-export,pdf-export}.ts',
       ],
       exclude: [
         'node_modules/',

@@ -6,14 +6,16 @@ import { getSettingsContext } from '@/features/settings/actions'
 import { MySettingsTab } from '@/widgets/settings/my-settings-tab'
 import { MembersTab } from '@/widgets/settings/members-tab'
 import { OrganizationTab } from '@/widgets/settings/organization-tab'
-import { Settings, Users, Building2 } from 'lucide-react'
+import { BillingTab } from '@/widgets/settings/billing-tab'
+import { Settings, Users, Building2, CreditCard } from 'lucide-react'
 
-type TabId = 'profile' | 'members' | 'organization'
+type TabId = 'profile' | 'members' | 'organization' | 'billing'
 
 const TABS: { id: TabId; label: string; icon: typeof Settings; orgOnly?: boolean }[] = [
   { id: 'profile', label: 'My Settings', icon: Settings },
   { id: 'members', label: 'Members', icon: Users, orgOnly: true },
   { id: 'organization', label: 'Organization', icon: Building2, orgOnly: true },
+  { id: 'billing', label: 'Billing', icon: CreditCard, orgOnly: true },
 ]
 
 export default function SettingsPage() {
@@ -61,6 +63,8 @@ export default function SettingsPage() {
         <MembersTab />
       ) : activeTab === 'organization' ? (
         <OrganizationTab isOrgAdmin={Boolean(ctx?.isOrgAdmin)} />
+      ) : activeTab === 'billing' && ctx?.hasOrg ? (
+        <BillingTab />
       ) : (
         <MySettingsTab />
       )}

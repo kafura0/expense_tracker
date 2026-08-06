@@ -50,6 +50,7 @@ export const AUDIT_ACTIONS = [
   'request.reject',
   'plan.price_update',
   'subscription.plan_change',
+  'billing.subscription_cancelled',
 ] as const
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]

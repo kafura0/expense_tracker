@@ -55,6 +55,14 @@ describe('MemoryRateLimitStore', () => {
     expect(store.get('expired')).toBeNull()
     expect(store.get('fresh')).not.toBeNull()
   })
+
+  it('keeps a record whose resetTime is exactly now (expiry is strictly after resetTime)', () => {
+    const store = new MemoryRateLimitStore()
+    const atBoundary = Date.now()
+    store.set('boundary', { count: 1, resetTime: atBoundary })
+    store.cleanup()
+    expect(store.get('boundary')).not.toBeNull()
+  })
 })
 
 describe('UpstashRedisRateLimitStore', () => {
@@ -104,6 +112,25 @@ describe('rateLimit', () => {
     expect(blocked!.headers.get('X-RateLimit-Limit')).toBe('60')
   })
 
+  it('allows exactly the api limit and blocks the next request with remaining=0', async () => {
+    const request = makeRequest('/api/things', '10.0.0.20')
+    for (let i = 0; i < 60; i++) {
+      expect(await rateLimit(request)).toBeNull()
+    }
+    const blocked = await rateLimit(request)
+    expect(blocked?.status).toBe(429)
+    expect(blocked!.headers.get('X-RateLimit-Remaining')).toBe('0')
+    expect(blocked!.headers.get('X-RateLimit-Reset')).toMatch(/^\d+$/)
+  })
+
+  it('enforces the general limit at its own boundary', async () => {
+    const request = makeRequest('/dashboard', '10.0.0.21')
+    for (let i = 0; i < 100; i++) {
+      expect(await rateLimit(request)).toBeNull()
+    }
+    expect((await rateLimit(request))?.status).toBe(429)
+  })
+
   it('uses the auth limit for auth paths', async () => {
     const request = makeRequest('/login', '10.0.0.3')
     for (let i = 0; i < 5; i++) {
@@ -142,5 +169,14 @@ describe('addRateLimitHeaders', () => {
     const request = makeRequest('/api/never-hit', '10.0.0.10')
     const response = await addRateLimitHeaders(makeResponse(), request)
     expect(response.headers.get('X-RateLimit-Limit')).toBeNull()
+  })
+
+  it('decrements remaining by one per hit inside the window', async () => {
+    const request = makeRequest('/api/things', '10.0.0.11')
+    await rateLimit(request)
+    await rateLimit(request)
+    const response = await addRateLimitHeaders(makeResponse(), request)
+    expect(response.headers.get('X-RateLimit-Limit')).toBe('60')
+    expect(response.headers.get('X-RateLimit-Remaining')).toBe('58')
   })
 })

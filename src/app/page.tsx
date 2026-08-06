@@ -176,7 +176,7 @@ const SITE_GRAPH = [
 ]
 
 export const metadata: Metadata = {
-  title: 'Master Your Financial Future',
+  title: 'Ledgerly — Master Your Financial Future',
   description: SITE_DESCRIPTION,
   alternates: { canonical: '/' },
   openGraph: {

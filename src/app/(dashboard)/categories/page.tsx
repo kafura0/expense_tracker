@@ -23,10 +23,13 @@ interface CategoryRow {
   name: string
   icon: string | null
   color: string | null
+  kind: string
   budget_id: string | null
   budget_cents: number
   spent_cents: number
 }
+
+type KindFilter = 'expense' | 'income' | 'all'
 
 const ICON_CHOICES = [
   'briefcase', 'plane', 'utensils', 'monitor', 'megaphone', 'shopping-bag',
@@ -50,6 +53,8 @@ export default function CategoriesPage() {
   const [addName, setAddName] = useState('')
   const [addIcon, setAddIcon] = useState(ICON_CHOICES[0])
   const [addColor, setAddColor] = useState(COLOR_CHOICES[0])
+  const [addKind, setAddKind] = useState<'expense' | 'income'>('expense')
+  const [kindFilter, setKindFilter] = useState<KindFilter>('expense')
 
   const monthStart = useMemo(() => {
     const d = new Date()
@@ -63,7 +68,7 @@ export default function CategoriesPage() {
     queryFn: async () => {
       if (!scope) throw new Error('No scope resolved')
 
-      let catQuery = supabase.from('categories').select('id, name, icon, color')
+      let catQuery = supabase.from('categories').select('id, name, icon, color, kind')
       catQuery = applyCategoryScope(catQuery, scope)
       const { data: categories, error: catError } = await catQuery.order('name')
       if (catError) throw catError
@@ -102,6 +107,7 @@ export default function CategoriesPage() {
         name: c.name,
         icon: c.icon,
         color: c.color,
+        kind: c.kind,
         budget_id: budgetByCat.get(c.id)?.id ?? null,
         budget_cents: budgetByCat.get(c.id)?.amount_cents ?? 0,
         spent_cents: spentByCat.get(c.id) || 0,
@@ -112,8 +118,13 @@ export default function CategoriesPage() {
 
   const budgetScope = scope && scope.persona === 'solo' ? 'user' : 'org'
 
-  const totalBudget = useMemo(() => (data || []).reduce((a, c) => a + c.budget_cents, 0), [data])
-  const totalSpent = useMemo(() => (data || []).reduce((a, c) => a + c.spent_cents, 0), [data])
+  const visible = useMemo(
+    () => (data || []).filter((c) => kindFilter === 'all' || c.kind === kindFilter),
+    [data, kindFilter]
+  )
+
+  const totalBudget = useMemo(() => visible.reduce((a, c) => a + c.budget_cents, 0), [visible])
+  const totalSpent = useMemo(() => visible.reduce((a, c) => a + c.spent_cents, 0), [visible])
 
   const canManageCategories = true
 
@@ -157,6 +168,7 @@ export default function CategoriesPage() {
       name: addName.trim(),
       icon: addIcon,
       color: addColor,
+      kind: addKind,
       user_id: scope.userId,
       org_id: scope.orgId,
     })
@@ -165,6 +177,7 @@ export default function CategoriesPage() {
       return
     }
     setAddName('')
+    setAddKind('expense')
     setAddOpen(false)
     queryClient.invalidateQueries({ queryKey: ['categories-with-budgets'] })
     toast('Category created', 'success')
@@ -225,6 +238,8 @@ export default function CategoriesPage() {
           setIcon={setAddIcon}
           color={addColor}
           setColor={setAddColor}
+          kind={addKind}
+          setKind={setAddKind}
           onSubmit={handleAddCategory}
         />}
       </div>
@@ -244,6 +259,23 @@ export default function CategoriesPage() {
             Add Category
           </Button>
         )}
+      </div>
+
+      <div className="flex items-center gap-1.5 rounded-xl border border-border bg-card p-1.5 w-fit">
+        {(['expense', 'income', 'all'] as KindFilter[]).map((k) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setKindFilter(k)}
+            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-all capitalize ${
+              kindFilter === k
+                ? 'bg-primary/15 text-primary ring-1 ring-primary/30'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {k}
+          </button>
+        ))}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -275,8 +307,15 @@ export default function CategoriesPage() {
         </Card>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {data.map((category) => {
+      {visible.length === 0 ? (
+        <EmptyState
+          icon={<Tag className="h-8 w-8" />}
+          title="No categories here"
+          description={kindFilter === 'all' ? 'Create your first category to get started.' : `No ${kindFilter} categories yet. Create one or switch the filter.`}
+        />
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {visible.map((category) => {
           const Icon: LucideIcon = getCategoryIcon(category.icon)
           const percentage = category.budget_cents > 0
             ? Math.min((category.spent_cents / category.budget_cents) * 100, 100)
@@ -296,7 +335,12 @@ export default function CategoriesPage() {
                       <Icon className="h-5 w-5" />
                     </div>
                     <div>
-                      <CardTitle className="text-base">{category.name}</CardTitle>
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-base">{category.name}</CardTitle>
+                        {category.kind === 'income' && (
+                          <Badge variant="outline" className="border-emerald-500/30 text-emerald-500">Income</Badge>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground tabular-nums">
                         {formatMoney(category.spent_cents, scope.baseCurrency)} of {formatMoney(category.budget_cents, scope.baseCurrency)}
                       </p>
@@ -362,7 +406,8 @@ export default function CategoriesPage() {
             </Card>
           )
         })}
-      </div>
+        </div>
+      )}
 
       <AddCategoryModal
         open={addOpen}
@@ -373,6 +418,8 @@ export default function CategoriesPage() {
         setIcon={setAddIcon}
         color={addColor}
         setColor={setAddColor}
+        kind={addKind}
+        setKind={setAddKind}
         onSubmit={handleAddCategory}
       />
     </div>
@@ -388,6 +435,8 @@ function AddCategoryModal({
   setIcon,
   color,
   setColor,
+  kind,
+  setKind,
   onSubmit,
 }: {
   open: boolean
@@ -398,6 +447,8 @@ function AddCategoryModal({
   setIcon: (v: string) => void
   color: string
   setColor: (v: string) => void
+  kind: 'expense' | 'income'
+  setKind: (v: 'expense' | 'income') => void
   onSubmit: () => void
 }) {
   if (!open) return null
@@ -417,6 +468,25 @@ function AddCategoryModal({
                 if (e.key === 'Enter') void onSubmit()
               }}
             />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-muted-foreground">Type</label>
+            <div className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 p-1.5">
+              {(['expense', 'income'] as const).map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setKind(k)}
+                  className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium capitalize transition-all ${
+                    kind === k
+                      ? 'bg-card text-primary ring-1 ring-primary/30 shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {k}
+                </button>
+              ))}
+            </div>
           </div>
           <div>
             <label className="mb-1.5 block text-sm font-medium text-muted-foreground">Icon</label>

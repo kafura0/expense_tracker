@@ -85,7 +85,7 @@ export function useDashboardData(scope: DashboardScope) {
             .gte('date', sixMonthsAgo.toISOString()),
           scope
         ),
-        applyCategoryScope(supabase.from('categories').select('id, name, icon, color'), scope),
+        applyCategoryScope(supabase.from('categories').select('id, name, icon, color').eq('kind', 'expense'), scope),
         applyBudgetScope(
           supabase
             .from('budgets')

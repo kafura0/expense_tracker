@@ -108,7 +108,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
     queryKey: ['categories', scope?.orgId, scope?.persona, scope?.userId],
     queryFn: async () => {
       if (!scope) throw new Error('No scope resolved')
-      let query = supabase.from('categories').select('id, name, icon, color')
+      let query = supabase.from('categories').select('id, name, icon, color').eq('kind', 'expense')
       query = applyCategoryScope(query, scope)
       const { data, error } = await query.order('name')
       if (error) throw error

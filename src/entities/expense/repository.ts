@@ -2,6 +2,7 @@ import { createClient } from '@/shared/lib/supabase/server'
 import { getActiveOrgId } from '@/shared/lib/org-context'
 import { escapeLikePattern } from '@/shared/lib/like-escape'
 import { assertCategoryBudget } from '@/entities/budget/enforcement'
+import { assertMonthlyExpenseCap } from '@/entities/billing/enforcement'
 import { expenseSchema, type Expense, type ExpenseInsert, type ExpenseUpdate } from './schema'
 import type { ExpenseListParams, ExpenseListResponse } from './types'
 
@@ -220,6 +221,10 @@ export async function createExpense(expense: ExpenseInsert): Promise<Expense> {
     convertedAmountCents: expense.converted_amount_cents,
     convertedCurrency: expense.converted_currency,
   })
+
+  // Enforce the plan's monthly expense cap before persisting (throws
+  // ExpenseCapExceededError). Applies to orgs with a subscription only.
+  await assertMonthlyExpenseCap(supabase, { orgId })
 
   const { data, error } = await supabase
     .from('expenses')
