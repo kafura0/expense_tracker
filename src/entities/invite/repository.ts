@@ -23,7 +23,7 @@ export async function createInvite(data: InviteInsert): Promise<Invite> {
     throw new Error('A pending invite already exists for this email')
   }
 
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+  const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString()
 
   const { data: invite, error } = await supabase
     .from('invites')
@@ -73,7 +73,7 @@ export async function revokeInvite(orgId: string, inviteId: string): Promise<Inv
 export async function resendInvite(orgId: string, inviteId: string): Promise<Invite | null> {
   const supabase = await createClient()
 
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+  const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString()
 
   const { data, error } = await supabase
     .from('invites')
