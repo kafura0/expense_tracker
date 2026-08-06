@@ -22,6 +22,12 @@ export interface RateLimitStore {
   set(key: string, record: RateLimitRecord): Promise<void> | void
   /** Best-effort cleanup of expired keys (memory stores). */
   cleanup?(): void
+  /**
+   * Atomic counter increment. Distributed stores implement this so concurrent
+   * requests from different instances cannot read-then-write past the limit.
+   * Returns the new count and the window's reset time.
+   */
+  increment?(key: string, windowMs: number): Promise<{ count: number; resetTime: number }>
 }
 
 /** In-process store. Works everywhere; not shared between instances. */
@@ -65,6 +71,20 @@ export class UpstashRedisRateLimitStore implements RateLimitStore {
     // Expire the key shortly after the window closes so the store stays lean.
     const ttlSeconds = Math.max(1, Math.ceil((record.resetTime - Date.now()) / 1000))
     await this.redis.set(key, record, { ex: ttlSeconds })
+  }
+
+  /**
+   * Atomic fixed-window increment. The INCR + conditional EXPIRE pair is the
+   * shared, race-free counter across every instance — a distributed guarantee
+   * the read-then-write fallback cannot provide.
+   */
+  async increment(key: string, windowMs: number): Promise<{ count: number; resetTime: number }> {
+    const count = await this.redis.incr(key)
+    if (count === 1) {
+      // First request opens the window; set the TTL once so the key self-cleans.
+      await this.redis.expire(key, Math.max(1, Math.ceil(windowMs / 1000)))
+    }
+    return { count, resetTime: Date.now() + windowMs }
   }
 }
 
@@ -122,6 +142,17 @@ async function checkRateLimit(
   config: { windowMs: number; maxRequests: number }
 ): Promise<{ allowed: boolean; remaining: number; resetTime: number }> {
   const now = Date.now()
+
+  // Distributed stores use an atomic INCR-based counter shared across instances.
+  if (store.increment) {
+    const { count, resetTime } = await store.increment(key, config.windowMs)
+    return {
+      allowed: count <= config.maxRequests,
+      remaining: Math.max(0, config.maxRequests - count),
+      resetTime,
+    }
+  }
+
   const record = await store.get(key)
 
   if (!record || now > record.resetTime) {

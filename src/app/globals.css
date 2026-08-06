@@ -123,6 +123,16 @@
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-slide-up,
+  .animate-slide-in-right,
+  .animate-scale-in,
+  .animate-pulse-soft {
+    animation: none;
+  }
+}
+
 @layer base {
   * {
     @apply border-border;

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { NextRequest, NextResponse } from 'next/server'
 import {
   MemoryRateLimitStore,
@@ -6,6 +6,23 @@ import {
   rateLimit,
   addRateLimitHeaders,
 } from '@/shared/lib/rate-limit'
+
+vi.mock('@upstash/redis', () => ({
+  Redis: class {
+    incr() {
+      return Promise.resolve(1)
+    }
+    expire() {
+      return Promise.resolve(1)
+    }
+    async get() {
+      return null
+    }
+    async set() {
+      return 'OK'
+    }
+  },
+}))
 
 function makeRequest(pathname: string, ip: string, extra: Record<string, string> = {}): NextRequest {
   return new NextRequest(new URL(`https://example.com${pathname}`), {
@@ -43,6 +60,30 @@ describe('MemoryRateLimitStore', () => {
 describe('UpstashRedisRateLimitStore', () => {
   it('throws when credentials are missing', () => {
     expect(() => new UpstashRedisRateLimitStore(undefined, undefined)).toThrow()
+  })
+
+  it('increments atomically and sets the window TTL on the first hit', async () => {
+    const store = new UpstashRedisRateLimitStore('https://cache.upstash.io', 'token')
+    const redis = (store as unknown as { redis: { incr: (...a: unknown[]) => Promise<number>; expire: (...a: unknown[]) => Promise<number> } }).redis
+    const incrSpy = vi.spyOn(redis, 'incr').mockResolvedValue(1)
+    const expireSpy = vi.spyOn(redis, 'expire').mockResolvedValue(1)
+
+    const { count, resetTime } = await store.increment!('rate:api:1.2.3.4', 60_000)
+    expect(count).toBe(1)
+    expect(incrSpy).toHaveBeenCalledWith('rate:api:1.2.3.4')
+    expect(expireSpy).toHaveBeenCalledWith('rate:api:1.2.3.4', 60)
+    expect(resetTime).toBeGreaterThan(Date.now())
+  })
+
+  it('does not re-set the TTL on later hits in the same window', async () => {
+    const store = new UpstashRedisRateLimitStore('https://cache.upstash.io', 'token')
+    const redis = (store as unknown as { redis: { incr: (...a: unknown[]) => Promise<number>; expire: (...a: unknown[]) => Promise<number> } }).redis
+    const incrSpy = vi.spyOn(redis, 'incr').mockResolvedValue(7)
+    const expireSpy = vi.spyOn(redis, 'expire').mockResolvedValue(1)
+
+    await store.increment!('rate:api:9.9.9.9', 60_000)
+    expect(incrSpy).toHaveBeenCalledWith('rate:api:9.9.9.9')
+    expect(expireSpy).not.toHaveBeenCalled()
   })
 })
 

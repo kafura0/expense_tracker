@@ -25,7 +25,7 @@ const sanitizedString = (maxLength: number) =>
 export const expenseSchema = z.object({
   id: z.string().uuid().optional(),
   user_id: z.string().uuid().optional(),
-  org_id: z.string().uuid().optional(),
+  org_id: z.string().uuid().nullable().optional(),
   amount_cents: z
     .number()
     .int()

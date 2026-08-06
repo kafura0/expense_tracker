@@ -39,6 +39,44 @@ function usePrevious<T>(value: T): T | undefined {
   return ref.current
 }
 
+function IconNavLinks({
+  navItems,
+  isActive,
+}: {
+  navItems: NavItem[]
+  isActive: (href: string) => boolean
+}) {
+  return (
+    <nav className="flex flex-col items-center gap-1">
+      {navItems.map((item) => {
+        const active = isActive(item.href)
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            aria-label={item.label}
+            title={item.label}
+            className={cn(
+              'relative flex h-10 w-10 items-center justify-center rounded-lg transition-all duration-200',
+              active
+                ? 'bg-sidebar-accent text-sidebar-primary shadow-sm'
+                : 'text-sidebar-accent-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+            )}
+          >
+            {active && (
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-[3px] rounded-r-full bg-sidebar-primary shadow-glow" />
+            )}
+            <item.icon className={cn(
+              'h-5 w-5',
+              active ? 'text-sidebar-primary drop-shadow-[0_0_8px_rgba(52,211,153,0.4)]' : 'text-sidebar-accent-foreground'
+            )} />
+          </Link>
+        )
+      })}
+    </nav>
+  )
+}
+
 function NavLinks({
   navItems,
   isActive,
@@ -143,7 +181,7 @@ export function DashboardShell({
         Skip to content
       </a>
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 flex-col border-r border-sidebar-border bg-sidebar">
+      <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
         <div className="flex items-center px-5 py-4 border-b border-sidebar-border">
           <Logo size={40} />
         </div>
@@ -192,6 +230,46 @@ export function DashboardShell({
             >
               <LogOut className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover:-translate-x-0.5" />
                   Log out
+                </button>
+              </form>
+            </div>
+          </aside>
+
+          {/* Tablet Icon Rail (md–lg) */}
+          <aside className="hidden md:flex lg:hidden w-16 shrink-0 flex-col items-center border-r border-sidebar-border bg-sidebar">
+            <div className="flex w-full items-center justify-center border-b border-sidebar-border py-4">
+              <Logo size={32} />
+            </div>
+            {userRole && (
+              <div className="flex w-full items-center justify-center border-b border-sidebar-border py-3">
+                <span
+                  title={roleLabels[userRole] || userRole}
+                  className={cn(
+                    'h-2.5 w-2.5 rounded-full',
+                    userRole === 'super_admin' ? 'bg-purple-400' : 'bg-primary'
+                  )}
+                />
+              </div>
+            )}
+            <div className="w-full flex-1 overflow-y-auto px-2 py-4">
+              <p className="sr-only">Navigation</p>
+              <IconNavLinks navItems={navItems} isActive={isActive} />
+            </div>
+            <div className="flex w-full flex-col items-center gap-3 border-t border-sidebar-border py-4">
+              <div
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-sidebar-primary/20 to-sidebar-primary/5 ring-1 ring-sidebar-primary/20"
+                title={displayName}
+              >
+                <span className="text-[10px] font-semibold text-sidebar-primary">{initials}</span>
+              </div>
+              <form action={logout}>
+                <button
+                  type="submit"
+                  aria-label="Log out"
+                  title="Log out"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-sidebar-accent-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-all duration-200"
+                >
+                  <LogOut className="h-4 w-4" />
                 </button>
               </form>
             </div>

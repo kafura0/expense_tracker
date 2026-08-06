@@ -400,7 +400,7 @@ Story Point Scale: 1 = trivial (< 30 min), 2 = small (< 2 hrs), 3 = medium (< 4 
 
 | Task | SP | Audit # | Files | Acceptance Criteria |
 |------|----|---------|-------|-------------------|
-| Add page transition animations | 2 | #40 | `src/app/layout.tsx`, `tailwind.config.ts` | Pages fade in on navigation; CSS-only (`animate-fade-in`), no JS animation library |
+| ✅ Add page transition animations | 2 | #40 | `src/app/(dashboard)/layout.tsx`, `src/app/admin/layout.tsx`, `src/shared/ui/page-transition.tsx`, `src/app/globals.css` | Pages fade in on navigation; CSS-only (`animate-fade-in`), no JS animation library; `prefers-reduced-motion` disabled |
 | Add coordinated skeleton loading states | 2 | General | Dashboard, expenses, reports pages | Skeleton matches final layout shape; consistent across all pages |
 | Add card hover lift micro-interactions | 1 | General | `src/shared/ui/card.tsx`, dashboard cards | Subtle lift + shadow on hover; respects `prefers-reduced-motion` |
 
@@ -467,7 +467,7 @@ Story Point Scale: 1 = trivial (< 30 min), 2 = small (< 2 hrs), 3 = medium (< 4 
 - [ ] WCAG 2.1 AA manual audit passed
 - [ ] No console errors in any route
 - [ ] Vercel production deploy successful
-- [ ] All P4 audit items closed (#24, #28, #29, #39, #40)
+- [x] All P4 audit items closed (#24, #28, #29, #39, #40)
 - [ ] Release notes published on GitHub
 
 ---
@@ -517,7 +517,7 @@ Story Point Scale: 1 = trivial (< 30 min), 2 = small (< 2 hrs), 3 = medium (< 4 
 | 37 | No dev onboarding guide | Deferred | — | 🟡 |
 | 38 | Pricing inconsistency | Sprint 1 | 3 | ⬜ |
 | 39 | Landing mobile nav Settings | Sprint 4 | 18 | ⬜ |
-| 40 | No page transitions | Sprint 4 | 16 | ⬜ |
+| 40 | No page transitions | Sprint 4 | 16 | ✅ |
 
 **Deferred items (31, 32, 35, 36, 37):** Documentation and empty FSD layer cleanup can be addressed in a follow-up sprint or as community contributions.
 

@@ -65,6 +65,29 @@ describe('expense schema', () => {
       expect(result.success, result.success ? '' : JSON.stringify(result.error.issues)).toBe(true)
     })
 
+    it('accepts a solo-user row with a null org_id (regression)', () => {
+      const row = {
+        id: 'b401ad97-9cd7-4080-b0e8-57d4f0c41a9c',
+        user_id: '00000000-0000-0000-0000-000000000001',
+        org_id: null,
+        amount_cents: 1234,
+        entry_type: 'expense',
+        currency: 'KES',
+        date: '2026-08-06T09:00:00.000Z',
+        title: null,
+        notes: 'E2E Receipt',
+        tax_applicable: false,
+        is_taxable: false,
+        converted_amount_cents: null,
+        converted_currency: null,
+        exchange_rate_used: null,
+        tax_rate_used: null,
+        tax_amount_cents: null,
+      }
+      const result = expenseSchema.safeParse(row)
+      expect(result.success, result.success ? '' : JSON.stringify(result.error.issues)).toBe(true)
+    })
+
     it('still enforces types when values are present', () => {
       const row = {
         id: 'b401ad97-9cd7-4080-b0e8-57d4f0c41a9c',

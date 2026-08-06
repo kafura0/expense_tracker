@@ -72,6 +72,87 @@ function SortButton({
   )
 }
 
+interface ExpenseRowActionsProps {
+  expense: ExpenseWithCategory
+  onEdit: (expense: ExpenseWithCategory) => void
+  onDeleteClick: (expense: ExpenseWithCategory) => void
+  onDuplicate?: (id: string) => void
+  onAttachments?: (expense: ExpenseWithCategory) => void
+  buttonClass?: string
+  iconClass?: string
+}
+
+function ExpenseRowActions({
+  expense,
+  onEdit,
+  onDeleteClick,
+  onDuplicate,
+  onAttachments,
+  buttonClass = 'h-9 w-9',
+  iconClass = 'h-4 w-4',
+}: ExpenseRowActionsProps) {
+  return (
+    <>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn('text-muted-foreground hover:text-foreground', buttonClass)}
+            onClick={() => onAttachments?.(expense)}
+            aria-label={`Receipts for ${expense.notes}`}
+          >
+            <Paperclip className={iconClass} />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Receipts</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn('text-muted-foreground hover:text-foreground', buttonClass)}
+            onClick={() => onEdit(expense)}
+            aria-label={`Edit ${expense.notes}`}
+          >
+            <Pencil className={iconClass} />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Edit</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn('text-muted-foreground hover:text-foreground', buttonClass)}
+            onClick={() => onDuplicate?.(expense.id)}
+            aria-label={`Duplicate ${expense.notes}`}
+          >
+            <Copy className={iconClass} />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Duplicate</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn('text-muted-foreground hover:text-destructive', buttonClass)}
+            onClick={() => onDeleteClick(expense)}
+            aria-label={`Delete ${expense.notes}`}
+          >
+            <Trash2 className={iconClass} />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Delete</TooltipContent>
+      </Tooltip>
+    </>
+  )
+}
+
 function TableSkeleton() {
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -148,10 +229,22 @@ export function ExpenseTable({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="border-border bg-muted/30 hover:bg-muted/30">
+      {data.length === 0 ? (
+        <div className="rounded-xl border border-border bg-card">
+          <div className="flex h-48 flex-col items-center justify-center text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/50 text-muted-foreground">
+              <ReceiptText className="h-8 w-8" />
+            </div>
+            <p className="text-base font-semibold text-foreground mb-1">No expenses found</p>
+            <p className="text-sm text-muted-foreground">Try adjusting your filters or add a new expense.</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="hidden md:block rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border bg-muted/30 hover:bg-muted/30">
               <TableHead className="w-[100px] py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Type
               </TableHead>
@@ -178,20 +271,7 @@ export function ExpenseTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="h-48">
-                  <div className="flex flex-col items-center justify-center text-center">
-                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/50 text-muted-foreground">
-                      <ReceiptText className="h-8 w-8" />
-                    </div>
-                    <p className="text-base font-semibold text-foreground mb-1">No expenses found</p>
-                    <p className="text-sm text-muted-foreground">Try adjusting your filters or add a new expense.</p>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : (
-              data.map((expense, index) => (
+            {data.map((expense, index) => (
                 <TableRow
                   key={expense.id}
                   onMouseEnter={() => setHoveredRow(expense.id)}
@@ -258,76 +338,89 @@ export function ExpenseTable({
                   <TableCell className="py-3.5">
                     <div className={cn(
                       "flex items-center gap-0.5 transition-opacity duration-150",
-                      hoveredRow === expense.id ? "opacity-100" : "opacity-0"
+                      hoveredRow === expense.id ? "opacity-100" : "opacity-0 pointer-coarse:opacity-100"
                     )}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                            onClick={() => onAttachments?.(expense)}
-                            aria-label={`Receipts for ${expense.notes}`}
-                          >
-                            <Paperclip className="h-3.5 w-3.5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Receipts</TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                            onClick={() => onEdit(expense)}
-                            aria-label={`Edit ${expense.notes}`}
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Edit</TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                            onClick={() => onDuplicate?.(expense.id)}
-                            aria-label={`Duplicate ${expense.notes}`}
-                          >
-                            <Copy className="h-3.5 w-3.5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Duplicate</TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                            onClick={() => handleDeleteClick(expense)}
-                            aria-label={`Delete ${expense.notes}`}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Delete</TooltipContent>
-                      </Tooltip>
+                      <ExpenseRowActions
+                        expense={expense}
+                        onEdit={onEdit}
+                        onDeleteClick={handleDeleteClick}
+                        onDuplicate={onDuplicate}
+                        onAttachments={onAttachments}
+                        buttonClass="h-8 w-8"
+                        iconClass="h-3.5 w-3.5"
+                      />
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
+              ))}
           </TableBody>
         </Table>
       </div>
+          <div className="md:hidden space-y-3">
+            {data.map((expense) => (
+              <div key={expense.id} className="rounded-xl border border-border bg-card shadow-sm p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Badge
+                      variant={expense.entry_type === 'income' ? 'success' : 'secondary'}
+                      className="font-medium shrink-0"
+                    >
+                      {expense.entry_type === 'income' ? 'Income' : 'Expense'}
+                    </Badge>
+                    {expense.tax_applicable && (
+                      <Badge variant="info" className="font-medium shrink-0">VAT</Badge>
+                    )}
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <span className={cn(
+                      "text-base font-bold tabular-nums",
+                      expense.entry_type === 'income' ? "text-emerald-500" : "text-foreground"
+                    )}>
+                      {expense.entry_type === 'income' ? '+' : ''}{formatAmount(expense.amount_cents, expense.currency)}
+                    </span>
+                  </div>
+                </div>
+                <p className="mt-2 truncate text-sm text-muted-foreground">{expense.notes || '—'}</p>
+                <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                  <span className="whitespace-nowrap">
+                    {formatDate(expense.date, 'MMM d, yyyy')} · {formatDate(expense.date, 'h:mm a')}
+                  </span>
+                  {expense.categories ? (
+                    <Badge
+                      variant="secondary"
+                      className="font-medium border"
+                      style={{
+                        backgroundColor: expense.categories.color ? `${expense.categories.color}15` : undefined,
+                        borderColor: expense.categories.color ? `${expense.categories.color}30` : undefined,
+                        color: expense.categories.color || undefined,
+                      }}
+                    >
+                      {expense.categories.name}
+                    </Badge>
+                  ) : (
+                    <span>Uncategorized</span>
+                  )}
+                </div>
+                <div className="mt-3 flex items-center justify-end border-t border-border pt-2">
+                  <ExpenseRowActions
+                    expense={expense}
+                    onEdit={onEdit}
+                    onDeleteClick={handleDeleteClick}
+                    onDuplicate={onDuplicate}
+                    onAttachments={onAttachments}
+                    buttonClass="h-10 w-10"
+                    iconClass="h-4 w-4"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       {total > 0 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="hidden sm:block text-sm text-muted-foreground">
             Showing <span className="font-medium text-foreground">{startRow}</span> to{' '}
             <span className="font-medium text-foreground">{endRow}</span> of{' '}
             <span className="font-medium text-foreground">{total}</span> expenses
@@ -336,9 +429,10 @@ export function ExpenseTable({
             <Button
               variant="outline"
               size="icon"
-              className="h-8 w-8"
+              className="h-9 w-9"
               onClick={() => onPageChange(page - 1)}
               disabled={page === 1}
+              aria-label="Previous page"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -364,7 +458,7 @@ export function ExpenseTable({
                     key={p}
                     variant={p === page ? 'default' : 'ghost'}
                     size="icon"
-                    className={cn("h-8 w-8 text-sm", p === page && "shadow-sm")}
+                    className={cn("h-9 w-9 text-sm", p === page && "shadow-sm")}
                     onClick={() => onPageChange(p as number)}
                   >
                     {p}
@@ -374,9 +468,10 @@ export function ExpenseTable({
             <Button
               variant="outline"
               size="icon"
-              className="h-8 w-8"
+              className="h-9 w-9"
               onClick={() => onPageChange(page + 1)}
               disabled={page === totalPages}
+              aria-label="Next page"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>

@@ -310,7 +310,7 @@ export default function ReportsPage() {
           <h1 className="font-headline text-3xl font-bold tracking-tight">Reports</h1>
           <p className="text-muted-foreground">Analyze your spending patterns</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="flex rounded-lg border border-border bg-muted/50 p-1">
             {(['week', 'month', 'quarter', 'year'] as const).map((r) => (
               <button
@@ -326,14 +326,16 @@ export default function ReportsPage() {
               </button>
             ))}
           </div>
-          <Button variant="outline" onClick={() => handleExport('csv')} disabled={isExporting}>
-            <Download className="mr-2 h-4 w-4" />
-            {isExporting ? 'Exporting...' : 'CSV'}
-          </Button>
-          <Button variant="outline" onClick={() => handleExport('pdf')} disabled={isExporting}>
-            <Download className="mr-2 h-4 w-4" />
-            PDF
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => handleExport('csv')} disabled={isExporting}>
+              <Download className="mr-2 h-4 w-4" />
+              {isExporting ? 'Exporting...' : 'CSV'}
+            </Button>
+            <Button variant="outline" onClick={() => handleExport('pdf')} disabled={isExporting}>
+              <Download className="mr-2 h-4 w-4" />
+              PDF
+            </Button>
+          </div>
         </div>
       </div>
 

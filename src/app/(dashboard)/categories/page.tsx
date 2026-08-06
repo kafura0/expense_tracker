@@ -447,7 +447,7 @@ function AddCategoryModal({
                   key={c}
                   type="button"
                   onClick={() => setColor(c)}
-                  className={`h-8 w-8 rounded-full border-2 transition-all ${color === c ? 'scale-110 border-foreground' : 'border-transparent'}`}
+                  className={`h-10 w-10 rounded-full border-2 transition-all ${color === c ? 'scale-110 border-foreground' : 'border-transparent'}`}
                   style={{ backgroundColor: c }}
                   aria-label={`Color ${c}`}
                 />

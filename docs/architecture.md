@@ -629,7 +629,7 @@ Extracted from the Premium Audit Report (`PREMIUM_AUDIT.md`).
 | TD-037 | No developer onboarding guide | Global | Open |
 | TD-038 | Pricing inconsistency (landing vs onboarding) | `page.tsx` + onboarding | Open |
 | TD-039 | Landing mobile bottom nav links to Settings→/login | Landing page | Open |
-| TD-040 | No page transitions | All pages | Open |
+| TD-040 | No page transitions | `src/shared/ui/page-transition.tsx` (pathname-keyed `animate-fade-in`, `prefers-reduced-motion` respected) | Done |
 
 ---
 

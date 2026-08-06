@@ -1,6 +1,7 @@
 import { createClient } from '@/shared/lib/supabase/server'
 import { getActiveOrgId } from '@/shared/lib/org-context'
 import { escapeLikePattern } from '@/shared/lib/like-escape'
+import { assertCategoryBudget } from '@/entities/budget/enforcement'
 import { expenseSchema, type Expense, type ExpenseInsert, type ExpenseUpdate } from './schema'
 import type { ExpenseListParams, ExpenseListResponse } from './types'
 
@@ -207,6 +208,19 @@ export async function createExpense(expense: ExpenseInsert): Promise<Expense> {
 
   const orgId = await getOrgId()
 
+  // Enforce category budgets before persisting (throws BudgetExceededError).
+  await assertCategoryBudget(supabase, {
+    userId: user.id,
+    orgId,
+    categoryId: expense.category_id ?? null,
+    amountCents: expense.amount_cents,
+    currency: expense.currency,
+    entryType: expense.entry_type ?? 'expense',
+    date: new Date(expense.date).toISOString(),
+    convertedAmountCents: expense.converted_amount_cents,
+    convertedCurrency: expense.converted_currency,
+  })
+
   const { data, error } = await supabase
     .from('expenses')
     .insert({
@@ -245,6 +259,24 @@ export async function updateExpense(id: string, expense: ExpenseUpdate): Promise
   if (!user) throw new Error('Not authenticated')
 
   const orgId = await getOrgId()
+
+  // Load the current row so the budget guard can exclude it from the month's
+  // spent total and use effective values for any fields not being changed.
+  const existing = await findExpenseById(id)
+  if (!existing) throw new Error('Expense not found')
+
+  await assertCategoryBudget(supabase, {
+    userId: user.id,
+    orgId,
+    categoryId: (expense.category_id ?? existing.category_id) ?? null,
+    amountCents: expense.amount_cents ?? existing.amount_cents,
+    currency: expense.currency ?? existing.currency,
+    entryType: expense.entry_type ?? existing.entry_type,
+    date: new Date(expense.date ?? existing.date).toISOString(),
+    convertedAmountCents: expense.converted_amount_cents,
+    convertedCurrency: expense.converted_currency,
+    excludeExpenseId: id,
+  })
 
   let query = supabase
     .from('expenses')

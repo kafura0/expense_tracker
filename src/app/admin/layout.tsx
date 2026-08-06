@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { QueryProvider } from '../providers'
+import { PageTransition } from '@/shared/ui/page-transition'
 
 export const metadata: Metadata = {
   title: { default: 'Admin', template: '%s | Ledgerly' },
@@ -11,5 +12,9 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  return <QueryProvider>{children}</QueryProvider>
+  return (
+    <QueryProvider>
+      <PageTransition>{children}</PageTransition>
+    </QueryProvider>
+  )
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Providers } from '../providers'
 import { DashboardShell } from './dashboard-shell'
+import { PageTransition } from '@/shared/ui/page-transition'
 
 export const metadata: Metadata = {
   title: { default: 'Dashboard', template: '%s | Ledgerly' },
@@ -14,7 +15,9 @@ export default function DashboardLayout({
 }) {
   return (
     <Providers>
-      <DashboardShell>{children}</DashboardShell>
+      <DashboardShell>
+        <PageTransition>{children}</PageTransition>
+      </DashboardShell>
     </Providers>
   )
 }
