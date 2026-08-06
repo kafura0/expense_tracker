@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { expenseFormSchema, type ExpenseInsert } from '@/entities/expense/schema'
@@ -9,6 +9,13 @@ import type { ExpenseWithCategory } from '@/entities/expense/types'
 import { createExpense, updateExpense } from './actions'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select'
 import { useToast } from '@/shared/ui/toast'
 import { createClient } from '@/shared/lib/supabase/client'
 import { useDashboardScope, applyCategoryScope } from '@/features/dashboard/scope'
@@ -65,6 +72,7 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
   const {
     register,
     handleSubmit,
+    control,
     watch,
     setValue,
     formState: { errors, isSubmitting },
@@ -255,19 +263,24 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
           <label htmlFor="currency" className="text-sm font-semibold text-foreground">
             Currency
           </label>
-          <div className="relative">
-            <select
-              id="currency"
-              {...register('currency')}
-              className="flex h-10 w-full rounded-lg border border-input bg-muted/50 px-3 py-2 text-sm text-foreground transition-all duration-200 hover:border-muted-foreground/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:border-ring appearance-none"
-            >
-              {CURRENCIES.map((currency) => (
-                <option key={currency} value={currency}>
-                  {currency}
-                </option>
-              ))}
-            </select>
-          </div>
+          <Controller
+            name="currency"
+            control={control}
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger id="currency" aria-label="Currency" className="w-full bg-muted/50">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CURRENCIES.map((currency) => (
+                    <SelectItem key={currency} value={currency}>
+                      {currency}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </div>
       </div>
 
@@ -295,26 +308,26 @@ export function ExpenseForm({ expense, onSuccess, onCancel }: ExpenseFormProps) 
             <Tag className="h-3.5 w-3.5 text-muted-foreground" />
             Category
           </label>
-          <div className="relative">
-            <select
-              id="category_id"
-              value={editingCategoryMissing ? EXISTING_CATEGORY_VALUE : (categoryId ?? '')}
-              onChange={(e) => handleCategoryChange(e.target.value)}
-              className="flex h-10 w-full rounded-lg border border-input bg-muted/50 px-3 py-2 text-sm text-foreground transition-all duration-200 hover:border-muted-foreground/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:border-ring appearance-none"
-            >
-              <option value="">{categoriesLoading ? 'Loading categories…' : 'Select category'}</option>
+          <Select
+            value={editingCategoryMissing ? EXISTING_CATEGORY_VALUE : (categoryId ?? '')}
+            onValueChange={handleCategoryChange}
+          >
+            <SelectTrigger id="category_id" aria-label="Category" className="w-full bg-muted/50">
+              <SelectValue placeholder={categoriesLoading ? 'Loading categories…' : 'Select category'} />
+            </SelectTrigger>
+            <SelectContent>
               {(categories || []).map((category) => (
-                <option key={category.id} value={category.id}>
+                <SelectItem key={category.id} value={category.id}>
                   {category.name}
-                </option>
+                </SelectItem>
               ))}
               {editingCategoryMissing && (
-                <option value={EXISTING_CATEGORY_VALUE}>
+                <SelectItem value={EXISTING_CATEGORY_VALUE}>
                   {expense?.categories?.name || 'Existing category'}
-                </option>
+                </SelectItem>
               )}
-            </select>
-          </div>
+            </SelectContent>
+          </Select>
           {selectedCategory && (
             <p className="text-xs text-muted-foreground leading-relaxed pt-0.5">
               {selectedCategory.name}

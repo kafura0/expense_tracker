@@ -362,31 +362,18 @@ export default function OnboardingPage() {
             <Logo size={40} className="block mb-4" />
             <p className="text-muted-foreground text-sm leading-relaxed mb-6">The premium expense intelligence platform for modern finance teams.</p>
             <div className="flex gap-3">
-              <a className="w-10 h-10 rounded-full border border-border flex items-center justify-center hover:bg-primary/10 hover:border-primary transition-all" href="#">
-                <span className="material-symbols-outlined text-sm">public</span>
-              </a>
-              <a className="w-10 h-10 rounded-full border border-border flex items-center justify-center hover:bg-primary/10 hover:border-primary transition-all" href="#">
-                <span className="material-symbols-outlined text-sm">share</span>
+              <a
+                href="https://github.com/kafura0/expense_tracker"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Ledgerly on GitHub"
+                className="w-10 h-10 rounded-full border border-border flex items-center justify-center hover:bg-primary/10 hover:border-primary transition-all"
+              >
+                <span className="material-symbols-outlined text-sm">code</span>
               </a>
             </div>
           </div>
-          <div className="md:col-span-2">
-            <h4 className="text-xs uppercase tracking-widest font-medium mb-4">Product</h4>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><a className="hover:text-primary transition-colors" href="#">Changelog</a></li>
-              <li><a className="hover:text-primary transition-colors" href="#">Documentation</a></li>
-              <li><a className="hover:text-primary transition-colors" href="#">Integrations</a></li>
-            </ul>
-          </div>
-          <div className="md:col-span-2">
-            <h4 className="text-xs uppercase tracking-widest font-medium mb-4">Company</h4>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><a className="hover:text-primary transition-colors" href="#">About</a></li>
-              <li><a className="hover:text-primary transition-colors" href="#">Careers</a></li>
-              <li><a className="hover:text-primary transition-colors" href="#">Legal</a></li>
-            </ul>
-          </div>
-          <div className="md:col-span-4">
+          <div className="md:col-span-4 md:col-start-9">
             <h4 className="text-xs uppercase tracking-widest font-medium mb-4">Subscribe to Updates</h4>
             <div className="flex gap-2">
               <input className="bg-card border border-border rounded-lg px-4 py-2 flex-1 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none placeholder:text-muted-foreground" placeholder="email@example.com" type="email" />
@@ -396,11 +383,6 @@ export default function OnboardingPage() {
         </div>
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center border-t border-border/50 pt-6">
           <p className="text-muted-foreground text-xs">&copy; 2026 Ledgerly. All rights reserved.</p>
-          <div className="flex gap-8 mt-4 md:mt-0">
-            <a className="text-muted-foreground text-xs hover:text-foreground" href="#">Security</a>
-            <a className="text-muted-foreground text-xs hover:text-foreground" href="#">Privacy Policy</a>
-            <a className="text-muted-foreground text-xs hover:text-foreground" href="#">Terms</a>
-          </div>
         </div>
       </footer>
     </div>

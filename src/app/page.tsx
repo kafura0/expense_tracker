@@ -210,6 +210,12 @@ export default function LandingPage() {
 
   return (
     <div className="bg-background text-foreground antialiased selection:bg-primary/30 selection:text-primary-foreground text-center">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground"
+      >
+        Skip to content
+      </a>
       {/* Header */}
       <header className="flex justify-between items-center w-full px-2 md:px-10 h-14 md:h-16 sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border text-left">
         <Link href="/" className="inline-flex items-center gap-2.5">
@@ -226,7 +232,7 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <main className="relative overflow-hidden pb-24 md:pb-0">
+      <main id="main-content" className="relative overflow-hidden pb-24 md:pb-0 outline-none">
         {/* Hero */}
         <section className="hero-gradient relative pt-16 pb-12 md:pt-32 md:pb-24 px-2 md:px-10 flex flex-col items-center overflow-hidden">
           <div className="absolute top-20 left-[10%] w-72 h-72 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
@@ -499,7 +505,7 @@ export default function LandingPage() {
                     ))}
                   </ul>
                   <Link
-                    href={plan.featured ? '/signup' : '#'}
+                    href={plan.featured ? '/signup' : plan.cta === 'Contact Sales' ? '/request-access' : '/signup'}
                     className={`w-full py-3 rounded-xl font-medium transition-all text-center block ${
                       plan.featured
                         ? 'bg-primary text-primary-foreground hover:brightness-110'
@@ -534,7 +540,7 @@ export default function LandingPage() {
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
-                href="#"
+                href="/request-access"
                 className="border border-border text-foreground font-medium px-6 py-3 rounded-xl text-sm md:text-body-lg hover:bg-muted/50 transition-all inline-flex items-center justify-center gap-2 w-full sm:w-auto"
               >
                 Contact Sales
@@ -553,16 +559,17 @@ export default function LandingPage() {
               The premium operating system for modern financial management.
             </p>
             <div className="flex gap-2">
-              {['M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z',
-                'M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4|M9 18c-4.51 2-5-2-7-2',
-                'M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z|M2 9h2v12H2z|M4 2a2 2 0 1 1 0 4 2 2 0 0 1 0-4z',
-              ].map((d, i) => (
-                <a key={i} href="#" className="w-9 h-9 rounded-full border border-border flex items-center justify-center hover:bg-primary/10 hover:border-primary transition-all">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
-                    <path d={d} />
-                  </svg>
-                </a>
-              ))}
+              <a
+                href="https://github.com/kafura0/expense_tracker"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Ledgerly on GitHub"
+                className="w-9 h-9 rounded-full border border-border flex items-center justify-center hover:bg-primary/10 hover:border-primary transition-all"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
+                  <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
+                </svg>
+              </a>
             </div>
           </div>
           <div className="flex flex-col min-w-[120px]">
@@ -570,10 +577,8 @@ export default function LandingPage() {
               Product
             </h4>
             <ul className="space-y-2 text-muted-foreground font-body-md text-sm">
-              <li><a href="#" className="hover:text-primary transition-colors">Features</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Pricing</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Changelog</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Documentation</a></li>
+              <li><Link href="/#features" className="hover:text-primary transition-colors">Features</Link></li>
+              <li><Link href="/#pricing" className="hover:text-primary transition-colors">Pricing</Link></li>
             </ul>
           </div>
           <div className="flex flex-col min-w-[120px]">
@@ -581,10 +586,7 @@ export default function LandingPage() {
               Company
             </h4>
             <ul className="space-y-2 text-muted-foreground font-body-md text-sm">
-              <li><a href="#" className="hover:text-primary transition-colors">About</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Careers</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Blog</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Legal</a></li>
+              <li><Link href="/request-access" className="hover:text-primary transition-colors">Contact Sales</Link></li>
             </ul>
           </div>
           <div className="flex flex-col w-full md:w-auto md:min-w-[200px]">
@@ -610,11 +612,6 @@ export default function LandingPage() {
           <p className="text-muted-foreground font-label-sm text-xs md:text-label-sm text-center">
             &copy; {currentYear} Ledgerly Inc. All rights reserved.
           </p>
-          <div className="flex gap-6">
-            <a href="#" className="text-muted-foreground font-label-sm text-xs md:text-label-sm hover:text-foreground transition-colors">Security</a>
-            <a href="#" className="text-muted-foreground font-label-sm text-xs md:text-label-sm hover:text-foreground transition-colors">Privacy Policy</a>
-            <a href="#" className="text-muted-foreground font-label-sm text-xs md:text-label-sm hover:text-foreground transition-colors">Terms</a>
-          </div>
         </div>
       </footer>
 

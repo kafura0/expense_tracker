@@ -10,6 +10,13 @@ import { Badge } from '@/shared/ui/badge'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { useToast } from '@/shared/ui/toast'
 import { useTheme } from '@/shared/ui/theme-provider'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select'
 import { Upload, Save, User, Globe, Percent, AlertTriangle, Trash2, Camera, Undo2 } from 'lucide-react'
 
 const CURRENCIES = [
@@ -315,33 +322,41 @@ function SettingsForm({ settings }: { settings: UserSettingsData }) {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Theme</label>
-            <select
+            <Select
               value={formState.theme}
-              onChange={(e) => updateField('theme', e.target.value as 'light' | 'dark' | 'system')}
-              className="flex h-10 w-full rounded-lg border border-input bg-muted/50 px-3 py-2 text-sm text-foreground transition-all duration-200 hover:border-muted-foreground/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:border-ring"
+              onValueChange={(value) => updateField('theme', value as 'light' | 'dark' | 'system')}
             >
-              <option value="dark">Dark</option>
-              <option value="light">Light</option>
-              <option value="system">System</option>
-            </select>
+              <SelectTrigger className="w-full bg-muted/50">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="dark">Dark</SelectItem>
+                <SelectItem value="light">Light</SelectItem>
+                <SelectItem value="system">System</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Base Currency</label>
             <div className="relative">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-lg">
+              <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-lg">
                 {currentCurrency.flag}
               </div>
-              <select
+              <Select
                 value={formState.baseCurrency}
-                onChange={(e) => updateField('baseCurrency', e.target.value)}
-                className="flex h-10 w-full rounded-lg border border-input bg-muted/50 pl-10 pr-3 py-2 text-sm text-foreground transition-all duration-200 hover:border-muted-foreground/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:border-ring appearance-none"
+                onValueChange={(value) => updateField('baseCurrency', value)}
               >
-                {CURRENCIES.map((currency) => (
-                  <option key={currency.code} value={currency.code}>
-                    {currency.flag}  {currency.code} - {currency.name}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="w-full bg-muted/50 pl-10">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CURRENCIES.map((currency) => (
+                    <SelectItem key={currency.code} value={currency.code}>
+                      {currency.flag}  {currency.code} - {currency.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <p className="text-xs text-muted-foreground">
               Dashboard totals will be converted to this currency

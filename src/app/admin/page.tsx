@@ -37,6 +37,15 @@ import {
   Inbox, CreditCard, ScrollText, CheckCircle2, XCircle, Clock,
 } from 'lucide-react'
 import { formatMoneyCompact } from '@/shared/lib/currency'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select'
+
+const ALL_FILTER = '__all__'
 
 type Tab = 'users' | 'clients' | 'requests' | 'plans' | 'audit' | 'invites' | 'announcements' | 'messages'
 
@@ -413,15 +422,19 @@ function UsersTab() {
                   {chip.label}
                 </button>
               ))}
-              <select
+              <Select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-                className="h-8 rounded-lg border border-border bg-muted px-2 text-xs text-foreground"
+                onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}
               >
-                <option value="all">All statuses</option>
-                <option value="active">Active</option>
-                <option value="suspended">Suspended</option>
-              </select>
+                <SelectTrigger className="h-8 rounded-lg border border-border bg-muted px-2 text-xs text-foreground">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All statuses</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="suspended">Suspended</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardContent>
@@ -721,22 +734,26 @@ function ClientsTab() {
                               {org.plan_price != null && (
                                 <p className="text-xs text-muted-foreground">${Number(org.plan_price).toFixed(2)}/mo</p>
                               )}
-                              <select
-                                value={org.plan_id || ''}
-                                onChange={(e) => {
-                                  const planId = e.target.value
+                              <Select
+                                value={org.plan_id || ALL_FILTER}
+                                onValueChange={(value) => {
+                                  const planId = value === ALL_FILTER ? '' : value
                                   if (planId && planId !== org.plan_id) {
                                     planMutation.mutate({ orgId: org.id, planId })
                                   }
                                 }}
                                 disabled={planMutation.isPending}
-                                className="mt-1 w-full h-8 rounded-lg border border-border bg-muted px-2 text-xs text-foreground"
                               >
-                                <option value="">Change plan…</option>
-                                {(plansQuery.data || []).map((plan) => (
-                                  <option key={plan.id} value={plan.id}>{plan.name}</option>
-                                ))}
-                              </select>
+                                <SelectTrigger className="mt-1 w-full h-8 rounded-lg border border-border bg-muted px-2 text-xs text-foreground">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value={ALL_FILTER}>Change plan…</SelectItem>
+                                  {(plansQuery.data || []).map((plan) => (
+                                    <SelectItem key={plan.id} value={plan.id}>{plan.name}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
                             <div className="space-y-1">
                               <p className="text-xs text-muted-foreground">Members</p>
@@ -955,47 +972,59 @@ function AnnouncementsTab() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Type</label>
-              <select
+              <Select
                 value={category}
-                onChange={(e) => setCategory(e.target.value as typeof category)}
-                className="flex w-full h-10 rounded-lg border border-input bg-muted/50 px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                onValueChange={(v) => setCategory(v as typeof category)}
               >
-                <option value="announcement">Announcement</option>
-                <option value="offer">Offer</option>
-                <option value="maintenance">Maintenance</option>
-              </select>
+                <SelectTrigger className="w-full h-10 rounded-lg border border-input bg-muted/50 px-3 text-sm text-foreground">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="announcement">Announcement</SelectItem>
+                  <SelectItem value="offer">Offer</SelectItem>
+                  <SelectItem value="maintenance">Maintenance</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Audience</label>
-              <select
+              <Select
                 value={audience}
-                onChange={(e) => setAudience(e.target.value as typeof audience)}
-                className="flex w-full h-10 rounded-lg border border-input bg-muted/50 px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                onValueChange={(v) => setAudience(v as typeof audience)}
               >
-                <option value="everyone">Everyone</option>
-                <option value="orgs">All organizations</option>
-                <option value="solo">Solo users</option>
-                <option value="org">One organization</option>
-              </select>
+                <SelectTrigger className="w-full h-10 rounded-lg border border-input bg-muted/50 px-3 text-sm text-foreground">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="everyone">Everyone</SelectItem>
+                  <SelectItem value="orgs">All organizations</SelectItem>
+                  <SelectItem value="solo">Solo users</SelectItem>
+                  <SelectItem value="org">One organization</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             {audience === 'org' && (
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Organization</label>
-                <select
-                  value={targetOrgId}
-                  onChange={(e) => setTargetOrgId(e.target.value)}
-                  className="flex w-full h-10 rounded-lg border border-input bg-muted/50 px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                <Select
+                  value={targetOrgId || ALL_FILTER}
+                  onValueChange={(v) => setTargetOrgId(v === ALL_FILTER ? '' : v)}
                 >
-                  <option value="">Select an organization...</option>
-                  {orgs.map((org) => (
-                    <option key={org.id} value={org.id}>
-                      {org.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full h-10 rounded-lg border border-input bg-muted/50 px-3 text-sm text-foreground">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ALL_FILTER}>Select an organization...</SelectItem>
+                    {orgs.map((org) => (
+                      <SelectItem key={org.id} value={org.id}>
+                        {org.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
           </div>
@@ -1146,25 +1175,33 @@ function MessagesTab() {
         <CardContent className="p-4">
           <div className="flex items-center gap-3 flex-wrap">
             <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="bg-muted border border-border rounded-lg px-3 py-1.5 text-sm text-foreground"
+            <Select
+              value={typeFilter || ALL_FILTER}
+              onValueChange={(v) => setTypeFilter(v === ALL_FILTER ? '' : v)}
             >
-              <option value="">All types</option>
-              <option value="support">Support tickets</option>
-              <option value="announcement">Announcements</option>
-            </select>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-muted border border-border rounded-lg px-3 py-1.5 text-sm text-foreground"
+              <SelectTrigger className="bg-muted border border-border rounded-lg px-3 text-sm text-foreground">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_FILTER}>All types</SelectItem>
+                <SelectItem value="support">Support tickets</SelectItem>
+                <SelectItem value="announcement">Announcements</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={statusFilter === '' ? ALL_FILTER : statusFilter}
+              onValueChange={(v) => setStatusFilter(v === ALL_FILTER ? '' : v)}
             >
-              <option value="">All statuses</option>
-              <option value="open">Open</option>
-              <option value="replied">Replied</option>
-              <option value="closed">Closed</option>
-            </select>
+              <SelectTrigger className="bg-muted border border-border rounded-lg px-3 text-sm text-foreground">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_FILTER}>All statuses</SelectItem>
+                <SelectItem value="open">Open</SelectItem>
+                <SelectItem value="replied">Replied</SelectItem>
+                <SelectItem value="closed">Closed</SelectItem>
+              </SelectContent>
+            </Select>
             <span className="text-xs text-muted-foreground ml-auto">
               {messages.length} message{messages.length !== 1 ? 's' : ''}
             </span>
@@ -1479,15 +1516,16 @@ function RequestsTab() {
             <div className="space-y-4 mt-4">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-foreground">Plan</label>
-                <select
-                  value={approvePlan}
-                  onChange={(e) => setApprovePlan(e.target.value)}
-                  className="flex w-full h-10 rounded-lg border border-input bg-muted/50 px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-                >
-                  {(plansQuery.data || []).map((plan) => (
-                    <option key={plan.id} value={plan.slug}>{plan.name}</option>
-                  ))}
-                </select>
+                <Select value={approvePlan} onValueChange={(v) => setApprovePlan(v)}>
+                  <SelectTrigger className="w-full h-10 rounded-lg border border-input bg-muted/50 px-3 text-sm text-foreground">
+                    <SelectValue placeholder="Select a plan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(plansQuery.data || []).map((plan) => (
+                      <SelectItem key={plan.id} value={plan.slug}>{plan.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <label className="flex items-center gap-2.5 text-sm text-foreground cursor-pointer">
                 <input
@@ -1816,40 +1854,48 @@ function AuditLogsTab() {
         <CardContent className="p-4">
           <div className="flex items-center gap-2 flex-wrap">
             <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
-            <select
-              value={actionFilter}
-              onChange={(e) => { setActionFilter(e.target.value); setPage(0) }}
-              className="bg-muted border border-border rounded-lg px-3 py-1.5 text-sm text-foreground"
+            <Select
+              value={actionFilter || ALL_FILTER}
+              onValueChange={(v) => { setActionFilter(v === ALL_FILTER ? '' : v); setPage(0) }}
             >
-              <option value="">All actions</option>
-              <option value="user.login">user.login</option>
-              <option value="expense.create">expense.create</option>
-              <option value="expense.update">expense.update</option>
-              <option value="expense.delete">expense.delete</option>
-              <option value="member.add">member.add</option>
-              <option value="member.remove">member.remove</option>
-              <option value="member.role_change">member.role_change</option>
-              <option value="invite.send">invite.send</option>
-              <option value="invite.revoke">invite.revoke</option>
-              <option value="invite.accept">invite.accept</option>
-              <option value="settings.update">settings.update</option>
-              <option value="org.profile_update">org.profile_update</option>
-              <option value="org.status_change">org.status_change</option>
-              <option value="request.approve">request.approve</option>
-              <option value="request.reject">request.reject</option>
-              <option value="plan.price_update">plan.price_update</option>
-              <option value="subscription.plan_change">subscription.plan_change</option>
-            </select>
-            <select
-              value={orgFilter}
-              onChange={(e) => { setOrgFilter(e.target.value); setPage(0) }}
-              className="bg-muted border border-border rounded-lg px-3 py-1.5 text-sm text-foreground"
+              <SelectTrigger className="bg-muted border border-border rounded-lg px-3 text-sm text-foreground">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_FILTER}>All actions</SelectItem>
+                <SelectItem value="user.login">user.login</SelectItem>
+                <SelectItem value="expense.create">expense.create</SelectItem>
+                <SelectItem value="expense.update">expense.update</SelectItem>
+                <SelectItem value="expense.delete">expense.delete</SelectItem>
+                <SelectItem value="member.add">member.add</SelectItem>
+                <SelectItem value="member.remove">member.remove</SelectItem>
+                <SelectItem value="member.role_change">member.role_change</SelectItem>
+                <SelectItem value="invite.send">invite.send</SelectItem>
+                <SelectItem value="invite.revoke">invite.revoke</SelectItem>
+                <SelectItem value="invite.accept">invite.accept</SelectItem>
+                <SelectItem value="settings.update">settings.update</SelectItem>
+                <SelectItem value="org.profile_update">org.profile_update</SelectItem>
+                <SelectItem value="org.status_change">org.status_change</SelectItem>
+                <SelectItem value="request.approve">request.approve</SelectItem>
+                <SelectItem value="request.reject">request.reject</SelectItem>
+                <SelectItem value="plan.price_update">plan.price_update</SelectItem>
+                <SelectItem value="subscription.plan_change">subscription.plan_change</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={orgFilter || ALL_FILTER}
+              onValueChange={(v) => { setOrgFilter(v === ALL_FILTER ? '' : v); setPage(0) }}
             >
-              <option value="">All organizations</option>
-              {(orgsQuery.data || []).map((org) => (
-                <option key={org.id} value={org.id}>{org.name}</option>
-              ))}
-            </select>
+              <SelectTrigger className="bg-muted border border-border rounded-lg px-3 text-sm text-foreground">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_FILTER}>All organizations</SelectItem>
+                {(orgsQuery.data || []).map((org) => (
+                  <SelectItem key={org.id} value={org.id}>{org.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <input
               type="date"
               value={from}

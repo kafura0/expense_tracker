@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { OrgProvider } from '@/shared/lib/org-provider'
+import { TooltipProvider } from '@/shared/ui/tooltip'
 
 export function QueryProvider({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -23,8 +24,10 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <QueryProvider>
-      <OrgProvider>{children}</OrgProvider>
-    </QueryProvider>
+    <TooltipProvider delayDuration={200}>
+      <QueryProvider>
+        <OrgProvider>{children}</OrgProvider>
+      </QueryProvider>
+    </TooltipProvider>
   )
 }

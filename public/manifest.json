@@ -22,6 +22,21 @@
     }
   ],
   "categories": ["finance", "productivity"],
-  "screenshots": [],
+  "screenshots": [
+    {
+      "src": "/screenshots/desktop.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Ledgerly landing page"
+    },
+    {
+      "src": "/screenshots/mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Ledgerly mobile view"
+    }
+  ],
   "prefer_related_applications": false
 }

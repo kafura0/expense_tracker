@@ -19,18 +19,21 @@
  * - This provider reads it via the `getAppContext` server action (authenticated, server-side)
  * - When the user switches org, this provider calls the switchOrg() server action
  * - The server action validates membership and sets the new httpOnly cookie, then
- *   we reload to refetch all data
+ *   we clear React Query caches, re-bootstrap the org context, and refresh the
+ *   server components — no full page reload.
  *
- * WHY FULL PAGE RELOAD ON SWITCH:
+ * WHY NO FULL PAGE RELOAD ON SWITCH:
  * Every component in the app has its own React Query cache keyed by org_id.
- * Rather than manually invalidating every query, we reload the page which:
- * 1. Clears all client-side state
- * 2. Re-renders the layout with the new org context
- * 3. All components refetch with the new org_id
- * This is the safest approach for data consistency across the entire app.
+ * `queryClient.clear()` drops every cached query so active observers refetch
+ * with the new org context, `fetchOrgs()` re-bootstraps activeOrg/orgs from the
+ * server-set cookie, and `router.refresh()` re-renders the server component
+ * tree. Together these give the same data-consistency guarantees as a reload
+ * without the white flash.
  */
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import { getAppContext, switchOrg as switchOrgAction } from '@/shared/lib/org-actions'
 
 /**
@@ -127,6 +130,8 @@ export function useOrg() {
  * - Users can only see orgs they are members of (org_members RLS policy)
  */
 export function OrgProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter()
+  const queryClient = useQueryClient()
   const [orgs, setOrgs] = useState<OrgInfo[]>([])
   const [activeOrg, setActiveOrg] = useState<OrgInfo | null>(null)
   const [loading, setLoading] = useState(true)
@@ -171,20 +176,29 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
    * 1. Call the switchOrg() server action — it authenticates the user and
    *    validates their membership in the target org
    * 2. If validation passes, the server sets the httpOnly cookie
-   * 3. Reload the page so all React Query caches are invalidated
+   * 3. Clear React Query caches (all org-scoped data refetches), re-bootstrap
+   *    the org context from the new cookie, and refresh server components
    *
    * No client-side cookie is ever written — the httpOnly cookie is the single
    * source of truth, and org membership is validated server-side only.
    */
-  const switchOrg = useCallback(async (orgId: string) => {
-    const result = await switchOrgAction(orgId)
-    if (result.error) {
-      throw new Error(result.error)
-    }
+  const switchOrg = useCallback(
+    async (orgId: string) => {
+      const result = await switchOrgAction(orgId)
+      if (result.error) {
+        throw new Error(result.error)
+      }
 
-    // Reload to refetch all data with the new org context
-    window.location.reload()
-  }, [])
+      // Drop every org-scoped React Query cache so all active observers refetch
+      // with the new org context (no full page reload / white flash).
+      queryClient.clear()
+      // Re-bootstrap activeOrg/orgs from the server-set httpOnly cookie.
+      await fetchOrgs()
+      // Re-render the server component tree (the cookie changed server-side).
+      router.refresh()
+    },
+    [queryClient, fetchOrgs, router]
+  )
 
   const refreshOrgs = useCallback(async () => {
     setLoading(true)

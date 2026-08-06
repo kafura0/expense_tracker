@@ -136,6 +136,12 @@ export function DashboardShell({
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground"
+      >
+        Skip to content
+      </a>
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex w-64 flex-col border-r border-sidebar-border bg-sidebar">
         <div className="flex items-center px-5 py-4 border-b border-sidebar-border">
@@ -205,6 +211,7 @@ export function DashboardShell({
               </div>
               <button
                 onClick={() => setMobileOpen(false)}
+                aria-label="Close navigation menu"
                 className="p-2 rounded-lg text-sidebar-accent-foreground hover:bg-sidebar-accent/50 transition-all duration-200"
               >
                 <X className="h-5 w-5" />
@@ -267,6 +274,7 @@ export function DashboardShell({
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileOpen(true)}
+              aria-label="Open navigation menu"
               className="p-2 -ml-2 rounded-lg text-foreground/70 hover:bg-accent hover:text-foreground transition-all duration-200"
             >
               <Menu className="h-5 w-5" />
@@ -280,7 +288,7 @@ export function DashboardShell({
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto p-4 md:p-6 outline-none">
           {children}
         </main>
       </div>

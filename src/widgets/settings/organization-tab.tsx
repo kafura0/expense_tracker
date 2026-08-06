@@ -13,6 +13,13 @@ import { Input } from '@/shared/ui/input'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { useToast } from '@/shared/ui/toast'
 import { ErrorState } from '@/shared/ui/error-state'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select'
 import { Building2, Save, Globe, Percent, Lock } from 'lucide-react'
 
 const CURRENCIES = [
@@ -25,8 +32,7 @@ const CURRENCIES = [
   { code: 'JPY', flag: '\u{1F1EF}\u{1F1F5}', name: 'Japanese Yen' },
 ]
 
-const selectClass =
-  'flex h-10 w-full rounded-lg border border-input bg-muted/50 px-3 py-2 text-sm text-foreground transition-all duration-200 hover:border-muted-foreground/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:border-ring'
+const INHERIT_CURRENCY_VALUE = '__inherit__'
 
 function ReadOnlyHint({ text }: { text: string }) {
   return (
@@ -222,19 +228,25 @@ function OrgSettingsForm({
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Default Currency</label>
-            <select
-              value={defaultCurrency}
-              onChange={(e) => setDefaultCurrency(e.target.value)}
+            <Select
+              value={defaultCurrency === '' ? INHERIT_CURRENCY_VALUE : defaultCurrency}
+              onValueChange={(value) =>
+                setDefaultCurrency(value === INHERIT_CURRENCY_VALUE ? '' : value)
+              }
               disabled={!isOrgAdmin}
-              className={selectClass}
             >
-              <option value="">Inherit from account</option>
-              {CURRENCIES.map((currency) => (
-                <option key={currency.code} value={currency.code}>
-                  {currency.flag}  {currency.code} - {currency.name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="w-full bg-muted/50">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={INHERIT_CURRENCY_VALUE}>Inherit from account</SelectItem>
+                {CURRENCIES.map((currency) => (
+                  <SelectItem key={currency.code} value={currency.code}>
+                    {currency.flag}  {currency.code} - {currency.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Default VAT Rate</label>
