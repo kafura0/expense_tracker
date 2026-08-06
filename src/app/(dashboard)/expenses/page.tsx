@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/shared/lib/supabase/client'
 import { useDashboardScope, applyExpenseScope } from '@/features/dashboard/scope'
@@ -8,6 +8,9 @@ import { sumInBaseCurrency } from '@/entities/expense/totals'
 import { fetchBaseRates } from '@/entities/exchange-rate/base-rates'
 import { ExpenseTable, TableSkeleton } from '@/features/expenses/expense-table'
 import { ExpenseFilters } from '@/features/expenses/expense-filters'
+import { RecurringSection } from '@/features/recurring/recurring-section'
+import { materializeDueRecurring } from '@/features/recurring/actions'
+import { AttachmentsDialog } from '@/features/attachments/attachments-dialog'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -27,10 +30,28 @@ export default function ExpensesPage() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingExpense, setEditingExpense] = useState<ExpenseWithCategory | null>(null)
+  const [attachmentExpense, setAttachmentExpense] = useState<ExpenseWithCategory | null>(null)
+  const materializedScopeRef = useRef<string | null>(null)
   const supabase = createClient()
   const queryClient = useQueryClient()
   const { toast } = useToast()
   const { scope, loading: scopeLoading } = useDashboardScope()
+
+  // Materialize due recurring templates once per resolved scope, then refresh
+  // both the expense list and the recurring section (next_due_date moved on).
+  useEffect(() => {
+    if (!scope) return
+    const key = `${scope.orgId ?? scope.userId}:${scope.persona}`
+    if (materializedScopeRef.current === key) return
+    materializedScopeRef.current = key
+
+    materializeDueRecurring().then((result) => {
+      if (result.data?.created) {
+        queryClient.invalidateQueries({ queryKey: ['expenses'] })
+        queryClient.invalidateQueries({ queryKey: ['recurring'] })
+      }
+    })
+  }, [scope, queryClient])
 
   const fetchExpenses = async (params: ExpenseListParams) => {
     if (!scope) throw new Error('No active scope')
@@ -170,6 +191,10 @@ export default function ExpensesPage() {
     setDialogOpen(true)
   }, [])
 
+  const handleAttachments = useCallback((expense: ExpenseWithCategory) => {
+    setAttachmentExpense(expense)
+  }, [])
+
   const handleDelete = useCallback(async (id: string) => {
     const result = await deleteExpense(id)
 
@@ -298,6 +323,14 @@ export default function ExpensesPage() {
         </div>
       )}
 
+      {scope ? (
+        <RecurringSection scope={scope} />
+      ) : (
+        <div className="rounded-xl border border-border bg-card p-4">
+          <Skeleton className="h-9 w-56" />
+        </div>
+      )}
+
       <ExpenseFilters
         filters={filters}
         onFilterChange={handleFilterChange}
@@ -339,6 +372,7 @@ export default function ExpensesPage() {
           onEdit={handleEdit}
           onDelete={handleDelete}
           onDuplicate={handleDuplicate}
+          onAttachments={handleAttachments}
         />
       )}
 
@@ -346,6 +380,12 @@ export default function ExpensesPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         expense={editingExpense}
+      />
+
+      <AttachmentsDialog
+        open={!!attachmentExpense}
+        onOpenChange={(open) => !open && setAttachmentExpense(null)}
+        expense={attachmentExpense}
       />
     </div>
   )

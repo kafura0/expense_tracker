@@ -14,7 +14,7 @@ import { Badge } from '@/shared/ui/badge'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/shared/ui/dialog'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
-import { ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Trash2, Copy, Pencil, ReceiptText } from 'lucide-react'
+import { ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Trash2, Copy, Pencil, ReceiptText, Paperclip } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/shared/lib/utils'
 import type { ExpenseWithCategory } from '@/entities/expense/types'
@@ -37,6 +37,7 @@ interface ExpenseTableProps {
   onEdit: (expense: ExpenseWithCategory) => void
   onDelete?: (id: string) => void
   onDuplicate?: (id: string) => void
+  onAttachments?: (expense: ExpenseWithCategory) => void
 }
 
 function SortButton({
@@ -115,6 +116,7 @@ export function ExpenseTable({
   onEdit,
   onDelete,
   onDuplicate,
+  onAttachments,
 }: ExpenseTableProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [expenseToDelete, setExpenseToDelete] = useState<ExpenseWithCategory | null>(null)
@@ -172,7 +174,7 @@ export function ExpenseTable({
               <TableHead className="w-[80px] py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Tax
               </TableHead>
-              <TableHead className="w-[100px] py-3" />
+              <TableHead className="w-[130px] py-3" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -258,6 +260,20 @@ export function ExpenseTable({
                       "flex items-center gap-0.5 transition-opacity duration-150",
                       hoveredRow === expense.id ? "opacity-100" : "opacity-0"
                     )}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            onClick={() => onAttachments?.(expense)}
+                            aria-label={`Receipts for ${expense.notes}`}
+                          >
+                            <Paperclip className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Receipts</TooltipContent>
+                      </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
