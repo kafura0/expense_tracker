@@ -43,8 +43,8 @@
 |---|-------|--------|-----|
 | 11 | No CSV/PDF export | John | Implement export with real data |
 | 12 | No budgeting/budget limits per category | John + Mary | Add real budgets on categories page |
-| 13 | No recurring expenses | John + Mary | Add recurring expense tracking |
-| 14 | No expense attachments/receipt upload | John | Add file upload for expenses |
+| 13 | No recurring expenses | John + Mary | Add recurring expense tracking — ✅ DONE (migration 015, `src/features/recurring/`; auto-materializes due instances on the expenses page) |
+| 14 | No expense attachments/receipt upload | John | Add file upload for expenses — ✅ DONE (migration 016 + `receipts` storage bucket, `src/features/attachments/`; image-only ≤5MB, per-row paperclip) |
 | 15 | Dashboard layout is entirely client-rendered | Winston | Extract sidebar to client component, make layout Server Component |
 | 16 | Settings actions bypass entity layer (FSD violation) | Winston + Amelia | Create `entities/settings/repository.ts` |
 | 17 | Duplicate getOrgId() helper | Winston + Amelia | Extract to `shared/lib/org-resolver.ts` |
@@ -113,11 +113,11 @@
 6. Fix accessibility gaps (#21, #22, #26)
 
 ### Sprint 2 (Core Features) — 5-7 days
-7. Reports page with real data (#7)
-8. Categories page with real DB-backed CRUD + budgets (#8, #12)
-9. CSV/PDF export (#11)
-10. Recurring expenses (#13)
-11. Expense attachments/receipt upload (#14)
+7. Reports page with real data (#7) — ✅
+8. Categories page with real DB-backed CRUD + budgets (#8, #12) — ✅
+9. CSV/PDF export (#11) — ✅
+10. Recurring expenses (#13) — ✅
+11. Expense attachments/receipt upload (#14) — ✅
 12. Fix expense stats to show full totals (#19)
 
 ### Sprint 3 (Architecture + Polish) — 3-4 days

@@ -22,7 +22,7 @@ P1×3, P2×2, P3×1, P4×0.5 → **≈ 8.2/10**
 
 ## Remaining gaps
 
-- None of the original 9 actions remain open. Watch items: no `kind` (income/expense) column on categories; recurring expenses, receipts, and page transitions (#13/#14/#40) are still out of scope.
+- None of the original 9 actions remain open. Watch items: no `kind` (income/expense) column on categories; page transitions (#40) still out of scope. Recurring expenses (#13) and receipt uploads (#14) shipped in the 2026-08-06 feature pass (migrations 015/016).
 
 ## Status log
 
@@ -32,3 +32,5 @@ P1×3, P2×2, P3×1, P4×0.5 → **≈ 8.2/10**
 | 2026-08-05 | Error boundaries added (`src/app/error.tsx`, `(dashboard)/error.tsx`) | 8.2 |
 | 2026-08-05 | Expense form now DB-backed (catalog.ts removed) | 8.2 |
 | 2026-08-05 | Brand logo from `docs/template/demo_files/logo.png` used sitewide + favicon (`src/app/icon.png`, PWA icons) | 8.2 |
+| 2026-08-06 | Landing truthfulness pass (hero, features, pricing, Teams, footer, onboarding, OG image) | 8.4 |
+| 2026-08-06 | Recurring expenses (migration 015) + receipt uploads (migration 016) shipped; invite expiry 72h | 8.7 |

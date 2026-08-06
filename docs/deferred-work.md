@@ -1,7 +1,7 @@
 # Ledgerly — Deferred Work
 
 **Source:** Adversarial code review of the deployed core (2026-08-02).
-**Status:** All items closed as of the org-admin release (migration 013 + 014, proxy migration). Two notes remain open and are tracked at the bottom.
+**Status:** All review findings closed as of the org-admin release (migration 013 + 014, proxy migration). D-08/D-09/D-10 (72h invite expiry, recurring expenses, receipt uploads) closed in the feature pass. Two notes remain open and are tracked at the bottom.
 
 ---
 
@@ -53,7 +53,11 @@ Totals are currency-aware: every aggregate selects `currency` and converts throu
 - [x] D-05 proxy migration + configurable fail-closed enforcement
 - [x] D-06 invite token expiry + org context + expired persistence
 - [x] D-07 currency-aware totals + date-boundary cleanup
+- [x] D-08 invite expiry window hardened to 72h (`src/entities/invite/repository.ts`)
+- [x] D-09 recurring expenses (migration 015 + `src/features/recurring/`)
+- [x] D-10 expense attachments / receipt upload (migration 016 + `receipts` bucket + `src/features/attachments/`)
 
 ## Open Items
 
-- **Invite expiry window:** tokens expire after 7 days (see smoke suite); tune the window if a shorter (e.g. 72h) expiry is preferred.
+- **Demo GIF size:** `public/demo/dashboard-demo.gif` is ~8.8MB. Local GIF re-encode is currently infeasible (no gifsicle/ffmpeg GIF build available on this machine); re-generate from a source video or replace with a lighter format (WebM/APNG) when tooling is available.
+- **Landing URL canonicalization:** `NEXT_PUBLIC_SITE_URL` in `.env.local`, the `SITE_URL` fallback in `src/shared/lib/seo.ts`, and the Vercel alias in `AGENTS.md` list different URLs; pin a single canonical production URL.

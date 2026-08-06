@@ -278,21 +278,21 @@ Story Point Scale: 1 = trivial (< 30 min), 2 = small (< 2 hrs), 3 = medium (< 4 
 
 | Task | SP | Audit # | Files | Acceptance Criteria |
 |------|----|---------|-------|-------------------|
-| Add recurring expenses model (schema + UI) | 2 | #13 | Migration, expenses page | User can mark expense as recurring (weekly/monthly/yearly); visual indicator |
-| Add expense receipt attachment upload | 1.5 | #14 | Expenses page, Supabase Storage | User can upload image/PDF receipt per expense; stored in Supabase Storage |
+| Add recurring expenses model (schema + UI) | 2 | #13 | Migration 015, expenses page | User can create/edit/pause/delete recurring templates (weekly/monthly/yearly); due instances auto-materialize into the expense list; visual indicator | 
+| Add expense receipt attachment upload | 1.5 | #14 | Migration 016 + `receipts` bucket, expenses page | User can upload image (JPEG/PNG/WebP ≤5MB) receipt per expense; view/download/delete; private bucket + RLS | 
 | Fix expense stats to show full totals (not page-only) | 1 | #19 | Expenses page | Stats show total across all expenses, not just current page; label clarified |
 | Fix settings page fake email display | 0.5 | #20 | Settings page | Shows real user email from Supabase auth, not generated from display name |
 
 **End-of-Day Verification — Sprint 2 Checkpoint (CP-2):**
-- [ ] `npm run build` — zero errors
-- [ ] `npm run lint` — zero warnings
-- [ ] `npm test` — all tests pass
-- [ ] Reports page: real data, charts, date filtering, export
-- [ ] Categories page: real CRUD, budget limits, progress indicators
-- [ ] Export: CSV and PDF both generate valid files
-- [ ] Expenses: recurring flag, receipt upload, correct totals
-- [ ] Settings: real email displayed
-- [ ] All P2 audit items closed (#7, #8, #11-#14, #19, #20)
+- [x] `npm run build` — zero errors
+- [x] `npm run lint` — zero warnings
+- [x] `npm test` — all tests pass (209 as of 2026-08-06)
+- [x] Reports page: real data, charts, date filtering, export
+- [x] Categories page: real CRUD, budget limits, progress indicators
+- [x] Export: CSV and PDF both generate valid files
+- [x] Expenses: recurring flag, receipt upload, correct totals
+- [x] Settings: real email displayed
+- [x] All P2 audit items closed (#7, #8, #11-#14, #19, #20)
 - [ ] No mock data remains in any page (`grep -r "hardcoded\|mock\|dummy" src/app/`)
 
 ---
@@ -490,8 +490,8 @@ Story Point Scale: 1 = trivial (< 30 min), 2 = small (< 2 hrs), 3 = medium (< 4 
 | 10 | Fake feature claims | Sprint 1 | 3 | ⬜ |
 | 11 | No CSV/PDF export | Sprint 2 | 9-10 | ⬜ |
 | 12 | No budget limits | Sprint 2 | 8 | ⬜ |
-| 13 | No recurring expenses | Sprint 2 | 11 | ⬜ |
-| 14 | No receipt attachments | Sprint 2 | 11 | ⬜ |
+| 13 | No recurring expenses | Sprint 2 | 11 | ✅ |
+| 14 | No receipt attachments | Sprint 2 | 11 | ✅ |
 | 15 | Dashboard client-only layout | Sprint 3 | 13 | ⬜ |
 | 16 | Settings FSD violation | Sprint 3 | 12 | ⬜ |
 | 17 | Duplicate getOrgId | Sprint 3 | 12 | ⬜ |

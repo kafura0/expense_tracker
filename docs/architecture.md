@@ -592,8 +592,8 @@ Extracted from the Premium Audit Report (`PREMIUM_AUDIT.md`).
 |----|-------|----------|--------|
 | TD-011 | No CSV/PDF export with real data | Features layer | Open |
 | TD-012 | No budgeting/budget limits per category | Features layer | Open |
-| TD-013 | No recurring expenses | Features layer | Open |
-| TD-014 | No expense attachments/receipt upload | Features layer | Open |
+| TD-013 | No recurring expenses | `src/features/recurring/` (migration 015) | Done |
+| TD-014 | No expense attachments/receipt upload | `src/features/attachments/` + `receipts` bucket (migration 016) | Done |
 | TD-015 | Dashboard layout is entirely client-rendered | `src/app/(dashboard)/layout.tsx` | Open |
 | TD-016 | Settings actions bypass entity layer (FSD violation) | `src/features/settings/actions.ts` | Open |
 | TD-017 | Duplicate `getOrgId()` helper | `expense/repository.ts:14` + `settings/actions.ts:14` | Open |
