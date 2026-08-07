@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import Image from 'next/image'
 import type { Metadata } from 'next'
 import { Logo } from '@/shared/ui/logo'
 import { SITE_URL, SITE_TITLE, SITE_DESCRIPTION } from '@/shared/lib/seo'
@@ -279,13 +278,14 @@ export default function LandingPage() {
                   </div>
                   <div className="p-4 md:p-16">
                     <div className="w-full aspect-[16/9] bg-muted/30 rounded-lg overflow-hidden relative">
-                      <Image
-                        src="/demo/dashboard-demo.gif"
-                        alt="Ledgerly dashboard demo"
-                        fill
-                        sizes="(max-width: 768px) 0px, 768px"
-                        unoptimized
-                        className="object-cover object-top"
+                      <video
+                        src="/demo/dashboard-demo.mp4"
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        poster="/demo/dashboard-demo.gif"
+                        className="absolute inset-0 w-full h-full object-cover object-top"
                       />
                     </div>
                   </div>
