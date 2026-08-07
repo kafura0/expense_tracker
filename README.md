@@ -13,7 +13,7 @@ Dark-first, PWA-enabled expense tracking with real-time exchange rates, VAT supp
 
 ![Ledgerly dashboard demo](public/demo/dashboard-demo.gif)
 
-▶ **Watch the full walkthrough video:** [`dashboard_landing_page demo.mp4`](docs/template/demo_files/dashboard_landing_page%20demo.mp4) · also at [`docs/demo.mp4`](docs/demo.mp4)
+▶ **Watch the full walkthrough:** [`ledgerly-demo.mp4`](demos/ledgerly-demo.mp4) (≈4:00 — cinematic intro + narrated platform walkthrough) · [`ledgerly-demo.webm`](demos/ledgerly-demo.webm)
 Source media lives in [`docs/template/demo_files/`](docs/template/demo_files/) (GIF, MP4, logo, intro audio).
 
 ---
