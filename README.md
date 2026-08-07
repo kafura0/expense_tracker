@@ -4,7 +4,7 @@
 
 Dark-first, PWA-enabled expense tracking with real-time exchange rates, VAT support, per-org dashboards, budgets, and bank-grade security (RLS + nonce-based CSP).
 
-**Live:** [expense-tracker-iq7pempv3-joan-kaburas-projects.vercel.app](https://expense-tracker-iq7pempv3-joan-kaburas-projects.vercel.app) · **Alias:** [expense-tracker-ruddy-five-r8k6s4r6zg.vercel.app](https://expense-tracker-ruddy-five-r8k6s4r6zg.vercel.app)
+**Live:** [expense-tracker-iq7pempv3-joan-kaburas-projects.vercel.app](https://expense-tracker-iq7pempv3-joan-kaburas-projects.vercel.app/) · **Alias:** [expense-tracker-ruddy-five-r8k6s4r6zg.vercel.app](https://expense-tracker-ruddy-five-r8k6s4r6zg.vercel.app)
 **Repository:** [github.com/kafura0/expense_tracker](https://github.com/kafura0/expense_tracker)
 
 ---
