@@ -176,7 +176,7 @@ Supabase  ← RLS enforces org/row isolation at the query layer
 
 ### Content Security Policy
 
-- Static prerendered pages carry inline bootstrap/RSC scripts trusted by **SHA-256 hashes** generated at build time (`scripts/generate-csp-hashes.mjs`, 82 hashes in `src/shared/lib/csp-hashes.generated.ts`).
+- Static prerendered pages carry inline bootstrap/RSC scripts trusted by **SHA-256 hashes** generated at build time (`scripts/generate-csp-hashes.mjs`, auto-synced by `scripts/build-with-csp.mjs`).
 - Dynamically rendered pages trust scripts via the **per-request nonce**.
 - `'unsafe-eval'` ships only in development; `style-src 'unsafe-inline'` is retained for Tailwind/chart inline styles; `frame-ancestors 'none'` blocks clickjacking.
 - The build pipeline is deterministic and self-verifying: `next build` → generate hashes → `next build` → `--verify` fails CI if the committed hash file drifts.
@@ -258,13 +258,12 @@ tests/
 
 ## Database Schema
 
-Sixteen migrations manage the schema — note there are two `002_*` and two `014_*` files (order of creation, both applied). **Supabase project ref:** `weitlewvoufvgfpkryvg`
+Twenty migrations manage the schema (`001`–`020`, uniquely numbered). **Supabase project ref:** `weitlewvoufvgfpkryvg`
 
 | Migration | Purpose |
 |-----------|---------|
 | `001_initial_schema.sql` | Core tables (`profiles`, `categories`, `expenses`, `settings`, `exchange_rates`) + `handle_new_user` trigger + RLS |
 | `002_tenancy_and_security.sql` | `plans`, `organizations`, `org_members`, `client_requests`, `subscriptions`, `audit_logs`; `org_id` columns; RLS rewrite; helper functions; `create_org_for_user` + `approve_client_request` RPCs; plan seeds |
-| `002_performance_optimization.sql` | Composite indexes for dashboard date-range analytics |
 | `003_onboarding.sql` | `profiles.onboarding_completed` flag + index |
 | `004_messages_table.sql` | `messages` (support tickets + announcements) with RLS |
 | `005_invites_and_solo_support.sql` | `invites` table + solo-user RLS policies + `is_solo_user` / `is_row_owner` helpers |
@@ -277,7 +276,12 @@ Sixteen migrations manage the schema — note there are two `002_*` and two `014
 | `012_security_hardening.sql` | RLS hardening + defense-in-depth |
 | `013_org_administration.sql` | Org admin management (`can_admin_org`) |
 | `014_accept_invite_expired_persist.sql` | Invite acceptance + expiry handling |
-| `014_query_performance.sql` | Additional query-performance indexes |
+| `015_recurring_expenses.sql` | Recurring expense templates |
+| `016_expense_attachments.sql` | Receipt attachment uploads |
+| `017_categories_kind.sql` | `categories.kind` (income/expense) |
+| `018_billing_audit_actions.sql` | Stripe billing + widened audit vocabulary |
+| `019_performance_optimization.sql` | Composite indexes for dashboard date-range analytics |
+| `020_query_performance.sql` | Additional query-performance indexes |
 
 ### Tables
 
@@ -370,7 +374,6 @@ Apply the migrations in order **via the Supabase Management API** (never the SQL
 ```bash
 supabase/migrations/001_initial_schema.sql
 supabase/migrations/002_tenancy_and_security.sql
-supabase/migrations/002_performance_optimization.sql
 supabase/migrations/003_onboarding.sql
 supabase/migrations/004_messages_table.sql
 supabase/migrations/005_invites_and_solo_support.sql
@@ -383,7 +386,12 @@ supabase/migrations/011_remove_legacy_org_roles.sql
 supabase/migrations/012_security_hardening.sql
 supabase/migrations/013_org_administration.sql
 supabase/migrations/014_accept_invite_expired_persist.sql
-supabase/migrations/014_query_performance.sql
+supabase/migrations/015_recurring_expenses.sql
+supabase/migrations/016_expense_attachments.sql
+supabase/migrations/017_categories_kind.sql
+supabase/migrations/018_billing_audit_actions.sql
+supabase/migrations/019_performance_optimization.sql
+supabase/migrations/020_query_performance.sql
 ```
 
 Each file is applied with `POST https://api.supabase.com/v1/projects/{project_ref}/database/query`

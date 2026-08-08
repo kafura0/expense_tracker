@@ -8,20 +8,19 @@
  * scripts to execute while every other inline script stays blocked.
  *
  * The generated module is imported by `src/shared/lib/security-headers.ts`
- * (and therefore baked into the proxy bundle). The package `build` script
- * runs this generator after the first `next build` and rebuilds so the proxy
- * ships the hashes that match the freshly rendered HTML:
+ * (and therefore baked into the proxy bundle). Inline-script bodies are
+ * byte-deterministic across builds of unchanged source, so `scripts/build-with-csp.mjs`
+ * only triggers a second build when the hashes actually changed:
  *
- *   "build": "next build && node scripts/generate-csp-hashes.mjs && next build"
+ *   "build": "node scripts/build-with-csp.mjs"
  *
  * Run standalone to refresh after hand-editing the committed file:
  *
  *   node scripts/generate-csp-hashes.mjs
  *
  * `--verify` recomputes the hashes from the current build output and compares
- * them to the committed file, exiting non-zero on any mismatch. The package
- * build script uses it after the final `next build` to guarantee the served
- * HTML matches the CSP the proxy shipped.
+ * them to the committed file, exiting non-zero on any mismatch. It guarantees
+ * the served HTML matches the CSP the proxy shipped.
  */
 import { createHash } from 'node:crypto'
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
@@ -61,16 +60,7 @@ function hashesFromHtml(file) {
   return hashes
 }
 
-function main() {
-  const htmlFiles = collectHtmlFiles(APP_HTML_DIR)
-  if (htmlFiles.length === 0) {
-    console.error(
-      `[generate-csp-hashes] no HTML found in ${APP_HTML_DIR}. ` +
-        'Run "next build" before this script.'
-    )
-    process.exit(1)
-  }
-
+function computeOutput(htmlFiles) {
   const seen = new Set()
   const filesWithHashes = []
   for (const file of htmlFiles) {
@@ -93,34 +83,74 @@ function main() {
     ']',
     '',
   ]
-  const output = lines.join('\n')
+  return { output: lines.join('\n'), sorted, filesWithHashes }
+}
 
-  if (VERIFY) {
-    if (!existsSync(OUT_FILE)) {
-      console.error(`[generate-csp-hashes] missing ${OUT_FILE} - run "node scripts/generate-csp-hashes.mjs" first.`)
-      process.exit(1)
-    }
-    const current = readFileSync(OUT_FILE, 'utf8')
-    if (current === output) {
-      console.log(`[generate-csp-hashes] verify OK: ${sorted.length} hashes match ${OUT_FILE}`)
-      return
-    }
+/**
+ * Recompute the hashes from the current build output and write the generated
+ * module. Returns `true` when the on-disk file changed (callers must rebuild
+ * so the proxy bundle ships the new hashes).
+ */
+export function generateHashes() {
+  const htmlFiles = collectHtmlFiles(APP_HTML_DIR)
+  if (htmlFiles.length === 0) {
     console.error(
-      `[generate-csp-hashes] MISMATCH: the prerendered HTML inline scripts changed after the final ` +
-        `build (${sorted.length} hashes now). Re-run the full build so the proxy ships the new hashes.`
+      `[generate-csp-hashes] no HTML found in ${APP_HTML_DIR}. ` +
+        'Run "next build" before this script.'
     )
     process.exit(1)
   }
 
-  writeFileSync(OUT_FILE, output)
+  const { output, sorted, filesWithHashes } = computeOutput(htmlFiles)
+  const previous = existsSync(OUT_FILE) ? readFileSync(OUT_FILE, 'utf8') : ''
+  const changed = previous !== output
+
+  if (changed) writeFileSync(OUT_FILE, output)
 
   console.log(
     `[generate-csp-hashes] ${sorted.length} unique inline-script hash(es) ` +
-      `from ${htmlFiles.length} HTML file(s) -> ${OUT_FILE}`
+      `from ${htmlFiles.length} HTML file(s) -> ${OUT_FILE}${changed ? ' (CHANGED)' : ' (unchanged)'}`
   )
   for (const { file, count } of filesWithHashes.sort((a, b) => b.count - a.count)) {
     console.log(`  ${count.toString().padStart(3)}  ${file.replace(process.cwd(), '.')}`)
   }
+  return changed
+}
+
+/** Compare the current build output to the committed file; exit non-zero on mismatch. */
+export function verifyHashes() {
+  const htmlFiles = collectHtmlFiles(APP_HTML_DIR)
+  if (htmlFiles.length === 0) {
+    console.error(
+      `[generate-csp-hashes] no HTML found in ${APP_HTML_DIR}. ` +
+        'Run "next build" before this script.'
+    )
+    process.exit(1)
+  }
+  if (!existsSync(OUT_FILE)) {
+    console.error(`[generate-csp-hashes] missing ${OUT_FILE} - run "node scripts/generate-csp-hashes.mjs" first.`)
+    process.exit(1)
+  }
+
+  const { output, sorted } = computeOutput(htmlFiles)
+  const current = readFileSync(OUT_FILE, 'utf8')
+  if (current === output) {
+    console.log(`[generate-csp-hashes] verify OK: ${sorted.length} hashes match ${OUT_FILE}`)
+    return
+  }
+  console.error(
+    `[generate-csp-hashes] MISMATCH: the prerendered HTML inline scripts changed after the final ` +
+      `build (${sorted.length} hashes now). Re-run the full build so the proxy ships the new hashes.`
+  )
+  process.exit(1)
+}
+
+function main() {
+  if (VERIFY) {
+    verifyHashes()
+    return
+  }
+  generateHashes()
 }
 
 main()

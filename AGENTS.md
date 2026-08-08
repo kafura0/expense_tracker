@@ -9,7 +9,7 @@ Premium SaaS expense tracker built with Next.js 16, Supabase, Tailwind CSS v4. D
 - **Database:** Supabase (PostgreSQL + RLS)
 - **Auth:** Supabase Auth (email/password + OTP)
 - **UI:** Custom design system, Tailwind CSS v4, Lucide icons, Recharts
-- **Testing:** Vitest (68 tests across 7 files)
+- **Testing:** Vitest (246 tests across 29 files) + Playwright E2E (smoke, route protection, public routes, features)
 - **Lint:** ESLint (zero errors)
 - **Deploy:** Vercel (auto-deploy on push to main)
 
@@ -25,7 +25,7 @@ Premium SaaS expense tracker built with Next.js 16, Supabase, Tailwind CSS v4. D
 ## Supabase
 - **Project ref:** `weitlewvoufvgfpkryvg`
 - **URL:** `https://weitlewvoufvgfpkryvg.supabase.co`
-- **Migrations:** `supabase/migrations/` (20 files, 001–018 — note the duplicate `002_*` and `014_*` pairs)
+- **Migrations:** `supabase/migrations/` (20 files, uniquely numbered 001–020)
 - **Schema changes:** All future Supabase schema changes MUST be applied via the **Management API** (not direct SQL/psql, not the Supabase CLI `db push`). Author the migration file under `supabase/migrations/` for versioning, then apply it through the Management API endpoint (e.g. `POST /v1/projects/{ref}/database/query`).
 - **RLS helpers:** `is_super_admin()`, `is_org_member()`, `can_write_in_org()`, `can_admin_org()`, `is_solo_user()`, `is_row_owner()`
 - **Roles:** `org_members.role` is `super_admin | org_admin | member`. `super_admin` = platform staff (owns `/admin`); `org_admin` = org-level admin (roster/invites/org-settings); `member` = plain write access.
@@ -79,7 +79,7 @@ The script reads `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from
 
 ## Key Commands
 ```bash
-npm run dev          # Dev server (port 3000)
+npm run dev          # Dev server (port 3002 via cmd background process)
 npm run build        # Production build
 npm run lint         # ESLint
 npm test             # Vitest
@@ -101,6 +101,7 @@ https://github.com/kafura0/expense_tracker.git
 - Dashboard pages are left-aligned (no text-center)
 - All auth pages have `text-center` on root div
 - Exchange rate fallback: Frankfurter API + hardcoded USD/KES = 153.5
+- **Git LFS** is enabled: media patterns (`*.mp4`, `*.webm`, `*.mp3`, `*.gif`, `*.avif`) are LFS-tracked via `.gitattributes` — commit them normally, LFS stores the blobs. Existing media committed before `.gitattributes` are regular blobs (rewriting history to LFS would require a force-push).
 - `Button` component uses Radix Slot v1.3.0 on React 19 — `asChild` path is separate
 - `useSearchParams` pages must be wrapped in `<Suspense>`
 - Dev server port 3002 via cmd background process

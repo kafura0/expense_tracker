@@ -1,4 +1,4 @@
--- 014_query_performance.sql
+-- 020_query_performance.sql
 -- Org-wide expense queries (dashboard widgets, expenses list, reports) always
 -- filter `org_id` + `is_deleted = false` and typically order by `date DESC`.
 -- The only org index on expenses today is the single-column `idx_expenses_org_id`,

@@ -470,11 +470,11 @@ Located in `supabase/migrations/` (6 files):
 | Migration | Purpose |
 |-----------|---------|
 | `001_initial_schema.sql` | Base tables: profiles, categories, expenses, settings, exchange_rates + RLS |
-| `002_performance_optimization.sql` | Query optimization indexes |
 | `002_tenancy_and_security.sql` | Multi-tenancy: organizations, org_members, subscriptions, audit_logs, RLS rewrite |
 | `003_onboarding.sql` | Onboarding flow support |
 | `004_messages_table.sql` | Messaging/announcements |
 | `005_invites_and_solo_support.sql` | Invite system, solo user mode |
+| `019_performance_optimization.sql` | Query optimization indexes |
 
 ---
 

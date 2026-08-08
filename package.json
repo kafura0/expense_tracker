@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "node --max-old-space-size=8192 node_modules/next/dist/bin/next dev",
-    "build": "next build && node scripts/generate-csp-hashes.mjs && next build && node scripts/generate-csp-hashes.mjs --verify",
+    "build": "node scripts/build-with-csp.mjs",
     "start": "next start",
     "lint": "eslint",
     "seed": "tsx scripts/seed.ts",
